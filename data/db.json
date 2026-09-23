@@ -1,0 +1,108 @@
+{
+  "_meta": {
+    "schemaVersion": 1,
+    "referenceDate": "2026-09-23",
+    "notes": "Base de exemplo do protótipo. Na primeira carga, todas as datas são deslocadas para que referenceDate vire o dia atual; assim o cenário (empréstimo no prazo, devolvido e atrasado) continua coerente. Depois disso os dados ficam salvos no navegador (localStorage)."
+  },
+
+  "users": [
+    { "id": 1, "name": "Paola Santiago", "role": "almoxarife", "active": true }
+  ],
+
+  "inspectors": [
+    { "id": 1, "badge": "12345678", "name": "João Silva", "department": "Alto Forno", "faceEnrolled": false, "active": true },
+    { "id": 2, "badge": "87654321", "name": "Maria Santos", "department": "Manutenção Mecânica", "faceEnrolled": false, "active": true },
+    { "id": 3, "badge": "11223344", "name": "Carlos Oliveira", "department": "Segurança do Trabalho", "faceEnrolled": false, "active": true },
+    { "id": 4, "badge": "99887766", "name": "Ana Pereira", "department": "Inspeção Elétrica", "faceEnrolled": true, "active": true },
+    { "id": 5, "badge": "55667788", "name": "Pedro Costa", "department": "Laminação", "faceEnrolled": false, "active": false }
+  ],
+
+  "categories": [
+    { "id": 1, "name": "Instrumentos de Medição" },
+    { "id": 2, "name": "Instrumentos de Inspeção" },
+    { "id": 3, "name": "Ferramentas de Aperto" },
+    { "id": 4, "name": "Segurança" }
+  ],
+
+  "locations": [
+    { "id": 1, "name": "Almoxarifado Central - A1", "type": "almoxarifado" },
+    { "id": 2, "name": "Almoxarifado Central - A3", "type": "almoxarifado" },
+    { "id": 3, "name": "Almoxarifado Central - B2", "type": "almoxarifado" },
+    { "id": 4, "name": "Em campo", "type": "campo" },
+    { "id": 5, "name": "Manutenção", "type": "oficina" }
+  ],
+
+  "toolStatuses": [
+    { "id": "disponivel", "label": "Disponível", "selectableOnCreate": true },
+    { "id": "em_uso", "label": "Em Uso", "selectableOnCreate": false },
+    { "id": "manutencao", "label": "Manutenção", "selectableOnCreate": true }
+  ],
+
+  "loanStatuses": [
+    { "id": "ativo", "label": "Ativo" },
+    { "id": "devolvido", "label": "Devolvido" },
+    { "id": "atrasado", "label": "Atrasado" }
+  ],
+
+  "tools": [
+    {
+      "id": 1, "code": "TRN-001", "name": "Multímetro Digital Fluke 87V",
+      "description": "Multímetro True RMS para medições elétricas em campo.",
+      "categoryId": 1, "locationId": 1, "status": "disponivel",
+      "nextMaintenance": "2027-02-15", "imageUrl": null,
+      "createdBy": 1, "createdAt": "2026-03-02T09:15:00", "updatedAt": "2026-09-21T16:40:00"
+    },
+    {
+      "id": 2, "code": "TRN-002", "name": "Câmera Termográfica FLIR E8",
+      "description": "Câmera infravermelha para inspeção de pontos quentes.",
+      "categoryId": 2, "locationId": 4, "status": "em_uso",
+      "nextMaintenance": "2027-01-20", "imageUrl": null,
+      "createdBy": 1, "createdAt": "2026-03-02T09:20:00", "updatedAt": "2026-09-20T08:30:00"
+    },
+    {
+      "id": 3, "code": "TRN-003", "name": "Torquímetro Digital 50-250 Nm",
+      "description": "Torquímetro com leitura digital e alarme de torque.",
+      "categoryId": 3, "locationId": 5, "status": "manutencao",
+      "nextMaintenance": "2026-10-01", "imageUrl": null,
+      "createdBy": 1, "createdAt": "2026-04-11T10:05:00", "updatedAt": "2026-09-18T14:00:00"
+    },
+    {
+      "id": 4, "code": "TRN-004", "name": "Detector de Gases 4 em 1",
+      "description": "Detector portátil de O2, CO, H2S e LEL para espaços confinados.",
+      "categoryId": 4, "locationId": 3, "status": "em_uso",
+      "nextMaintenance": "2027-02-10", "imageUrl": null,
+      "createdBy": 1, "createdAt": "2026-05-06T11:30:00", "updatedAt": "2026-09-10T07:50:00"
+    },
+    {
+      "id": 5, "code": "TRN-005", "name": "Medidor de Vibração Portátil",
+      "description": "Analisador de vibração para manutenção preditiva de motores.",
+      "categoryId": 1, "locationId": 2, "status": "disponivel",
+      "nextMaintenance": "2027-01-28", "imageUrl": null,
+      "createdBy": 1, "createdAt": "2026-06-15T15:45:00", "updatedAt": "2026-06-15T15:45:00"
+    }
+  ],
+
+  "loans": [
+    {
+      "id": 1, "toolId": 4, "inspectorId": 3,
+      "loanDate": "2026-09-10", "dueDate": "2026-09-17", "returnedDate": null,
+      "notes": "Inspeção área confinada",
+      "createdBy": 1, "receivedBy": null,
+      "createdAt": "2026-09-10T07:50:00", "updatedAt": "2026-09-10T07:50:00"
+    },
+    {
+      "id": 2, "toolId": 1, "inspectorId": 2,
+      "loanDate": "2026-09-15", "dueDate": "2026-09-22", "returnedDate": "2026-09-21",
+      "notes": "Manutenção preventiva setor A",
+      "createdBy": 1, "receivedBy": 1,
+      "createdAt": "2026-09-15T08:10:00", "updatedAt": "2026-09-21T16:40:00"
+    },
+    {
+      "id": 3, "toolId": 2, "inspectorId": 1,
+      "loanDate": "2026-09-20", "dueDate": "2026-09-27", "returnedDate": null,
+      "notes": "Inspeção Alto Forno 4",
+      "createdBy": 1, "receivedBy": null,
+      "createdAt": "2026-09-20T08:30:00", "updatedAt": "2026-09-20T08:30:00"
+    }
+  ]
+}
