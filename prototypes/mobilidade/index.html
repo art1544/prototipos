@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Protótipo navegável do app Mobilidade (área logada): ordens, solicitações, notas e eventos de manutenção.">
+<meta name="theme-color" content="#ffffff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mobilidade">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Mobilidade</title>
+<link rel="icon" href="assets/img/logo.png" type="image/png">
+<link rel="apple-touch-icon" href="assets/img/logo.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+<script type="module" src="assets/js/app.js"></script>
+</head>
+<body>
+<div id="app" class="app">
+  <main class="app-main">
+    <div class="state-screen" role="status">
+      <span class="spinner" aria-hidden="true"></span>
+      <p class="state-screen__text">Carregando…</p>
+    </div>
+  </main>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+<dialog id="dialog" class="dialog"></dialog>
+
+<noscript>
+  <div class="state-screen">
+    <h1 class="state-screen__title">JavaScript desativado</h1>
+    <p class="state-screen__text">Ative o JavaScript no navegador para usar o protótipo Mobilidade.</p>
+  </div>
+</noscript>
+
+<script src="assets/js/file-protocol-warning.js"></script>
+</body>
+</html>

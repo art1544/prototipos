@@ -13,6 +13,7 @@ export const APP = {
   name: 'Tool Management',
   version: 'v1.0.0 · DEV',
   company: 'Ternium',
+  hubUrl: '../../', // catálogo de protótipos (raiz do repositório)
   currentUserId: 1, // usuário "logado" (tabela users)
   toastMs: 2400,
   alertToastMs: 4500,

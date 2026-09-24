@@ -2,36 +2,63 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Protótipo navegável do sistema de gestão de ferramentas e empréstimos.">
-<meta name="theme-color" content="#ffffff">
-<title>Tool Management</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Catálogo de protótipos navegáveis: escolha um protótipo para abrir.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111318" media="(prefers-color-scheme: dark)">
+<title>Protótipos</title>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@500;600;700;800&family=Red+Hat+Text:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/styles.css">
-<script type="module" src="assets/js/app.js"></script>
+<link rel="stylesheet" href="assets/hub.css">
+<script src="assets/legacy-redirect.js"></script>
+<script type="module" src="assets/hub.js"></script>
 </head>
 <body>
-<div id="app" class="app">
-  <main>
-    <div class="state-screen" role="status">
-      <span class="spinner" aria-hidden="true"></span>
-      <span>Carregando…</span>
+<a class="skip-link" href="#catalog">Pular para os protótipos</a>
+
+<header class="hub-header">
+  <div class="container">
+    <div class="hub-brand">
+      <span class="hub-brand__mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>
+      </span>
+      <span class="hub-brand__name">Protótipos</span>
     </div>
-  </main>
-</div>
+    <h1 class="hub-title">Escolha um protótipo</h1>
+    <p class="hub-subtitle">Protótipos navegáveis de diferentes projetos. Cada um tem dados de exemplo próprios, salvos só neste navegador.</p>
+  </div>
+</header>
+
+<main id="catalog" class="container hub-main" tabindex="-1">
+  <div class="hub-toolbar" role="search">
+    <label class="hub-search">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span class="sr-only">Buscar protótipo</span>
+      <input id="hub-search" type="search" placeholder="Buscar por nome, projeto ou cliente" autocomplete="off" enterkeyhint="search">
+    </label>
+    <div class="hub-filters" role="group" aria-label="Filtrar por plataforma">
+      <button type="button" class="hub-chip is-active" data-platform="" aria-pressed="true">Todos</button>
+      <button type="button" class="hub-chip" data-platform="mobile" aria-pressed="false">Mobile</button>
+      <button type="button" class="hub-chip" data-platform="web" aria-pressed="false">Web</button>
+    </div>
+  </div>
+
+  <p id="hub-count" class="hub-count" aria-live="polite"></p>
+
+  <div id="hub-list" class="hub-grid" aria-busy="true">
+    <div class="hub-skeleton"></div>
+    <div class="hub-skeleton"></div>
+  </div>
+</main>
+
+<footer class="hub-footer">
+  <div class="container">
+    <p>Para adicionar um protótipo: <code>npm run new -- &lt;id&gt; "Nome"</code> e registre-o em <code>prototypes/registry.json</code>. Detalhes no README do repositório.</p>
+  </div>
+</footer>
 
 <noscript>
-  <div class="page page--sm">
-    <section class="card panel state-card">
-      <h1 class="page-title">JavaScript desativado</h1>
-      <p class="page-subtitle">Ative o JavaScript no navegador para usar o Tool Management.</p>
-    </section>
-  </div>
+  <div class="container"><p class="hub-empty">Ative o JavaScript para ver a lista de protótipos.</p></div>
 </noscript>
-
-<script src="assets/js/file-protocol-warning.js"></script>
 </body>
 </html>

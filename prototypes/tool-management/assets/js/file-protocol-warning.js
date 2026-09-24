@@ -7,7 +7,7 @@ if (window.location.protocol === 'file:') {
         <section class="card panel state-card">
           <h1 class="page-title">Abra o protótipo por um servidor</h1>
           <p class="page-subtitle">O navegador não carrega os dados quando o arquivo é aberto direto do disco.</p>
-          <p class="field-hint">Na pasta do projeto, rode <code>npx serve .</code> e acesse o endereço exibido,
+          <p class="field-hint">Na raiz do repositório, rode <code>npm run dev</code> e acesse o endereço exibido,
             ou use o link publicado na Vercel.</p>
         </section>
       </div>

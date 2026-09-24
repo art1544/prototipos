@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Visualização de protótipo mobile em moldura de celular.">
+<meta name="color-scheme" content="light dark">
+<title>Moldura de celular – Protótipos</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/hub.css">
+<script type="module" src="assets/preview.js"></script>
+</head>
+<body class="preview-body">
+<header class="preview-bar">
+  <a class="preview-bar__back" href="./">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+    Protótipos
+  </a>
+  <h1 id="preview-title" class="preview-bar__title">Carregando…</h1>
+  <div class="preview-bar__controls">
+    <label class="sr-only" for="preview-device">Aparelho</label>
+    <select id="preview-device" class="preview-select"></select>
+    <button type="button" id="preview-rotate" class="hub-btn hub-btn--ghost" aria-pressed="false">Girar</button>
+    <button type="button" id="preview-reload" class="hub-btn hub-btn--ghost">Recarregar</button>
+    <a id="preview-open" class="hub-btn hub-btn--primary" href="./">Abrir em tela cheia</a>
+  </div>
+</header>
+<main class="preview-stage" id="preview-stage">
+  <div class="device" id="preview-device-frame">
+    <iframe id="preview-frame" title="Protótipo" loading="eager"></iframe>
+  </div>
+</main>
+<p class="preview-hint" id="preview-hint">Dica: no celular, abra o protótipo direto (sem a moldura) e use "Adicionar à tela inicial" para vê-lo em tela cheia.</p>
+</body>
+</html>

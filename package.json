@@ -1,0 +1,14 @@
+{
+  "name": "prototipos",
+  "private": true,
+  "description": "Catálogo de protótipos navegáveis (HTML, CSS e JavaScript puros, sem build).",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "check": "node scripts/check.mjs",
+    "new": "node scripts/new-prototype.mjs"
+  }
+}

@@ -1,0 +1,231 @@
+{
+  "_meta": {
+    "schemaVersion": 1,
+    "referenceDate": "2026-09-21",
+    "notes": "Base de exemplo do protótipo Mobilidade. Na primeira carga, todas as datas são deslocadas para que referenceDate vire o dia atual; depois os dados ficam salvos no navegador (localStorage, chave mobilidade:db). Textos exibidos (prioridades, status, tipos de nota, notificações, eventos) são traduzidos pela interface a partir dos ids."
+  },
+
+  "users": [
+    {
+      "id": 1,
+      "name": "Sara El Khal",
+      "username": "K.SAR34",
+      "registration": "45231",
+      "email": "sara.elkhal@ternium.com",
+      "role": "tecnico_campo",
+      "deviceId": "7fq2mksd91plwaeuz3"
+    }
+  ],
+
+  "planningGroups": [
+    { "id": "0AA", "name": "ACI OP REFINO PRIM" },
+    { "id": "0AB", "name": "ACI OP REFINO SEC" },
+    { "id": "0AC", "name": "ACI OP LAMINAÇÃO" }
+  ],
+
+  "workCenters": [
+    { "id": "0AAOPESA", "name": "ACIARIA MELT SHOP OPERAÇÃO" },
+    { "id": "0AAMANUT", "name": "ACIARIA MANUTENÇÃO" }
+  ],
+
+  "plants": [
+    { "id": "RJ04", "name": "Usina de Santa Cruz" },
+    { "id": "RJ01", "name": "Usina Volta Redonda" }
+  ],
+
+  "activityTypes": [
+    { "id": "AJC", "name": "Ajuste e calibração" },
+    { "id": "MAN", "name": "Manutenção corretiva" },
+    { "id": "INS", "name": "Inspeção" }
+  ],
+
+  "noteTypes": [
+    { "id": "M0", "requiresOrder": true },
+    { "id": "M8", "requiresOrder": true },
+    { "id": "M3", "requiresOrder": false }
+  ],
+
+  "locations": [
+    { "code": "CSA", "description": "TERNIUM BRASIL", "parent": null },
+    { "code": "CSA-ACI1", "description": "ACIARIA TERNIUM BR.", "parent": "CSA" },
+    { "code": "CSA-ACI1-SAMA", "description": "AREA DE ABASTECIMENTO MATERIAIS ACIARIA", "parent": "CSA-ACI1" },
+    { "code": "CSA-ACI1-SAMA-BAL1", "description": "BALANÇA A SILOS A / B (METAL SEC)", "parent": "CSA-ACI1-SAMA" },
+    { "code": "CSA-ACI1-SAMA-BAL1-ESTR", "description": "ESTRUTURA BALANÇA A SILOS A / B (M SEC)", "parent": "CSA-ACI1-SAMA-BAL1" },
+    { "code": "CSA-ACI1-SAMA-BAL1-ESTR-BASE01", "description": "BASE DA BALANÇA A SILOS A/B", "parent": "CSA-ACI1-SAMA-BAL1-ESTR" },
+    { "code": "CSA-ACI1-SAMA-BAL1-ESTR-CALH01", "description": "CALHA VIBRATORIA BALANÇA A SILOS A/B", "parent": "CSA-ACI1-SAMA-BAL1-ESTR" },
+    { "code": "CSA-ACI1-SAMA-BAL1-DESC", "description": "LINHA DE DESCARGA BALANÇA A SILOS A/B", "parent": "CSA-ACI1-SAMA-BAL1" },
+    { "code": "CSA-ACI1-SAMA-ESTR03", "description": "ESTEIRA TRANSPORTADORA 3", "parent": "CSA-ACI1-SAMA" },
+    { "code": "CSA-ACI1-SAMA-ESTR03-MOTOR", "description": "MOTOR DA ESTEIRA 3", "parent": "CSA-ACI1-SAMA-ESTR03" },
+    { "code": "CSA-ACI1-SAMA-PREN02", "description": "PRENSA HIDRÁULICA 2", "parent": "CSA-ACI1-SAMA" },
+    { "code": "CSA-ACI1-SAMA-FORNO01", "description": "FORNO 1", "parent": "CSA-ACI1-SAMA" },
+    { "code": "CSA-ACI1-SAMA-FORNO01-VALV", "description": "VÁLVULA DE SEGURANÇA DO FORNO 1", "parent": "CSA-ACI1-SAMA-FORNO01" },
+    { "code": "CSA-ACI1-SAMA-FORNO02", "description": "FORNO 2", "parent": "CSA-ACI1-SAMA" },
+    { "code": "CSA-ACI1-SAMA-FORNO02-SENS", "description": "SENSORES DO FORNO 2", "parent": "CSA-ACI1-SAMA-FORNO02" },
+    { "code": "CSA-ACI1-SAMA-LINHA01", "description": "LINHA DE TRANSPORTE 1", "parent": "CSA-ACI1-SAMA" },
+    { "code": "CSA-ACI1-SAMA-LINHA01-ROL", "description": "ROLAMENTOS DA LINHA 1", "parent": "CSA-ACI1-SAMA-LINHA01" }
+  ],
+
+  "orders": [
+    {
+      "id": 1, "code": "OS-58231", "type": "PM10",
+      "description": "Vazamento de óleo na base da balança a silos A/B",
+      "priority": "emergencia", "status": "andamento",
+      "locationCode": "CSA-ACI1-SAMA-BAL1-ESTR-BASE01",
+      "workCenterId": "0AAOPESA", "plantId": "RJ04", "planningGroupId": "0AA", "activityTypeId": "MAN",
+      "startedAt": "2026-09-21T08:15:00", "finishedAt": null,
+      "desiredStart": "2026-09-21", "desiredEnd": "2026-09-21",
+      "systemStatus": "LIB CNPA", "userStatus": "", "headerText": "IM-2S - TML10 - OFICINA",
+      "operations": [
+        { "number": "0040", "title": "VERIFICAR A INTEGRIDADE FAROL DIANTEIRO", "code": "CSA-MEQ-DEDR-DR10-SELE-FARO01", "equipment": "FAROIS DR640-010", "workCenter": "1MDELP10", "people": 1, "duration": "1.0", "released": true, "completed": true },
+        { "number": "0050", "title": "VERIFICAR A INTEGRIDADE BATERIA", "code": "CSA-MEQ-DEDR-DR10-SELE-BATE01", "equipment": "BATERIA DR640-010", "workCenter": "1MDELP10", "people": 1, "duration": "1.0", "released": false, "completed": false },
+        { "number": "0060", "title": "VERIF A INTEG MODULO ELETRONICO", "code": "CSA-MEQ-DEDR-DR10-SELE-MODU01", "equipment": "MODULO DR640-010", "workCenter": "1MDELP10", "people": 1, "duration": "1.0", "released": false, "completed": false },
+        { "number": "0070", "title": "VERIFICAR A INTEGRIDADE PAINEL ELÉTRICO", "code": "CSA-MEQ-DEDR-DR10-SELE-PAIN01", "equipment": "PAINEL / QUADRO DISTRIBUICAO DR640-010", "workCenter": "1MDELP10", "people": 1, "duration": "1.0", "released": false, "completed": false }
+      ],
+      "documents": [
+        { "id": 1, "operation": "0040", "name": "000000000000000000000001 ZIT" }
+      ]
+    },
+    {
+      "id": 2, "code": "OS-58204", "type": "PM01",
+      "description": "Inspeção de rotina no motor da esteira 3",
+      "priority": "normal", "status": "andamento",
+      "locationCode": "CSA-ACI1-SAMA-ESTR03-MOTOR",
+      "workCenterId": "0AAMANUT", "plantId": "RJ04", "planningGroupId": "0AB", "activityTypeId": "INS",
+      "startedAt": "2026-09-20T14:00:00", "finishedAt": null,
+      "desiredStart": "2026-09-20", "desiredEnd": "2026-09-22",
+      "systemStatus": "LIB CNPA", "userStatus": "", "headerText": "IM-2S - TML10 - MANUTENÇÃO",
+      "operations": [
+        { "number": "0010", "title": "VERIFICAR RUIDO ANORMAL NO MOTOR", "code": "CSA-MEQ-ESTR-DR10-MOTR-EST301", "equipment": "MOTOR ESTEIRA 3", "workCenter": "1MDMANU10", "people": 1, "duration": "0.5", "released": true, "completed": false },
+        { "number": "0020", "title": "VERIFICAR TEMPERATURA DO MANCAL", "code": "CSA-MEQ-ESTR-DR10-MANC-EST301", "equipment": "MANCAL ESTEIRA 3", "workCenter": "1MDMANU10", "people": 1, "duration": "0.5", "released": false, "completed": false }
+      ],
+      "documents": [
+        { "id": 1, "operation": "0010", "name": "000000000000000000000002 ZIT" }
+      ]
+    },
+    {
+      "id": 3, "code": "OS-58180", "type": "PM03",
+      "description": "Troca do filtro hidráulico da prensa 2",
+      "priority": "alta", "status": "andamento",
+      "locationCode": "CSA-ACI1-SAMA-PREN02",
+      "workCenterId": "0AAOPESA", "plantId": "RJ01", "planningGroupId": "0AC", "activityTypeId": "MAN",
+      "startedAt": "2026-09-19T09:40:00", "finishedAt": null,
+      "desiredStart": "2026-09-19", "desiredEnd": "2026-09-20",
+      "systemStatus": "LIB CNPA", "userStatus": "", "headerText": "IM-2S - TML10 - OFICINA",
+      "operations": [
+        { "number": "0010", "title": "SUBSTITUIR FILTRO HIDRAULICO", "code": "CSA-MEQ-PREN-DR10-FILT-PREN02", "equipment": "FILTRO HIDRAULICO PRENSA 2", "workCenter": "1MDOPES10", "people": 2, "duration": "1.5", "released": true, "completed": true },
+        { "number": "0020", "title": "VERIFICAR NIVEL DE OLEO", "code": "CSA-MEQ-PREN-DR10-OLEO-PREN02", "equipment": "RESERVATORIO OLEO PRENSA 2", "workCenter": "1MDOPES10", "people": 1, "duration": "0.3", "released": false, "completed": false }
+      ],
+      "documents": [
+        { "id": 1, "operation": "0010", "name": "000000000000000000000003 ZIT" }
+      ]
+    },
+    {
+      "id": 4, "code": "OS-58122", "type": "PM10",
+      "description": "Reparo emergencial na válvula de segurança do forno",
+      "priority": "emergencia", "status": "concluida",
+      "locationCode": "CSA-ACI1-SAMA-FORNO01-VALV",
+      "workCenterId": "0AAMANUT", "plantId": "RJ04", "planningGroupId": "0AA", "activityTypeId": "MAN",
+      "startedAt": "2026-09-18T06:20:00", "finishedAt": "2026-09-18T17:40:00",
+      "desiredStart": "2026-09-18", "desiredEnd": "2026-09-18",
+      "systemStatus": "TECO CNPA", "userStatus": "", "headerText": "IM-2S - TML10 - MANUTENÇÃO",
+      "operations": [
+        { "number": "0010", "title": "SUBSTITUIR VALVULA DE SEGURANCA", "code": "CSA-MEQ-FORN-DR10-VALV-FORN01", "equipment": "VALVULA SEGURANCA FORNO 1", "workCenter": "1MDMANU10", "people": 2, "duration": "2.0", "released": true, "completed": true },
+        { "number": "0020", "title": "TESTAR PRESSAO DE ALIVIO", "code": "CSA-MEQ-FORN-DR10-PRES-FORN01", "equipment": "SISTEMA DE ALIVIO FORNO 1", "workCenter": "1MDMANU10", "people": 1, "duration": "0.5", "released": true, "completed": true }
+      ],
+      "documents": [
+        { "id": 1, "operation": "0010", "name": "000000000000000000000004 ZIT" },
+        { "id": 2, "operation": "0020", "name": "000000000000000000000005 ZIT" }
+      ]
+    },
+    {
+      "id": 5, "code": "OS-58090", "type": "PM05",
+      "description": "Calibração dos sensores de temperatura do forno 2",
+      "priority": "baixa", "status": "concluida",
+      "locationCode": "CSA-ACI1-SAMA-FORNO02-SENS",
+      "workCenterId": "0AAOPESA", "plantId": "RJ04", "planningGroupId": "0AB", "activityTypeId": "AJC",
+      "startedAt": "2026-09-15T10:00:00", "finishedAt": "2026-09-15T15:30:00",
+      "desiredStart": "2026-09-15", "desiredEnd": "2026-09-15",
+      "systemStatus": "TECO CNPA", "userStatus": "", "headerText": "IM-2S - TML10 - OFICINA",
+      "operations": [
+        { "number": "0010", "title": "CALIBRAR SENSOR DE TEMPERATURA", "code": "CSA-MEQ-FORN-DR10-SENS-FORN02", "equipment": "SENSOR TEMPERATURA FORNO 2", "workCenter": "1MDOPES10", "people": 1, "duration": "1.0", "released": true, "completed": true }
+      ],
+      "documents": []
+    },
+    {
+      "id": 6, "code": "OS-58077", "type": "PM01",
+      "description": "Lubrificação geral dos rolamentos da linha 1",
+      "priority": "normal", "status": "concluida",
+      "locationCode": "CSA-ACI1-SAMA-LINHA01-ROL",
+      "workCenterId": "0AAMANUT", "plantId": "RJ01", "planningGroupId": "0AC", "activityTypeId": "MAN",
+      "startedAt": "2026-09-12T07:50:00", "finishedAt": "2026-09-12T11:10:00",
+      "desiredStart": "2026-09-12", "desiredEnd": "2026-09-12",
+      "systemStatus": "TECO CNPA", "userStatus": "", "headerText": "IM-2S - TML10 - MANUTENÇÃO",
+      "operations": [
+        { "number": "0010", "title": "LUBRIFICAR ROLAMENTOS", "code": "CSA-MEQ-LINH-DR10-ROLM-LINH01", "equipment": "ROLAMENTOS LINHA 1", "workCenter": "1MDMANU10", "people": 1, "duration": "1.0", "released": true, "completed": true },
+        { "number": "0020", "title": "VERIFICAR FOLGA AXIAL", "code": "CSA-MEQ-LINH-DR10-FOLG-LINH01", "equipment": "EIXO LINHA 1", "workCenter": "1MDMANU10", "people": 1, "duration": "0.5", "released": true, "completed": true }
+      ],
+      "documents": [
+        { "id": 1, "operation": "0010", "name": "000000000000000000000006 ZIT" }
+      ]
+    }
+  ],
+
+  "requests": [
+    { "id": 11, "orderCode": "002004119256", "createdAt": "2026-09-21T13:46:35", "status": "sincronizada" },
+    { "id": 10, "orderCode": "002004119346", "createdAt": "2026-09-18T11:45:11", "status": "sincronizada" },
+    { "id": 9, "orderCode": "002004119345", "createdAt": "2026-09-18T11:45:05", "status": "pendente" },
+    { "id": 8, "orderCode": "002004119365", "createdAt": "2026-09-18T11:44:56", "status": "sincronizada" },
+    { "id": 7, "orderCode": "002004119364", "createdAt": "2026-09-17T09:12:40", "status": "pendente" },
+    { "id": 6, "orderCode": "002004119312", "createdAt": "2026-09-16T16:30:02", "status": "sincronizada" }
+  ],
+
+  "events": [
+    { "id": 9, "operation": "0010", "kind": "notificacao", "category": "administrativo", "categoryText": null, "message": "aguardando_sap", "createdAt": "2026-09-18T11:41:22", "status": "pendente" },
+    { "id": 8, "operation": "0010", "kind": "notificacao", "category": "administrativo", "categoryText": null, "message": "aguardando_sap", "createdAt": "2026-09-18T11:41:22", "status": "pendente" },
+    { "id": 7, "operation": "0010", "kind": "notificacao", "category": "administrativo", "categoryText": null, "message": "falha_conexao", "createdAt": "2026-09-18T11:41:22", "status": "erro" },
+    { "id": 6, "operation": "0010", "kind": "notificacao", "category": "administrativo", "categoryText": null, "message": "falha_conexao", "createdAt": "2026-09-18T11:41:22", "status": "erro" },
+    { "id": 5, "operation": "0010", "kind": "notificacao", "category": "administrativo", "categoryText": null, "message": "aguardando_sap", "createdAt": "2026-09-18T11:41:22", "status": "pendente" },
+    { "id": 2, "operation": "0040", "kind": "anexo", "category": null, "categoryText": "teste", "message": "aguardando_sap", "createdAt": "2026-09-16T08:17:29", "status": "pendente" },
+    { "id": 1, "operation": "0040", "kind": "notificacao", "category": "administrativo", "categoryText": null, "message": "confirmacao_ok", "createdAt": "2026-09-16T08:16:23", "status": "sincronizado" }
+  ],
+
+  "notes": [
+    {
+      "id": 3, "code": "NT-1003", "type": "M0", "orderNumber": "002004119346",
+      "locationCode": "CSA-ACI1",
+      "description": "Acompanhar temperatura do forno durante o turno da noite.",
+      "longText": "Monitorar variação de temperatura do forno a cada hora durante o turno da noite e registrar eventuais oscilações fora do padrão.",
+      "startAt": "2026-09-20T22:00:00", "endAt": "2026-09-21T06:00:00",
+      "planningGroupId": "0AC", "workCenterId": "0AAMANUT",
+      "failureProbability": "baixa", "maintenanceImpact": "sem_impacto", "priority": "emergencia",
+      "photos": [], "createdAt": "2026-09-20T21:40:00"
+    },
+    {
+      "id": 2, "code": "NT-1002", "type": "M8", "orderNumber": "002004119256",
+      "locationCode": "CSA-ACI1-SAMA-BAL1-DESC",
+      "description": "Solicitar peça de reposição para a válvula de segurança da base 01.",
+      "longText": "Válvula de segurança apresentando vazamento leve. Peça de reposição precisa ser solicitada ao almoxarifado com urgência.",
+      "startAt": "2026-09-17T09:30:00", "endAt": "2026-09-18T12:00:00",
+      "planningGroupId": "0AB", "workCenterId": "0AAOPESA",
+      "failureProbability": "alta", "maintenanceImpact": "parada_linha", "priority": "alta",
+      "photos": [], "createdAt": "2026-09-17T09:10:00"
+    },
+    {
+      "id": 1, "code": "NT-1001", "type": "M3", "orderNumber": "",
+      "locationCode": "CSA-ACI1-SAMA-BAL1-ESTR-BASE01",
+      "description": "Verificar folga no rolamento do motor da esteira 3.",
+      "longText": "Ruído anormal identificado durante a ronda do turno da tarde. Necessário verificar folga do rolamento antes da próxima parada programada.",
+      "startAt": "2026-09-15T08:00:00", "endAt": "2026-09-16T17:00:00",
+      "planningGroupId": "0AA", "workCenterId": "0AAMANUT",
+      "failureProbability": "media", "maintenanceImpact": "parcial", "priority": "normal",
+      "photos": [], "createdAt": "2026-09-15T07:45:00"
+    }
+  ],
+
+  "notifications": [
+    { "id": 4, "type": "info", "template": "nova_ordem", "vars": {}, "createdAt": "2026-09-21T10:30:00", "read": false },
+    { "id": 3, "type": "aviso", "template": "manutencao_programada", "vars": {}, "createdAt": "2026-09-21T09:15:00", "read": false },
+    { "id": 2, "type": "sucesso", "template": "tarefa_concluida", "vars": { "order": "OS-58122" }, "createdAt": "2026-09-20T17:45:00", "read": true },
+    { "id": 1, "type": "info", "template": "lembrete", "vars": {}, "createdAt": "2026-09-20T08:00:00", "read": true }
+  ]
+}

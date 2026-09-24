@@ -149,6 +149,7 @@ code {
 .nav-item--home { padding-top: 11px; padding-bottom: 11px; margin-bottom: 4px; }
 .nav-item.is-active { border-left-color: var(--orange); background: var(--hover); color: var(--navy); font-weight: 600; }
 .nav-item:disabled { opacity: .6; cursor: progress; }
+a.nav-item { text-decoration: none; }
 
 /* ---------- page layout ---------- */
 

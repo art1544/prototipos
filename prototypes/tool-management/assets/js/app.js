@@ -314,7 +314,7 @@ function headerHtml() {
         ${icon('user', 16, { sw: 1.8 })}
         <span class="user-chip__name">${esc(user.name)}</span>
       </div>` : ''}
-      <button type="button" class="icon-btn icon-btn--sm" data-action="logout" aria-label="Sair" title="Sair">
+      <button type="button" class="icon-btn icon-btn--sm" data-action="logout" aria-label="Sair e voltar ao catálogo de protótipos" title="Sair">
         ${icon('logout', 16, { sw: 1.8 })}
       </button>
     </div>
@@ -335,6 +335,10 @@ function sidebarHtml() {
         ${icon('refresh', 18, { style: 'color:var(--muted)' })}
         ${resetting ? 'Restaurando…' : 'Restaurar dados de exemplo'}
       </button>
+      <a class="nav-item" href="${esc(APP.hubUrl)}">
+        ${icon('grid', 18, { style: 'color:var(--muted)' })}
+        Todos os protótipos
+      </a>
     </div>
   </nav>`;
 }
@@ -368,7 +372,7 @@ function loadingView() {
 function bootErrorView() {
   const error = state.bootError;
   const hint = location.protocol === 'file:'
-    ? 'O protótipo precisa ser aberto por um servidor: rode <code>npx serve .</code> na pasta do projeto ou use o endereço publicado na Vercel.'
+    ? 'O protótipo precisa ser aberto por um servidor: rode <code>npm run dev</code> na raiz do repositório ou use o endereço publicado na Vercel.'
     : '';
   return stateCardHtml({
     tone: 'red', iconName: 'alert',
@@ -859,7 +863,8 @@ async function withPending(key, task) {
 const ACTIONS = {
   toggleMenu: () => setState({ menuOpen: !state.menuOpen, ...closedFilters() }),
   closeMenu: () => setState({ menuOpen: false }),
-  logout: () => showToast('Encerrando sessão…'),
+  // Sem tela de login no protótipo: sair leva de volta ao catálogo de protótipos.
+  logout: () => window.location.assign(APP.hubUrl),
   reload: () => window.location.reload(),
   retryBoot: () => boot(),
 

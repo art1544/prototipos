@@ -1,0 +1,11 @@
+{
+  "_meta": {
+    "schemaVersion": 1,
+    "notes": "Base de exemplo do protótipo __NAME__. Depois da primeira carga os dados ficam salvos no navegador (localStorage, chave __ID__:db)."
+  },
+
+  "items": [
+    { "id": 1, "title": "Primeiro item de exemplo", "createdAt": "__DATE__T09:00:00" },
+    { "id": 2, "title": "Segundo item de exemplo", "createdAt": "__DATE__T10:30:00" }
+  ]
+}

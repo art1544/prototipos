@@ -1,0 +1,6 @@
+# Arquivos que não precisam ir para a hospedagem
+scripts/
+templates/
+.github/
+.claude/
+*.md

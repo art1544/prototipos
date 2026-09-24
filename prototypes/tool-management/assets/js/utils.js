@@ -142,6 +142,7 @@ const ICONS = {
   upload: '<path d="M12 20V6"/><path d="M6 11l6-6 6 6"/><path d="M4 20h16"/>',
   uploadSmall: '<path d="M12 20V6"/><path d="M6 11l6-6 6 6"/>',
   refresh: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/>',
+  grid: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>',
 };
 
 export function icon(name, size = 18, { sw = 1.7, cls = '', style = '' } = {}) {
