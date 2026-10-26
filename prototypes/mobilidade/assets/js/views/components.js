@@ -10,11 +10,13 @@ export const errorText = (error) => (error ? t(error.key, error.vars) : '');
 /* ---------- estrutura da tela ---------- */
 
 // Barra laranja com "voltar" e o título (h1 recebe o foco ao trocar de tela).
-export function subheaderHtml(title, { fallback = '' } = {}) {
+// `end`: botão opcional à direita (ex.: editar). `noBack`: sem voltar (primeiro acesso).
+export function subheaderHtml(title, { fallback = '', end = '', noBack = false } = {}) {
   return `
   <header class="subheader">
-    <button type="button" class="subheader__back" data-action="back" data-fallback="${esc(fallback)}" aria-label="${esc(t('common.back'))}">${icon('back')}</button>
+    ${noBack ? '' : `<button type="button" class="subheader__back" data-action="back" data-fallback="${esc(fallback)}" aria-label="${esc(t('common.back'))}">${icon('back')}</button>`}
     <h1 id="page-title" class="subheader__title" tabindex="-1">${esc(title)}</h1>
+    ${end}
   </header>`;
 }
 
@@ -39,10 +41,10 @@ export function legendHtml() {
 }
 
 // Barra fixa no rodapé com Voltar + ação principal (sempre alcançável em formulários longos).
-export function actionBarHtml({ submitLabel, busyLabel, busy = false, disabled = false, form = '', fallback = '' }) {
+export function actionBarHtml({ submitLabel, busyLabel, busy = false, disabled = false, form = '', fallback = '', noBack = false }) {
   return `
   <div class="action-bar">
-    <button type="button" class="btn btn--secondary" data-action="back" data-fallback="${esc(fallback)}">${esc(t('common.back'))}</button>
+    ${noBack ? '' : `<button type="button" class="btn btn--secondary" data-action="back" data-fallback="${esc(fallback)}">${esc(t('common.back'))}</button>`}
     <button type="submit"${form ? ` form="${esc(form)}"` : ''} class="btn btn--primary${busy ? ' is-busy' : ''}"${busy || disabled ? ' disabled' : ''}${busy ? ' aria-busy="true"' : ''}>${esc(busy ? busyLabel : submitLabel)}</button>
   </div>`;
 }
@@ -58,15 +60,29 @@ export function iconButtonHtml({ action = '', href = '', iconName, label, busyKe
   return `<button type="button"${idAttr} class="${cls}" data-action="${esc(action)}"${attrs} aria-label="${esc(label)}" title="${esc(label)}"${busy ? ' disabled aria-busy="true"' : ''}>${icon(iconName)}</button>`;
 }
 
+// Botão com ícone e texto das barras de ferramentas.
+// tone: primary (laranja cheio) | blue | green | danger | '' (laranja claro)
+export function toolButtonHtml({ action = '', href = '', iconName, label, tone = '', busyKey = '', active = false, data = {}, id = '' }) {
+  const busy = busyKey && isBusy(busyKey);
+  const attrs = Object.entries(data).map(([k, v]) => ` data-${k}="${esc(v)}"`).join('');
+  const cls = ['tool-btn', tone && `tool-btn--${tone}`, active && 'is-active', busy && 'is-busy'].filter(Boolean).join(' ');
+  const idAttr = id ? ` id="${esc(id)}"` : '';
+  const content = `${icon(iconName)}<span>${esc(label)}</span>`;
+  if (href) return `<a${idAttr} class="${cls}" href="${esc(hrefFor(href))}">${content}</a>`;
+  return `<button type="button"${idAttr} class="${cls}" data-action="${esc(action)}"${attrs}${active ? ' aria-pressed="true"' : ''}${busy ? ' disabled aria-busy="true"' : ''}>${content}</button>`;
+}
+
+// Busca + botões. Com botões de texto (toolButtonHtml), eles descem para a linha de baixo.
 export function searchToolbarHtml({ id, path, placeholder, buttons = '' }) {
   const value = getPath(path) || '';
+  const labeled = buttons.includes('tool-btn');
   return `
-  <div class="toolbar">
+  <div class="toolbar${labeled ? ' toolbar--labeled' : ''}">
     <div class="searchbox">
       ${icon('search')}
       <input id="${esc(id)}" type="search" enterkeyhint="search" autocomplete="off" placeholder="${esc(placeholder)}" aria-label="${esc(placeholder)}" value="${esc(value)}" data-field="${esc(path)}" data-live>
     </div>
-    ${buttons}
+    ${labeled ? `<div class="toolbar__buttons">${buttons}</div>` : buttons}
   </div>`;
 }
 
@@ -81,8 +97,15 @@ export function filterTabsHtml({ label, path, options }) {
 
 /* ---------- badges ---------- */
 
-export function pillHtml(kind, label) {
-  return `<span class="pill pill--${esc(kind)}">${esc(label)}</span>`;
+// Atributos de quem abre uma dica ao ser tocado (ver tooltip.js). Fora de links, recebe foco.
+export function tipAttrs(text, { focusable = false, action = '', actionLabel = '', data = {} } = {}) {
+  if (!text) return '';
+  const extra = Object.entries(data).map(([k, v]) => ` data-${k}="${esc(v)}"`).join('');
+  return ` data-tip="${esc(text)}"${action ? ` data-tip-action="${esc(action)}" data-tip-action-label="${esc(actionLabel)}"` : ''}${extra}${focusable ? ' tabindex="0" role="button"' : ''}`;
+}
+
+export function pillHtml(kind, label, { tip = '', focusable = false, iconName = '' } = {}) {
+  return `<span class="pill pill--${esc(kind)}"${tipAttrs(tip, { focusable })}>${esc(label)}${iconName ? icon(iconName, { cls: 'pill__icon' }) : ''}</span>`;
 }
 
 export function priorityChipHtml(priority) {

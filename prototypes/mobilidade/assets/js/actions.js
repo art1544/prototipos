@@ -7,15 +7,17 @@ import { formatDate, setLocale, t } from './i18n/index.js';
 import { assignState, getPath, isBusy, mergePath, setBusy, setPath, setState, state } from './store.js';
 import { back, backTo, currentRoute, navigate } from './router.js';
 import {
-  ApiError, api, validateEmergencyInput, validateNoteInput, validateOperationInput, validateRegistration, validateRequestInput,
+  ApiError, api, validateEmergencyInput, validateLogin, validateNoteInput, validateOperationInput, validateRegistration,
+  validateRequestInput,
 } from './api.js';
 import { countEvents, currentUser, noteByCode, orderByCode } from './model.js';
-import { defaultUi } from './forms.js';
+import { defaultUi, loginForm } from './forms.js';
+import { setSession } from './session.js';
 import { confirmDialog, dialogHeaderHtml, openDialog, showToast } from './ui.js';
 
 const hasErrors = (errors) => Object.keys(errors).length > 0;
 const stillOn = (routeName) => currentRoute() && currentRoute().name === routeName;
-const refreshDb = () => assignState({ db: api.snapshot() });
+export const refreshDb = () => assignState({ db: api.snapshot() });
 
 /* ---------- erros ---------- */
 
@@ -41,7 +43,7 @@ function showFieldErrors(form, prefix, errors) {
 }
 
 // Erro de operação: mensagens de campo vão para o formulário; o resto vira toast.
-function handleError(err, { form, prefix } = {}) {
+export function handleError(err, { form, prefix } = {}) {
   if (!(err instanceof ApiError)) {
     reportUnexpected(err);
     return;
@@ -57,7 +59,7 @@ function handleError(err, { form, prefix } = {}) {
 }
 
 // Marca a operação como em andamento (botão ocupado, sem envio duplicado) enquanto ela roda.
-async function withBusy(key, task) {
+export async function withBusy(key, task) {
   if (isBusy(key)) return;
   setBusy(key, true);
   try {
@@ -139,9 +141,14 @@ export async function attachPhoto(file) {
 
 export const ACTIONS = {
   back: ({ fallback }) => back(fallback || ''),
-  // Sem tela de login no protótipo: sair leva de volta ao catálogo de protótipos
-  // (na janela principal, mesmo quando o protótipo está dentro da moldura de celular).
-  logout: () => window.top.location.assign(new URL(APP.hubUrl, window.location.href).href),
+  // Encerra a sessão e volta ao login (o Perfil e o login têm o link para o catálogo de protótipos).
+  logout: () => {
+    setSession(false);
+    assignState({ forms: { login: loginForm() }, ui: defaultUi(), picker: null });
+    navigate('login', { replace: true });
+    showToast(t('login.loggedOut'), 'success');
+  },
+  togglePassword: () => setPath('forms.login.showPassword', !state.forms.login.showPassword),
   reload: () => window.location.reload(),
 
   setFilter: ({ path, value }) => setPath(path, value),
@@ -184,6 +191,8 @@ export const ACTIONS = {
         const db = await api.reset();
         assignState({ db, ui: defaultUi(), forms: {}, picker: null });
         showToast(t('profile.resetDone'), 'success');
+        // A base de exemplo começa sem matrícula: o próximo passo é o primeiro acesso.
+        if (!currentUser().registration) navigate('primeiro-acesso', { replace: true });
       } catch (err) {
         handleError(err);
       }
@@ -281,6 +290,7 @@ export const ACTIONS = {
     if (button) button.focus();
   },
 
+  // Documentos vêm do SAP: no aparelho só podem ser baixados.
   downloadDocument: ({ id }) => {
     const order = orderByCode(state.route.params.code);
     const doc = order && order.documents.find((d) => d.id === Number(id));
@@ -289,24 +299,7 @@ export const ACTIONS = {
       showToast(t('orderDetail.downloading'));
       try {
         await api.sync();
-        showToast(t('orderDetail.downloaded', { name: doc.name }), 'success');
-      } catch (err) {
-        handleError(err);
-      }
-    });
-  },
-
-  deleteDocument: async ({ id }) => {
-    const order = orderByCode(state.route.params.code);
-    const doc = order && order.documents.find((d) => d.id === Number(id));
-    if (!doc || isBusy(`deleteDocument-${doc.id}`)) return;
-    const ok = await confirmDialog({ title: t('orderDetail.deleteTitle'), text: t('orderDetail.deleteText', { name: doc.name }), confirmLabel: t('common.delete'), danger: true });
-    if (!ok) return;
-    await withBusy(`deleteDocument-${doc.id}`, async () => {
-      try {
-        await api.deleteDocument(order.id, doc.id);
-        refreshDb();
-        showToast(t('orderDetail.deleted'), 'success');
+        showToast(t('orderDetail.downloaded', { name: doc.code }), 'success');
       } catch (err) {
         handleError(err);
       }
@@ -316,12 +309,12 @@ export const ACTIONS = {
   /* eventos */
 
   syncEvents: () => {
-    const { operation } = state.route.params;
-    if (!countEvents(operation, 'pendente')) return showToast(t('events.nonePending'));
+    const group = { type: state.route.params.type, code: state.route.params.code };
+    if (!countEvents(group, ['PE', 'PER', 'LE'])) return showToast(t('events.nonePending'));
     return withBusy('syncEvents', async () => {
       showToast(t('events.syncing'));
       try {
-        await api.syncEvents(operation);
+        await api.syncEvents(group);
         refreshDb();
         showToast(t('events.synced'), 'success');
       } catch (err) {
@@ -331,14 +324,14 @@ export const ACTIONS = {
   },
 
   reprocessEvents: () => {
-    const { operation } = state.route.params;
-    if (!countEvents(operation, 'erro')) return showToast(t('events.noneError'));
+    const group = { type: state.route.params.type, code: state.route.params.code };
+    if (!countEvents(group, ['ER'])) return showToast(t('events.noneError'));
     return withBusy('reprocessEvents', async () => {
       showToast(t('events.reprocessing'));
       try {
-        await api.reprocessEvents(operation);
+        await api.reprocessEvents(group);
         refreshDb();
-        showToast(t('events.reprocessed'), 'success');
+        showToast(t('events.requeued'), 'success');
       } catch (err) {
         handleError(err);
       }
@@ -350,7 +343,7 @@ export const ACTIONS = {
     try {
       await api.reprocessEvent(Number(id));
       refreshDb();
-      showToast(t('events.reprocessedOne'), 'success');
+      showToast(t('events.requeued'), 'success');
     } catch (err) {
       handleError(err);
     }
@@ -360,6 +353,31 @@ export const ACTIONS = {
 /* ---------- formulários ---------- */
 
 export const SUBMITS = {
+  // Qualquer usuário e senha preenchidos entram. Sem matrícula, o próximo passo é o primeiro acesso.
+  login: () => {
+    const f = state.forms.login;
+    const input = { username: f.username, password: f.password };
+    const errors = validateLogin(input);
+    if (hasErrors(errors)) return showFieldErrors('login', 'lg', errors);
+    return withBusy('login', async () => {
+      try {
+        await api.login(input);
+        setSession(true);
+        assignState({ forms: { ...state.forms, login: loginForm() } });
+        // Sem matrícula, a tela pedida antes do login fica guardada para depois do primeiro acesso.
+        if (!currentUser().registration) {
+          navigate('primeiro-acesso', { replace: true });
+          return;
+        }
+        const target = state.redirect || '';
+        assignState({ redirect: null });
+        navigate(target, { replace: true });
+      } catch (err) {
+        handleError(err, { form: 'login', prefix: 'lg' });
+      }
+    });
+  },
+
   request: () => {
     const input = { orderCode: state.forms.request.orderCode };
     const errors = validateRequestInput(input, state.db);
@@ -441,13 +459,38 @@ export const SUBMITS = {
     };
     const errors = validateNoteInput(input, state.db);
     if (hasErrors(errors)) return showFieldErrors('note', 'nn', errors);
+    const route = currentRoute().name;
     return withBusy('note', async () => {
       try {
-        const note = await api.createNote(input);
+        if (f.editCode) {
+          const note = await api.updateNote(f.editCode, input);
+          refreshDb();
+          showToast(t('notes.updated', { code: note.code }), 'success');
+          if (stillOn(route)) backTo(`notas/${encodeURIComponent(note.code)}`);
+          return;
+        }
+        const link = f.link ? { orderCode: f.link.orderCode, operation: f.link.operation, point: f.link.point } : null;
+        const note = await api.createNote(input, link);
         refreshDb();
-        setPath('ui.notes.search', '', { silent: true }); // a nota nova precisa aparecer na lista
         showToast(t('notes.saved', { code: note.code }), 'success');
-        if (stillOn('newNote')) backTo('notas');
+        if (link) {
+          // Volta para a operação com a nota à vista: na etapa do carrossel ou no painel de notas.
+          const { orderDetail } = state.ui;
+          const op = link.operation;
+          if (Number.isInteger(link.point)) {
+            const order = orderByCode(link.orderCode);
+            const info = order.operations.find((x) => x.number === op).info;
+            const offset = (info.safety ? 1 : 0) + (info.text ? 1 : 0);
+            setPath('ui.orderDetail.slides', { ...orderDetail.slides, [op]: offset + link.point }, { silent: true });
+          } else {
+            setPath('ui.orderDetail.panels', { ...orderDetail.panels, [op]: 'notas' }, { silent: true });
+          }
+          setPath('ui.orderDetail.collapsed', orderDetail.collapsed.filter((x) => x !== op), { silent: true });
+          if (stillOn(route)) backTo(`ordens/${encodeURIComponent(link.orderCode)}`);
+          return;
+        }
+        setPath('ui.notes.search', '', { silent: true }); // a nota nova precisa aparecer na lista
+        if (stillOn(route)) backTo('notas');
       } catch (err) {
         handleError(err, { form: 'note', prefix: 'nn' });
       }
@@ -458,12 +501,19 @@ export const SUBMITS = {
     const { value } = state.forms.registration;
     const errors = validateRegistration(value, currentUser());
     if (hasErrors(errors)) return showFieldErrors('registration', 'rg', errors);
+    const first = stillOn('firstAccess');
     return withBusy('registration', async () => {
       try {
         await api.updateRegistration(value);
         refreshDb();
-        showToast(t('registration.saved'), 'success');
-        if (stillOn('registration')) back('');
+        showToast(t(first ? 'registration.firstSaved' : 'registration.saved'), 'success');
+        if (first && stillOn('firstAccess')) {
+          const target = state.redirect || '';
+          assignState({ redirect: null });
+          navigate(target, { replace: true });
+        } else if (stillOn('registration')) {
+          back('');
+        }
       } catch (err) {
         handleError(err, { form: 'registration', prefix: 'rg' });
       }

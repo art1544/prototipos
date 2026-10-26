@@ -7,8 +7,8 @@ import { isBusy, state } from '../store.js';
 import { hrefFor } from '../router.js';
 import { filterRequests } from '../model.js';
 import {
-  actionBarHtml, emptyHtml, filterTabsHtml, iconButtonHtml, inputFieldHtml, legendHtml, pillHtml,
-  searchToolbarHtml, subheaderHtml, viewHtml,
+  actionBarHtml, emptyHtml, filterTabsHtml, inputFieldHtml, legendHtml, pillHtml,
+  searchToolbarHtml, subheaderHtml, toolButtonHtml, viewHtml,
 } from './components.js';
 
 function optionHtml({ path, iconName, tone = '', title, desc }) {
@@ -56,7 +56,7 @@ function requestCardHtml(r) {
       <span class="row-card__title">${esc(t('common.orderPrefix'))} ${esc(r.orderCode)}</span>
       <span class="row-card__meta">${esc(t('common.idPrefix'))} ${esc(r.id)} · ${esc(formatDateTime(r.createdAt, { seconds: true }))}</span>
     </span>
-    ${pillHtml(r.status, t(`requestStatus.${r.status}`))}
+    ${pillHtml(r.status, t(`requestStatus.${r.status}`), { tip: t(`requestTips.${r.status}`), focusable: true })}
   </li>`;
 }
 
@@ -78,8 +78,8 @@ export function myRequestsView() {
     ${searchToolbarHtml({
       id: 'rq-search', path: 'ui.myRequests.search', placeholder: t('myRequests.search'),
       buttons: `
-        ${iconButtonHtml({ href: 'solicitacao/ordem-comum', iconName: 'plus', label: t('myRequests.newAria') })}
-        ${iconButtonHtml({ action: 'refreshRequests', iconName: 'sync', label: t('myRequests.refreshAria'), busyKey: 'refreshRequests' })}`,
+        ${toolButtonHtml({ href: 'solicitacao/ordem-comum', iconName: 'plus', label: t('myRequests.newButton'), tone: 'primary' })}
+        ${toolButtonHtml({ action: 'refreshRequests', iconName: 'sync', label: t('myRequests.refreshButton'), tone: 'blue', busyKey: 'refreshRequests' })}`,
     })}
     <div class="page page--list">
       ${items.length

@@ -1,7 +1,9 @@
 # Tool Management – protótipo
 
-Protótipo navegável da gestão de ferramentas e empréstimos: dashboard, listagem e cadastro de
-ferramentas, empréstimo (identificação por ID ou reconhecimento facial simulado) e devolução.
+Protótipo navegável da gestão de ferramentas e empréstimos: login, dashboard com a disponibilidade
+das ferramentas, listagem e cadastro de ferramentas, empréstimo e devolução (identificação do
+inspetor por ID ou reconhecimento facial simulado) e o modelo do e-mail de alerta de devolução em
+atraso.
 
 É um site estático, sem build: HTML, CSS e JavaScript (módulos ES) puros. Os dados de exemplo
 ficam em `data/db.json` e as alterações feitas na interface são salvas no navegador (localStorage).
@@ -18,13 +20,18 @@ Acesse http://localhost:3000/prototypes/tool-management/ — ou abra o catálogo
 http://localhost:3000/ e escolha **Tool Management**. A publicação na Vercel é feita pela raiz do
 repositório (ver o README principal).
 
+**Login:** qualquer usuário e senha preenchidos entram (a sessão dura até fechar a aba). Sem sessão,
+qualquer endereço interno leva ao login e volta para ele depois de entrar.
+
 ## Estrutura
 
 ```
 index.html                  casca da página
+emails/devolucao-atrasada.html  modelo do e-mail de alerta ao gestor (link no menu lateral)
 data/db.json                banco de dados de exemplo (todas as entidades)
 assets/css/styles.css       estilos (tokens de cor/tipografia no topo)
 assets/img/favicon.svg
+assets/img/marca-login.png, ternium.png   imagens da tela de login
 assets/js/config.js         identidade, regras, textos de erro e cores de status
 assets/js/utils.js          datas, texto, imagens e ícones
 assets/js/api.js            camada de dados: simula a API REST, validações e erros
@@ -32,8 +39,11 @@ assets/js/app.js            estado, telas, ações e inicialização
 assets/js/file-protocol-warning.js   aviso para quem abre o arquivo direto do disco
 ```
 
-As telas usam roteamento por hash: `#/`, `#/ferramentas`, `#/ferramentas/cadastrar`,
+As telas usam roteamento por hash: `#/login`, `#/`, `#/ferramentas`, `#/ferramentas/cadastrar`,
 `#/emprestimos`, `#/emprestimos/novo`, `#/emprestimos/devolucao`.
+
+O dashboard mostra a **disponibilidade das ferramentas**: rosca com o % disponível, legenda por
+status (toque abre a lista filtrada) e barras por categoria.
 
 ## Modelo de dados (`data/db.json`)
 
@@ -53,6 +63,10 @@ Regras de negócio:
 - **Status do empréstimo é calculado**, não gravado: `devolvido` se tem `returnedDate`;
   `atrasado` se `dueDate` já passou; senão `ativo`.
 - Registrar um empréstimo muda a ferramenta para `em_uso`; a devolução volta para `disponivel`.
+- A **previsão de devolução** vai de hoje até hoje + 3 dias (`LIMITS.loanMaxDays` em `config.js`).
+- A **devolução** começa identificando o inspetor (ID ou reconhecimento facial) e lista só os
+  empréstimos em aberto dele — inclusive os atrasados, que também precisam ser devolvidos (o HTML
+  original listava apenas os "Ativo"). A API recusa devolver empréstimo de outro inspetor.
 - No cadastro, a ferramenta só pode começar como `disponivel` ou `manutencao`.
 - Categoria e localização digitadas que ainda não existem são criadas automaticamente.
 - Datas são ISO (`AAAA-MM-DD`; data e hora em `AAAA-MM-DDTHH:mm:ss`). Na primeira carga, todas
@@ -103,12 +117,13 @@ Exemplo: `/prototypes/tool-management/?latencia=2000#/emprestimos/novo`.
 | 99887766     | Ana Pereira      | identificada pelo reconhecimento facial |
 | 55667788     | Pedro Costa      | inativo (mostra o erro de bloqueio)     |
 
-Para voltar ao cenário inicial: menu lateral → **Restaurar dados de exemplo**. O mesmo menu tem
-**Todos os protótipos**, que volta ao catálogo (o botão **Sair** também).
+Para voltar ao cenário inicial: menu lateral → **Restaurar dados de exemplo**. O mesmo menu tem o
+**E-mail de devolução em atraso** (modelo enviado ao gestor) e **Todos os protótipos**, que volta ao
+catálogo (também disponível na tela de login). O botão **Sair** encerra a sessão e volta ao login.
 
 ## Ligando num backend real
 
 `assets/js/api.js` é o único ponto que conhece a origem dos dados. Para usar uma API de
-verdade, reimplemente os métodos de `api` (`load`, `createTool`, `findInspectorByBadge`,
+verdade, reimplemente os métodos de `api` (`load`, `login`, `createTool`, `findInspectorByBadge`,
 `recognizeFace`, `createLoan`, `returnLoan`, `reset`) com `fetch`, convertendo as respostas de
 erro para `ApiError`. A interface não precisa mudar.

@@ -48,6 +48,22 @@ export function addDaysISO(iso, days) {
   return toISODate(date) + iso.slice(10);
 }
 
+// Soma horas (com frações) a uma data e hora ISO.
+export function addHoursISO(iso, hours) {
+  const date = parseISO(iso);
+  if (!date) return iso;
+  return toISODateTime(new Date(date.getTime() + hours * 3_600_000));
+}
+
+// Duração entre duas datas e hora ISO no formato HH:MM:SS (sem fim = até agora).
+export function durationHMS(startIso, endIso) {
+  const start = parseISO(startIso);
+  const end = endIso ? parseISO(endIso) : new Date();
+  if (!start || !end) return '--:--:--';
+  const seconds = Math.max(0, Math.floor((end - start) / 1000));
+  return [Math.floor(seconds / 3600), Math.floor((seconds % 3600) / 60), seconds % 60].map(pad).join(':');
+}
+
 export function daysBetween(fromIso, toIso) {
   const a = parseISO(fromIso);
   const b = parseISO(toIso);
@@ -177,10 +193,38 @@ const ICONS = {
   grid: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>',
   reset: '<path d="M3 12a9 9 0 1 0 3-6.7"/><polyline points="3 4 3 9 8 9"/>',
   globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18"/><path d="M12 3a14 14 0 0 0 0 18"/>',
+  userAdd: '<circle cx="10" cy="8" r="4"/><path d="M2.5 21c0-4.1 3.4-7.5 7.5-7.5s7.5 3.4 7.5 7.5"/><line x1="19" y1="3" x2="19" y2="9"/><line x1="16" y1="6" x2="22" y2="6"/>',
+  avatar: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
+  lock: '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  eye: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/>',
+  eyeOff: '<path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.53 13.53 0 0 0 1 12s4 8 11 8a9.26 9.26 0 0 0 5.39-1.61"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>',
+  pause: '<line x1="8" y1="5" x2="8" y2="19"/><line x1="16" y1="5" x2="16" y2="19"/>',
+  stop: '<rect x="6" y="6" width="12" height="12" rx="1" fill="currentColor"/>',
+  photo: '<path d="M3 8a2 2 0 0 1 2-2h2l2-2h6l2 2h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><circle cx="12" cy="13" r="3.5"/>',
+  clip: '<path d="M21 11l-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 7"/>',
+  details: '<circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16.5"/><line x1="12" y1="7.5" x2="12.01" y2="7.5"/>',
+  flag: '<path d="M5 21V4"/><path d="M5 4h13l-2 4 2 4H5"/>',
+  notStarted: '<circle cx="12" cy="12" r="8.5" stroke-dasharray="3.2 3.4"/>',
+  shield: '<path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6l8-3z"/><path d="M12 8v5M12 16.5v.01"/>',
+  padlock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>',
+  chart: '<path d="M4 20V4M4 20h16M8 15l4-4 3 3 5-6"/>',
+  listCheck: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M3.5 6l1.2 1.2L7 5M3.5 12l1.2 1.2L7 11M3.5 18l1.2 1.2L7 17"/>',
+  errorCircle: '<circle cx="12" cy="12" r="9"/><line x1="12" y1="7.5" x2="12" y2="13"/><line x1="12" y1="16.5" x2="12.01" y2="16.5"/>',
+  syncCircle: '<path d="M21 12a9 9 0 0 1-15.5 6.2M3 12a9 9 0 0 1 15.5-6.2"/><polyline points="21 4 21 9 16 9"/><polyline points="3 20 3 15 8 15"/>',
+  done: '<polyline points="5 12 10 17 19 7"/>',
+};
+
+// Ícones preenchidos (não usam traço).
+const FILLED_ICONS = {
+  play: '<polygon points="6 4 20 12 6 20 6 4"/>',
+  progress: '<polygon points="3 5 11 12 3 19"/><polygon points="12 5 20 12 12 19"/>',
 };
 
 export function icon(name, { size, cls = '', sw = 2 } = {}) {
   const dims = size ? ` width="${size}" height="${size}"` : '';
+  if (FILLED_ICONS[name]) {
+    return `<svg class="icon${cls ? ` ${cls}` : ''}" viewBox="0 0 24 24"${dims} fill="currentColor" aria-hidden="true" focusable="false">${FILLED_ICONS[name]}</svg>`;
+  }
   return `<svg class="icon${cls ? ` ${cls}` : ''}" viewBox="0 0 24 24"${dims} fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${ICONS[name] || ''}</svg>`;
 }
 

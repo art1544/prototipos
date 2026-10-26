@@ -8,9 +8,9 @@ import { isBusy, state } from '../store.js';
 import { hrefFor } from '../router.js';
 import { catalogLabel, catalogOptions, filterNotes, locationLabel, noteTypeLabel, requiresOrder } from '../model.js';
 import {
-  actionBarHtml, emptyHtml, errorText, iconButtonHtml, inputFieldHtml, legendHtml, locationFieldHtml, locationLineHtml,
+  actionBarHtml, emptyHtml, errorText, inputFieldHtml, legendHtml, locationFieldHtml, locationLineHtml,
   priorityChipHtml, readonlyFieldHtml, searchToolbarHtml, sectionTitleHtml, selectFieldHtml, subheaderHtml,
-  textareaFieldHtml, viewHtml,
+  textareaFieldHtml, toolButtonHtml, viewHtml,
 } from './components.js';
 import { notFoundView } from './shell.js';
 
@@ -43,7 +43,7 @@ export function notesView() {
     ${subheaderHtml(t('notes.title'))}
     ${searchToolbarHtml({
       id: 'nt-search', path: 'ui.notes.search', placeholder: t('notes.search'),
-      buttons: iconButtonHtml({ href: 'notas/nova', iconName: 'plus', label: t('notes.newAria') }),
+      buttons: toolButtonHtml({ href: 'notas/nova', iconName: 'plus', label: t('notes.newButton'), tone: 'primary' }),
     })}
     <div class="page page--list">
       ${items.length
@@ -70,8 +70,9 @@ export function noteDetailView() {
   const note = state.db.notes.find((n) => n.code === state.route.params.code);
   if (!note) return notFoundView({ title: t('notes.notFound'), text: '' });
   const field = (key, label, value, multiline = false) => readonlyFieldHtml({ id: `nd-${key}`, label, value, multiline });
+  const edit = `<a class="subheader__action" href="${hrefFor(`notas/${encodeURIComponent(note.code)}/editar`)}" aria-label="${esc(t('notes.editAria'))}" title="${esc(t('notes.editAria'))}">${icon('pen')}</a>`;
   return viewHtml(`
-    ${subheaderHtml(t('notes.detailTitle'), { fallback: 'notas' })}
+    ${subheaderHtml(t('notes.detailTitle'), { fallback: 'notas', end: edit })}
     <div class="page">
       <section class="summary-card">
         <div class="entity-card__header">
@@ -108,13 +109,23 @@ export function noteDetailView() {
     </div>`);
 }
 
+// Para onde voltar: detalhe (edição), ordem (nota criada na operação) ou lista de notas.
+export function noteFormFallback(f) {
+  if (f.editCode) return `notas/${encodeURIComponent(f.editCode)}`;
+  if (f.link) return `ordens/${encodeURIComponent(f.link.orderCode)}`;
+  return 'notas';
+}
+
 export function newNoteView() {
   const f = state.forms.note;
+  if (!f) return notFoundView({ title: t('notes.notFound'), text: '' });
   const e = f.errors;
   const path = (key) => `forms.note.${key}`;
+  const editing = !!f.editCode;
   const needsOrder = f.type ? requiresOrder(f.type) : false;
   const showRest = !!f.type && (!needsOrder || f.orderNumber.trim() !== '');
   const typeOptions = state.db.noteTypes.map((nt) => ({ value: nt.id, label: noteTypeLabel(nt.id) }));
+  const fallback = noteFormFallback(f);
   const full = f.photos.length >= PHOTO.maxPerNote;
   const photoError = e.photos;
 
@@ -144,7 +155,7 @@ export function newNoteView() {
       <div class="panel">
         <div class="panel__header">
           <span class="panel__cols"><span>${esc(t('notes.attachments'))} (${f.photos.length}/${PHOTO.maxPerNote})</span></span>
-          <button type="button" id="nn-photos" class="icon-btn${f.photoProcessing ? ' is-busy' : ''}" data-action="addPhoto" aria-label="${esc(t('notes.addPhotoAria'))}"${f.photoProcessing || full ? ' disabled' : ''}${photoError ? ' aria-describedby="nn-photos-error"' : ''}>${f.photoProcessing ? '<span class="spinner spinner--sm spinner--light" aria-hidden="true"></span>' : icon('camera')}</button>
+          <button type="button" id="nn-photos" class="tool-btn tool-btn--primary${f.photoProcessing ? ' is-busy' : ''}" data-action="addPhoto" aria-label="${esc(t('notes.addPhotoAria'))}"${f.photoProcessing || full ? ' disabled' : ''}${photoError ? ' aria-describedby="nn-photos-error"' : ''}>${f.photoProcessing ? '<span class="spinner spinner--sm spinner--light" aria-hidden="true"></span>' : icon('camera')}<span>${esc(t('notes.addPhotoButton'))}</span></button>
         </div>
         ${f.photoProcessing ? `<p class="panel__empty" role="status">${esc(t('notes.photoProcessing'))}</p>` : ''}
         ${photoGridHtml(f.photos, { source: 'draft', removable: true })}
@@ -153,14 +164,21 @@ export function newNoteView() {
       <input id="nn-photo-input" class="sr-only" type="file" accept="image/*" capture="environment" tabindex="-1" aria-hidden="true">
     </div>`;
 
+  // Na edição, tipo e número da ordem ficam travados.
+  const identification = editing
+    ? `${readonlyFieldHtml({ id: 'nn-type', label: t('fields.noteType'), value: noteTypeLabel(f.type) })}
+       ${f.orderNumber ? readonlyFieldHtml({ id: 'nn-orderNumber', label: t('fields.orderNumber'), value: f.orderNumber }) : ''}`
+    : `${selectFieldHtml({ id: 'nn-type', path: path('type'), label: t('fields.noteType'), value: f.type, options: typeOptions, required: true, error: e.type, placeholder: t('placeholders.noteType'), live: true })}
+       ${needsOrder ? inputFieldHtml({ id: 'nn-orderNumber', path: path('orderNumber'), label: t('fields.orderNumber'), value: f.orderNumber, required: true, error: e.orderNumber, placeholder: t('placeholders.orderNumber'), live: 'empty', attrs: 'inputmode="numeric" maxlength="12"' }) : ''}`;
+
   return viewHtml(`
-    ${subheaderHtml(t('notes.newTitle'), { fallback: 'notas' })}
+    ${subheaderHtml(t(editing ? 'notes.editTitle' : 'notes.newTitle'), { fallback })}
     ${legendHtml()}
+    ${f.link ? `<p class="form-context">${icon('clipboardSmall')}<span>${esc(t('notes.linkedTo', { op: f.link.operation, order: f.link.orderCode }))}</span></p>` : ''}
     <form id="form-note" class="form" data-submit="note" novalidate>
       ${sectionTitleHtml(t('sections.identification'), { first: true })}
-      ${selectFieldHtml({ id: 'nn-type', path: path('type'), label: t('fields.noteType'), value: f.type, options: typeOptions, required: true, error: e.type, placeholder: t('placeholders.noteType'), live: true })}
-      ${needsOrder ? inputFieldHtml({ id: 'nn-orderNumber', path: path('orderNumber'), label: t('fields.orderNumber'), value: f.orderNumber, required: true, error: e.orderNumber, placeholder: t('placeholders.orderNumber'), live: 'empty', attrs: 'inputmode="numeric" maxlength="12"' }) : ''}
+      ${identification}
       ${showRest ? rest : `<p class="form-step-hint">${esc(t(f.type ? 'notes.stepOrder' : 'notes.stepType'))}</p>`}
     </form>
-    ${actionBarHtml({ form: 'form-note', submitLabel: t('common.save'), busyLabel: t('common.saving'), busy: isBusy('note'), disabled: f.photoProcessing, fallback: 'notas' })}`, { cls: 'view--form' });
+    ${actionBarHtml({ form: 'form-note', submitLabel: t('common.save'), busyLabel: t('common.saving'), busy: isBusy('note'), disabled: f.photoProcessing, fallback })}`, { cls: 'view--form' });
 }

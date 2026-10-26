@@ -5,12 +5,8 @@ import { esc, icon, initials } from '../utils.js';
 import { getLocale, t } from '../i18n/index.js';
 import { isBusy } from '../store.js';
 import { hrefFor } from '../router.js';
-import { currentUser, homeProgress } from '../model.js';
+import { currentUser, homeOrder } from '../model.js';
 import { viewHtml } from './components.js';
-
-function dotsHtml(active) {
-  return `<span class="dots" aria-hidden="true">${[0, 1].map((i) => `<span class="dot${i === active ? ' is-active' : ''}"></span>`).join('')}</span>`;
-}
 
 function linkCardHtml(path, iconName, label) {
   return `<a class="action-card" href="${hrefFor(path)}">${icon(iconName)}<span>${esc(label)}</span></a>`;
@@ -26,16 +22,26 @@ function syncCardHtml({ action, iconName, label, busyLabel }) {
   </button>`;
 }
 
+// Ordem em andamento: abre direto as operações dela. Sem ordem em andamento, abre a lista filtrada.
 function progressCardHtml() {
-  const pct = homeProgress();
-  const text = pct === null ? t('home.progressNone') : t('home.progressText', { pct });
+  const current = homeOrder();
+  const pct = current ? current.progress : 0;
+  const title = t(current && current.paused ? 'home.progressPaused' : 'home.progressTitle');
+  const text = current ? t('home.progressText', { pct }) : t('home.progressNone');
+  const href = current ? `ordens/${encodeURIComponent(current.order.code)}` : 'ordens?aba=andamento';
+  const alert = current && current.autoPaused ? `
+    <span class="progress-card__alert">
+      ${icon('clock')}
+      <span><strong>${esc(t('home.autoPausedTitle', { op: current.autoPaused.number }))}</strong><br>${esc(t('home.autoPausedText'))}</span>
+    </span>` : '';
   return `
-  <a class="progress-card" href="${hrefFor('ordens?aba=andamento')}">
-    <span class="progress-card__title">${esc(t('home.progressTitle'))}</span>
+  <a class="progress-card${alert ? ' progress-card--alert' : ''}" href="${hrefFor(href)}">
+    <span class="progress-card__title">${esc(title)}${current ? ` <span class="progress-card__code">${esc(current.order.code)}</span>` : ''}</span>
     <span class="progress-card__text">${esc(text)}</span>
-    <span class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct || 0}" aria-label="${esc(t('home.progressTitle'))}">
-      <span class="progress-fill" style="width:${pct || 0}%"></span>
+    <span class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="${esc(title)}">
+      <span class="progress-fill" style="width:${pct}%"></span>
     </span>
+    ${alert}
   </a>`;
 }
 
@@ -47,7 +53,7 @@ export function homeView() {
       <h1 id="page-title" class="hero__name" tabindex="-1">${esc(user.name)}</h1>
       <p class="hero__id">${esc(t('home.userPrefix'))} ${esc(user.username)}</p>
       <div class="hero__meta">
-        <p>${esc(t('home.registrationPrefix'))} ${esc(user.registration)}</p>
+        <p>${esc(t('home.registrationPrefix'))} ${esc(user.registration || '—')}</p>
         <p>${esc(t('home.devicePrefix'))} ${esc(user.deviceId)}</p>
       </div>
       ${progressCardHtml()}
@@ -56,7 +62,6 @@ export function homeView() {
     <section class="section" aria-labelledby="home-activities">
       <div class="section__header">
         <h2 id="home-activities">${esc(t('home.sectionActivities'))}</h2>
-        ${dotsHtml(0)}
       </div>
       <div class="card-grid">
         ${linkCardHtml('ordens', 'clipboard', t('home.cardOrders'))}
@@ -69,7 +74,6 @@ export function homeView() {
     <section class="section" aria-labelledby="home-tools">
       <div class="section__header">
         <h2 id="home-tools">${esc(t('home.sectionTools'))}</h2>
-        ${dotsHtml(1)}
       </div>
       <div class="card-grid">
         ${syncCardHtml({ action: 'downloadDatabase', iconName: 'download', label: t('home.cardDownloadDb'), busyLabel: t('common.downloading') })}
@@ -101,7 +105,7 @@ export function profileView() {
           <p>${esc(t(`roles.${user.role}`))}</p>
           <p class="profile-card__email">${esc(user.email)}</p>
           <div class="profile-card__extra">
-            <p>${esc(t('home.registrationPrefix'))} ${esc(user.registration)}</p>
+            <p>${esc(t('home.registrationPrefix'))} ${esc(user.registration || '—')}</p>
             <p>${esc(t('home.devicePrefix'))} ${esc(user.deviceId)}</p>
           </div>
         </div>

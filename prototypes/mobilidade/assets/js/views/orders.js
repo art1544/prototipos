@@ -1,25 +1,56 @@
-// Ordens: lista com abas por status + busca, e detalhe com as abas Operações / Dados Básicos / Documentos.
+// Ordens: lista com abas por status, busca e "Concluir todas ordens" (encerramento em lote), e o
+// detalhe com as abas Operações / Dados Básicos / Documentos.
 
 import { esc, icon } from '../utils.js';
 import { formatDate, formatDateTime, t } from '../i18n/index.js';
 import { isBusy, state } from '../store.js';
 import { hrefFor } from '../router.js';
-import { catalogLabel, filterOrders, locationLabel, orderByCode } from '../model.js';
 import {
-  emptyHtml, filterTabsHtml, iconButtonHtml, locationLineHtml, pillHtml, priorityChipHtml, readonlyFieldHtml,
-  searchToolbarHtml, sectionTitleHtml, subheaderHtml, viewHtml,
+  catalogLabel, displayStatus, eventSummary, filterOrders, isBatchBlocked, locationLabel, operationSummary, orderByCode,
+} from '../model.js';
+import {
+  emptyHtml, filterTabsHtml, locationLineHtml, pillHtml, priorityChipHtml, readonlyFieldHtml, searchToolbarHtml,
+  sectionTitleHtml, subheaderHtml, tipAttrs, toolButtonHtml, viewHtml,
 } from './components.js';
+import { operationCardHtml } from './operation.js';
 import { notFoundView } from './shell.js';
 
-const statusPill = (status) => pillHtml(status, t(`orderStatus.${status}`));
+// Ícone ao lado do status: ►► em andamento, pausa, tracejado (não iniciada) e bandeira (concluída).
+const STATUS_ICON = { andamento: 'progress', pausada: 'pause', pendente: 'notStarted', concluida: 'flag' };
 
-function orderCardHtml(o) {
+export function orderStatusPillHtml(order, { focusable = false } = {}) {
+  const status = displayStatus(order);
+  return pillHtml(status, t(`orderStatus.${status}`), { tip: t(`orderTips.${status}`), focusable, iconName: STATUS_ICON[status] });
+}
+
+const EVENT_DETAIL_ORDER = ['PE', 'PER', 'LE', 'PR', 'ER'];
+
+// Resumo compacto (como no app antigo): operações finalizadas e situação dos eventos; o detalhe
+// aparece ao tocar.
+export function orderSummaryHtml(order, { focusable = false } = {}) {
+  const ops = operationSummary(order);
+  const details = ['liberada', 'andamento', 'pausada', 'bloqueada', 'finalizada']
+    .filter((s) => ops.counts[s]).map((s) => `${t(`opStatus.${s}`)} (${ops.counts[s]})`).join(', ');
+  const opsTip = `${t('orders.summaryOps', { finished: ops.finished, total: ops.total })} ${details}`;
+  const opsHtml = `<span class="summary-icon${ops.counts.andamento ? ' summary-icon--blue' : ''}"${tipAttrs(opsTip, { focusable })}>${icon('listCheck')}<b>${ops.finished}/${ops.total}</b></span>`;
+
+  const ev = eventSummary(order);
+  let evHtml = '';
+  if (ev.total) {
+    const counts = { ...ev.counts, PR: (ev.counts.PR || 0) + (ev.counts.PRE || 0) }; // PRE e PR aparecem como "Processado SAP"
+    const evDetails = EVENT_DETAIL_ORDER.filter((s) => counts[s]).map((s) => `${t(`eventStatus.${s}`)} (${counts[s]})`).join(', ');
+    const tone = ev.errors ? 'red' : ev.pending ? 'amber' : 'green';
+    const iconName = ev.errors ? 'errorCircle' : ev.pending ? 'syncCircle' : 'done';
+    evHtml = `<span class="summary-icon summary-icon--${tone}"${tipAttrs(t('orders.summaryEvents', { details: evDetails }), { focusable })}>${icon(iconName)}<b>${ev.errors || ev.pending || ev.total}</b></span>`;
+  }
+  return `<span class="summary-icons">${opsHtml}${evHtml}</span>`;
+}
+
+function orderCardBodyHtml(o) {
   return `
-  <li>
-    <a class="entity-card entity-card--${esc(o.priority)}" href="${hrefFor(`ordens/${encodeURIComponent(o.code)}`)}">
       <span class="entity-card__header">
         <span class="entity-card__code">${esc(o.code)}</span>
-        ${statusPill(o.status)}
+        ${orderStatusPillHtml(o)}
       </span>
       <span class="entity-card__desc">${esc(o.description)}</span>
       ${locationLineHtml(locationLabel(o.locationCode))}
@@ -27,22 +58,51 @@ function orderCardHtml(o) {
         <span><strong>${esc(t('common.startPrefix'))}</strong> ${esc(formatDateTime(o.startedAt) || '—')}</span>
         <span><strong>${esc(t('common.endPrefix'))}</strong> ${esc(formatDateTime(o.finishedAt) || '—')}</span>
       </span>
-      <span class="entity-card__footer">${priorityChipHtml(o.priority)}</span>
-    </a>
+      <span class="entity-card__footer">${priorityChipHtml(o.priority)}${orderSummaryHtml(o)}</span>`;
+}
+
+function orderCardHtml(o) {
+  return `
+  <li>
+    <a class="entity-card entity-card--${esc(o.priority)}" href="${hrefFor(`ordens/${encodeURIComponent(o.code)}`)}">${orderCardBodyHtml(o)}</a>
+  </li>`;
+}
+
+// No modo "Concluir todas ordens" o cartão vira um botão de seleção (toque longo / toque simples).
+function batchCardHtml(o, selected) {
+  const isSelected = selected.includes(o.code);
+  const blocked = isBatchBlocked(o);
+  return `
+  <li>
+    <button type="button" id="batch-${esc(o.code)}" class="entity-card entity-card--${esc(o.priority)} entity-card--selectable${isSelected ? ' is-selected' : ''}${blocked ? ' is-blocked' : ''}" data-action="batchTap" data-code="${esc(o.code)}" data-longpress="batchSelect" aria-pressed="${isSelected}">
+      ${orderCardBodyHtml(o)}
+      ${isSelected ? `<span class="entity-card__check" aria-hidden="true">${icon('check')}</span>` : ''}
+    </button>
   </li>`;
 }
 
 export function ordersView() {
   const ui = state.ui.orders;
+  const { batch } = ui;
   const items = filterOrders(ui);
   const search = ui.search.trim();
+  let list;
+  if (items.length) {
+    list = `<ul class="list list--cards" role="list">${items.map((o) => (batch.active ? batchCardHtml(o, batch.selected) : orderCardHtml(o))).join('')}</ul>`;
+  } else if (batch.active) {
+    list = emptyHtml(t('batch.none'));
+  } else {
+    list = emptyHtml(search ? t('orders.emptySearch', { term: search }) : t('orders.empty'), { clearPath: search ? 'ui.orders.search' : '' });
+  }
+
   return viewHtml(`
     ${subheaderHtml(t('orders.title'))}
-    ${filterTabsHtml({
+    ${batch.active ? '' : filterTabsHtml({
       label: t('orders.filterAria'),
       path: 'ui.orders.tab',
       options: [
         { value: 'todas', label: t('orders.tabAll') },
+        { value: 'pendente', label: t('orders.tabNotStarted') },
         { value: 'andamento', label: t('orders.tabInProgress') },
         { value: 'concluida', label: t('orders.tabDone') },
       ],
@@ -50,14 +110,19 @@ export function ordersView() {
     ${searchToolbarHtml({
       id: 'or-search', path: 'ui.orders.search', placeholder: t('orders.search'),
       buttons: `
-        ${iconButtonHtml({ href: 'solicitacao', iconName: 'plus', label: t('orders.newAria') })}
-        ${iconButtonHtml({ action: 'refreshOrders', iconName: 'sync', label: t('orders.refreshAria'), busyKey: 'refreshOrders' })}`,
+        ${toolButtonHtml({ href: 'solicitacao', iconName: 'plus', label: t('orders.newButton'), tone: 'primary' })}
+        ${toolButtonHtml({ action: 'toggleBatch', iconName: 'flag', label: t('orders.batchButton'), tone: 'green', active: batch.active, id: 'or-batch' })}
+        ${toolButtonHtml({ action: 'refreshOrders', iconName: 'sync', label: t('orders.refreshButton'), tone: 'blue', busyKey: 'refreshOrders' })}`,
     })}
     <div class="page page--list">
-      ${items.length
-        ? `<ul class="list list--cards" role="list">${items.map(orderCardHtml).join('')}</ul>`
-        : emptyHtml(search ? t('orders.emptySearch', { term: search }) : t('orders.empty'), { clearPath: search ? 'ui.orders.search' : '' })}
-    </div>`);
+      ${batch.active ? `<p class="batch-hint" role="status">${esc(t('batch.hint'))}</p>` : ''}
+      ${list}
+    </div>
+    ${batch.active ? `
+    <div class="action-bar">
+      <button type="button" class="btn btn--secondary" data-action="toggleBatch">${esc(t('common.cancel'))}</button>
+      <button type="button" class="btn btn--primary${isBusy('closeOrders') ? ' is-busy' : ''}" data-action="confirmBatch"${isBusy('closeOrders') ? ' disabled aria-busy="true"' : ''}>${esc(t('batch.confirm', { count: batch.selected.length }))}</button>
+    </div>` : ''}`, { cls: batch.active ? 'view--form' : '' });
 }
 
 /* ---------- detalhe ---------- */
@@ -70,25 +135,7 @@ const DETAIL_TABS = [
 
 function operationsTabHtml(order) {
   if (!order.operations.length) return emptyHtml(t('orderDetail.opsEmpty'));
-  return `
-  <ul class="list" role="list">
-    ${order.operations.map((op) => `
-      <li class="op-card">
-        <div class="op-card__header">
-          ${icon('chevronRight', { cls: 'op-card__chevron' })}
-          <span class="op-card__number">${esc(op.number)}</span>
-          <span class="op-card__title">${esc(op.title)}</span>
-          <span class="op-card__lock op-card__lock--${op.released ? 'open' : 'closed'}" role="img" aria-label="${esc(t(op.released ? 'orderDetail.released' : 'orderDetail.blocked'))}">${icon(op.released ? 'lockOpen' : 'lockClosed')}</span>
-        </div>
-        <span class="op-card__code">${esc(op.code)}</span>
-        <span class="op-card__equipment">${esc(op.equipment)}</span>
-        <span class="op-card__center">${esc(op.workCenter)}</span>
-        <div class="op-card__footer">
-          <span class="op-card__fact" aria-label="${esc(t('orderDetail.peopleAria', { count: op.people }))}">${icon('people')}<span aria-hidden="true">${esc(op.people)}</span></span>
-          <span class="op-card__fact" aria-label="${esc(t('orderDetail.durationAria', { value: op.duration || '—' }))}">${icon('clock')}<span aria-hidden="true">${esc(op.duration ? `${op.duration} MIN` : '—')}</span></span>
-        </div>
-      </li>`).join('')}
-  </ul>`;
+  return `<ul class="list" role="list">${order.operations.map((op) => operationCardHtml(order, op)).join('')}</ul>`;
 }
 
 function basicTabHtml(order) {
@@ -117,19 +164,30 @@ function basicTabHtml(order) {
 
 function documentsTabHtml(order) {
   if (!order.documents.length) return emptyHtml(t('orderDetail.docsEmpty'));
+  const item = (label, value, full = false) => `
+    <div class="doc-card__field${full ? ' doc-card__field--full' : ''}">
+      <span class="doc-card__label">${esc(label)}</span>
+      <span>${esc(value || '—')}</span>
+    </div>`;
   return `
   <ul class="doc-list" role="list">
     ${order.documents.map((doc) => {
-      const deleting = isBusy(`deleteDocument-${doc.id}`);
+      const busy = isBusy(`downloadDocument-${doc.id}`);
       return `
-      <li class="doc-row">
-        ${icon('chevronRight', { cls: 'doc-row__chevron' })}
-        <span class="doc-row__number">${esc(doc.operation)}</span>
-        <span class="doc-row__name">${esc(doc.name)}</span>
-        <span class="doc-row__actions">
-          <button type="button" id="doc-download-${doc.id}" class="doc-row__btn" data-action="downloadDocument" data-id="${doc.id}" aria-label="${esc(t('orderDetail.downloadAria', { name: doc.name }))}">${icon('file')}</button>
-          <button type="button" id="doc-delete-${doc.id}" class="doc-row__btn doc-row__btn--danger${deleting ? ' is-busy' : ''}" data-action="deleteDocument" data-id="${doc.id}" aria-label="${esc(t('orderDetail.deleteAria', { name: doc.name }))}"${deleting ? ' disabled aria-busy="true"' : ''}>${icon('trash')}</button>
-        </span>
+      <li class="doc-card">
+        <div class="doc-card__head">
+          <span class="doc-card__number">${esc(doc.operation)}</span>
+          <span class="doc-card__code">${esc(doc.code)}</span>
+          <button type="button" id="doc-download-${doc.id}" class="doc-card__btn${busy ? ' is-busy' : ''}" data-action="downloadDocument" data-id="${doc.id}" aria-label="${esc(t('orderDetail.downloadAria', { name: doc.code }))}"${busy ? ' disabled aria-busy="true"' : ''}>${icon('download')}</button>
+        </div>
+        ${doc.thumbnail ? `<img class="doc-card__thumb" src="${esc(doc.thumbnail)}" alt="${esc(doc.file || doc.description || '')}" width="96" height="96" loading="lazy">` : ''}
+        <div class="doc-card__fields">
+          ${item(t('orderDetail.docDescription'), doc.description, true)}
+          ${item(t('orderDetail.docCreatedAt'), formatDate(doc.createdAt))}
+          ${item(t('orderDetail.docCreatedBy'), doc.createdBy)}
+          ${item(t('orderDetail.docPartial'), doc.partialDoc)}
+          ${item(t('orderDetail.docVersion'), doc.version)}
+        </div>
       </li>`;
     }).join('')}
   </ul>`;
@@ -147,10 +205,10 @@ export function orderDetailView() {
       <section class="summary-card">
         <div class="entity-card__header">
           <span class="summary-card__code">${esc(order.code)}</span>
-          ${statusPill(order.status)}
+          ${orderStatusPillHtml(order, { focusable: true })}
         </div>
         <p class="summary-card__desc">${esc(order.description)}</p>
-        <div>${priorityChipHtml(order.priority)}</div>
+        <div class="entity-card__footer">${priorityChipHtml(order.priority)}${orderSummaryHtml(order, { focusable: true })}</div>
       </section>
     </div>
     <div class="tabs tabs--detail" role="tablist" aria-label="${esc(t('orderDetail.tabsAria'))}">

@@ -22,10 +22,17 @@ export const APP = {
   alertToastMs: 4500,
 };
 
+// Login de rede: o protótipo aceita qualquer usuário e senha preenchidos.
+// A sessão dura até fechar a aba (sessionStorage).
+export const SESSION = {
+  storageKey: 'mobilidade:sessao',
+  forgotPasswordUrl: 'https://idm.ternium.net/',
+};
+
 export const API_CONFIG = {
   dbUrl: 'data/db.json',
   storageKey: 'mobilidade:db',
-  schemaVersion: 1,
+  schemaVersion: 2,
   requestTimeoutMs: 10000,
   // Parâmetros de URL para testar estados de carregamento e erro:
   //   ?latencia=0    → sem atraso simulado       ?latencia=2000 → 2 s por operação
@@ -85,6 +92,26 @@ export const EMERGENCY_ORDER = {
   defaultPriority: 'emergencia',
   defaultLocationCode: 'CSA-ACI1-SAMA-BAL1-ESTR-BASE01',
   operationStep: 10, // operações numeradas 0010, 0020, 0030…
+};
+
+// Execução das operações da ordem (play / pausa / parar).
+export const EXECUTION = {
+  autoPauseHours: 6, // operação ativa por mais tempo que isso é pausada automaticamente
+  // Ordens sequenciais: só a primeira operação não finalizada fica liberada.
+  sequential: { orderType: 'PM02', activityTypes: ['INM'] },
+  longPressMs: 500, // toque longo que inicia a seleção no "Concluir todas ordens"
+};
+
+export const DEVIATION_REASONS = ['administrativo', 'falha_equipamento', 'falta_material', 'seguranca', 'aguardando_liberacao', 'outro'];
+
+// Status dos eventos de sincronização com o SAP e o grupo (aba) de cada um.
+export const EVENT_STATUS_GROUP = {
+  PE: 'pendente', // criado no aparelho, aguardando envio
+  PER: 'pendente', // reprocessamento solicitado, aguardando envio
+  LE: 'aguardando', // enviado ao SAP, aguardando o retorno
+  PR: 'processado', // processado com sucesso
+  PRE: 'processado', // processado com sucesso (reenvio)
+  ER: 'erro', // processado com erro no SAP
 };
 
 export const NOTE_DEFAULTS = {

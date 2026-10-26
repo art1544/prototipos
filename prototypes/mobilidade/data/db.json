@@ -1,8 +1,8 @@
 {
   "_meta": {
-    "schemaVersion": 1,
+    "schemaVersion": 2,
     "referenceDate": "2026-09-21",
-    "notes": "Base de exemplo do protótipo Mobilidade. Na primeira carga, todas as datas são deslocadas para que referenceDate vire o dia atual; depois os dados ficam salvos no navegador (localStorage, chave mobilidade:db). Textos exibidos (prioridades, status, tipos de nota, notificações, eventos) são traduzidos pela interface a partir dos ids."
+    "notes": "Base de exemplo do protótipo Mobilidade. Na primeira carga, todas as datas são deslocadas para que referenceDate vire o dia atual; depois os dados ficam salvos no navegador (localStorage, chave mobilidade:db). Textos exibidos (prioridades, status, tipos de nota, notificações, eventos) são traduzidos pela interface a partir dos ids. A matrícula do usuário começa vazia: ela é pedida no primeiro acesso, logo depois do login."
   },
 
   "users": [
@@ -10,11 +10,18 @@
       "id": 1,
       "name": "Sara El Khal",
       "username": "K.SAR34",
-      "registration": "45231",
+      "registration": "",
       "email": "sara.elkhal@ternium.com",
       "role": "tecnico_campo",
       "deviceId": "7fq2mksd91plwaeuz3"
     }
+  ],
+
+  "inspectors": [
+    { "registration": "62271", "name": "Marcell Ballermann" },
+    { "registration": "100004", "name": "João Pereira" },
+    { "registration": "100003", "name": "Fernanda Lima" },
+    { "registration": "100002", "name": "Carlos Souza" }
   ],
 
   "planningGroups": [
@@ -36,7 +43,8 @@
   "activityTypes": [
     { "id": "AJC", "name": "Ajuste e calibração" },
     { "id": "MAN", "name": "Manutenção corretiva" },
-    { "id": "INS", "name": "Inspeção" }
+    { "id": "INS", "name": "Inspeção" },
+    { "id": "INM", "name": "Inspeção e manutenção" }
   ],
 
   "noteTypes": [
@@ -67,60 +75,103 @@
 
   "orders": [
     {
-      "id": 1, "code": "OS-58231", "type": "PM10",
+      "id": 1, "code": "OS-58231", "type": "PM10", "sapStatus": "I0010", "linkedNotice": true, "unsyncedEvents": false,
       "description": "Vazamento de óleo na base da balança a silos A/B",
       "priority": "emergencia", "status": "andamento",
       "locationCode": "CSA-ACI1-SAMA-BAL1-ESTR-BASE01",
       "workCenterId": "0AAOPESA", "plantId": "RJ04", "planningGroupId": "0AA", "activityTypeId": "MAN",
-      "startedAt": "2026-09-21T08:15:00", "finishedAt": null,
-      "desiredStart": "2026-09-21", "desiredEnd": "2026-09-21",
+      "startedAt": "2026-09-20T22:00:00", "finishedAt": null,
+      "desiredStart": "2026-09-20", "desiredEnd": "2026-09-21",
       "systemStatus": "LIB CNPA", "userStatus": "", "headerText": "IM-2S - TML10 - OFICINA",
       "operations": [
-        { "number": "0040", "title": "VERIFICAR A INTEGRIDADE FAROL DIANTEIRO", "code": "CSA-MEQ-DEDR-DR10-SELE-FARO01", "equipment": "FAROIS DR640-010", "workCenter": "1MDELP10", "people": 1, "duration": "1.0", "released": true, "completed": true },
-        { "number": "0050", "title": "VERIFICAR A INTEGRIDADE BATERIA", "code": "CSA-MEQ-DEDR-DR10-SELE-BATE01", "equipment": "BATERIA DR640-010", "workCenter": "1MDELP10", "people": 1, "duration": "1.0", "released": false, "completed": false },
-        { "number": "0060", "title": "VERIF A INTEG MODULO ELETRONICO", "code": "CSA-MEQ-DEDR-DR10-SELE-MODU01", "equipment": "MODULO DR640-010", "workCenter": "1MDELP10", "people": 1, "duration": "1.0", "released": false, "completed": false },
-        { "number": "0070", "title": "VERIFICAR A INTEGRIDADE PAINEL ELÉTRICO", "code": "CSA-MEQ-DEDR-DR10-SELE-PAIN01", "equipment": "PAINEL / QUADRO DISTRIBUICAO DR640-010", "workCenter": "1MDELP10", "people": 1, "duration": "1.0", "released": false, "completed": false }
+        {
+          "number": "0040", "title": "VERIFICAR A INTEGRIDADE FAROL DIANTEIRO", "code": "CSA-MEQ-DEDR-DR10-SELE-FARO01", "equipment": "FAROIS DR640-010", "workCenter": "1MDELP10", "people": 1, "duration": "1.0",
+          "longText": "Inspeção da bomba com equipamento bloqueado\nAplicar bloqueio conforme TSG antes de iniciar. Medir pressão de descarga e verificar ruído e vazamentos.",
+          "info": {
+            "safety": {
+              "description": "Bloqueio elétrico do motor da bomba principal",
+              "createdAt": "2026-09-15", "createdBy": "Seg.Trabalho", "partialDoc": "000", "version": "00",
+              "component": "Motor M-101 (55 kW)", "padlock": "Cadeado individual + etiqueta", "panelNumber": "QD-LAF-07", "panelCoordinate": "12", "position": ""
+            },
+            "title": "Inspeção da bomba com equipamento bloqueado",
+            "text": "Aplicar bloqueio conforme TSG antes de iniciar. Medir pressão de descarga e verificar ruído e vazamentos.",
+            "location": "Laminação a Frio - Unidade hidráulica", "locationCode": "BR01-LAF-UHD",
+            "equipment": "Bomba principal da unidade hidráulica", "equipmentCode": "10007810",
+            "points": [
+              {
+                "type": "num", "name": "Pressão de descarga da bomba", "code": "000000082001",
+                "min": 120, "max": 160, "target": 140, "class": "M - Medição", "characteristic": "Pressão", "unit": "bar",
+                "value": null, "history": [["2026-06-10", 138], ["2026-07-30", 142], ["2026-08-05", 149], ["2026-09-02", 156]], "noteIds": []
+              },
+              {
+                "type": "quali", "name": "Vazamento no selo mecânico", "code": "000000082002",
+                "class": "Q - Qualitativo", "characteristic": "", "unit": "",
+                "value": null, "history": [["2026-08-05", 0], ["2026-09-02", 0]], "noteIds": []
+              },
+              {
+                "type": "scale", "name": "Ruído no rolamento (preditiva)", "code": "000000082003",
+                "class": "Q - Qualitativo", "characteristic": "", "unit": "",
+                "value": null, "history": [], "noteIds": []
+              }
+            ]
+          },
+          "execution": {
+            "started": true, "paused": true, "autoPaused": true, "finished": false,
+            "deviationReason": "auto6h", "deviationText": "",
+            "people": [{ "registration": "62271", "name": "Marcell Ballermann" }],
+            "confirmations": [
+              { "registration": "62271", "name": "Marcell Ballermann", "start": "2026-09-20T22:05:47", "end": "2026-09-21T04:05:47", "reason": "auto6h" }
+            ],
+            "attachments": [],
+            "noteIds": []
+          }
+        },
+        { "number": "0050", "title": "VERIFICAR A INTEGRIDADE BATERIA", "code": "CSA-MEQ-DEDR-DR10-SELE-BATE01", "equipment": "BATERIA DR640-010", "workCenter": "1MDELP10", "people": 2, "duration": "1.0" },
+        { "number": "0060", "title": "VERIF A INTEG MODULO ELETRONICO", "code": "CSA-MEQ-DEDR-DR10-SELE-MODU01", "equipment": "MODULO DR640-010", "workCenter": "1MDELP10", "people": 1, "duration": "1.0" },
+        { "number": "0070", "title": "VERIFICAR A INTEGRIDADE PAINEL ELÉTRICO", "code": "CSA-MEQ-DEDR-DR10-SELE-PAIN01", "equipment": "PAINEL / QUADRO DISTRIBUICAO DR640-010", "workCenter": "1MDELP10", "people": 1, "duration": "1.0" }
       ],
       "documents": [
-        { "id": 1, "operation": "0040", "name": "000000000000000000000001 ZIT" }
+        { "id": 1, "operation": "0040", "code": "000000000000000000000001 ZIT", "description": "PI-LAF-012 Procedimento de inspeção de redutores", "createdAt": "2026-09-02", "createdBy": "Sap.Planej", "partialDoc": "000", "version": "00" },
+        { "id": 2, "operation": "0050", "code": "000000000000000000000002 ZIT", "description": "PI-LAF-015 Procedimento de troca e teste de baterias", "createdAt": "2026-09-05", "createdBy": "Sap.Planej", "partialDoc": "000", "version": "01" },
+        { "id": 3, "operation": "0060", "code": "000000000000000000000003 ZIT", "file": "foto_base_balanca.jpg", "thumbnail": "assets/img/documento-exemplo.svg", "description": "Foto da base da balança a silos A/B", "createdAt": "2026-09-08", "createdBy": "K.SAR34", "partialDoc": "000", "version": "00" }
       ]
     },
     {
-      "id": 2, "code": "OS-58204", "type": "PM01",
+      "id": 2, "code": "OS-58204", "type": "PM02", "sapStatus": "I0002", "linkedNotice": false, "unsyncedEvents": false,
       "description": "Inspeção de rotina no motor da esteira 3",
-      "priority": "normal", "status": "andamento",
+      "priority": "normal", "status": "pendente",
       "locationCode": "CSA-ACI1-SAMA-ESTR03-MOTOR",
-      "workCenterId": "0AAMANUT", "plantId": "RJ04", "planningGroupId": "0AB", "activityTypeId": "INS",
+      "workCenterId": "0AAMANUT", "plantId": "RJ04", "planningGroupId": "0AB", "activityTypeId": "INM",
       "startedAt": "2026-09-20T14:00:00", "finishedAt": null,
       "desiredStart": "2026-09-20", "desiredEnd": "2026-09-22",
       "systemStatus": "LIB CNPA", "userStatus": "", "headerText": "IM-2S - TML10 - MANUTENÇÃO",
       "operations": [
-        { "number": "0010", "title": "VERIFICAR RUIDO ANORMAL NO MOTOR", "code": "CSA-MEQ-ESTR-DR10-MOTR-EST301", "equipment": "MOTOR ESTEIRA 3", "workCenter": "1MDMANU10", "people": 1, "duration": "0.5", "released": true, "completed": false },
-        { "number": "0020", "title": "VERIFICAR TEMPERATURA DO MANCAL", "code": "CSA-MEQ-ESTR-DR10-MANC-EST301", "equipment": "MANCAL ESTEIRA 3", "workCenter": "1MDMANU10", "people": 1, "duration": "0.5", "released": false, "completed": false }
+        { "number": "0010", "title": "VERIFICAR RUIDO ANORMAL NO MOTOR", "code": "CSA-MEQ-ESTR-DR10-MOTR-EST301", "equipment": "MOTOR ESTEIRA 3", "workCenter": "1MDMANU10", "people": 1, "duration": "0.5" },
+        { "number": "0020", "title": "VERIFICAR TEMPERATURA DO MANCAL", "code": "CSA-MEQ-ESTR-DR10-MANC-EST301", "equipment": "MANCAL ESTEIRA 3", "workCenter": "1MDMANU10", "people": 1, "duration": "0.5" }
       ],
       "documents": [
-        { "id": 1, "operation": "0010", "name": "000000000000000000000002 ZIT" }
+        { "id": 1, "operation": "0010", "code": "000000000000000000000002 ZIT" }
       ]
     },
     {
-      "id": 3, "code": "OS-58180", "type": "PM03",
+      "id": 3, "code": "OS-58180", "type": "PM03", "sapStatus": "I0002", "linkedNotice": false, "unsyncedEvents": true,
       "description": "Troca do filtro hidráulico da prensa 2",
-      "priority": "alta", "status": "andamento",
+      "priority": "alta", "status": "pendente",
       "locationCode": "CSA-ACI1-SAMA-PREN02",
       "workCenterId": "0AAOPESA", "plantId": "RJ01", "planningGroupId": "0AC", "activityTypeId": "MAN",
       "startedAt": "2026-09-19T09:40:00", "finishedAt": null,
       "desiredStart": "2026-09-19", "desiredEnd": "2026-09-20",
       "systemStatus": "LIB CNPA", "userStatus": "", "headerText": "IM-2S - TML10 - OFICINA",
       "operations": [
-        { "number": "0010", "title": "SUBSTITUIR FILTRO HIDRAULICO", "code": "CSA-MEQ-PREN-DR10-FILT-PREN02", "equipment": "FILTRO HIDRAULICO PRENSA 2", "workCenter": "1MDOPES10", "people": 2, "duration": "1.5", "released": true, "completed": true },
-        { "number": "0020", "title": "VERIFICAR NIVEL DE OLEO", "code": "CSA-MEQ-PREN-DR10-OLEO-PREN02", "equipment": "RESERVATORIO OLEO PRENSA 2", "workCenter": "1MDOPES10", "people": 1, "duration": "0.3", "released": false, "completed": false }
+        { "number": "0010", "title": "SUBSTITUIR FILTRO HIDRAULICO", "code": "CSA-MEQ-PREN-DR10-FILT-PREN02", "equipment": "FILTRO HIDRAULICO PRENSA 2", "workCenter": "1MDOPES10", "people": 2, "duration": "1.5" },
+        { "number": "0020", "title": "VERIFICAR NIVEL DE OLEO", "code": "CSA-MEQ-PREN-DR10-OLEO-PREN02", "equipment": "RESERVATORIO OLEO PRENSA 2", "workCenter": "1MDOPES10", "people": 1, "duration": "0.3" }
       ],
       "documents": [
-        { "id": 1, "operation": "0010", "name": "000000000000000000000003 ZIT" }
+        { "id": 1, "operation": "0010", "code": "000000000000000000000003 ZIT" }
       ]
     },
     {
-      "id": 4, "code": "OS-58122", "type": "PM10",
+      "id": 4, "code": "OS-58122", "type": "PM10", "sapStatus": "I0045", "linkedNotice": true, "unsyncedEvents": false,
       "description": "Reparo emergencial na válvula de segurança do forno",
       "priority": "emergencia", "status": "concluida",
       "locationCode": "CSA-ACI1-SAMA-FORNO01-VALV",
@@ -129,16 +180,16 @@
       "desiredStart": "2026-09-18", "desiredEnd": "2026-09-18",
       "systemStatus": "TECO CNPA", "userStatus": "", "headerText": "IM-2S - TML10 - MANUTENÇÃO",
       "operations": [
-        { "number": "0010", "title": "SUBSTITUIR VALVULA DE SEGURANCA", "code": "CSA-MEQ-FORN-DR10-VALV-FORN01", "equipment": "VALVULA SEGURANCA FORNO 1", "workCenter": "1MDMANU10", "people": 2, "duration": "2.0", "released": true, "completed": true },
-        { "number": "0020", "title": "TESTAR PRESSAO DE ALIVIO", "code": "CSA-MEQ-FORN-DR10-PRES-FORN01", "equipment": "SISTEMA DE ALIVIO FORNO 1", "workCenter": "1MDMANU10", "people": 1, "duration": "0.5", "released": true, "completed": true }
+        { "number": "0010", "title": "SUBSTITUIR VALVULA DE SEGURANCA", "code": "CSA-MEQ-FORN-DR10-VALV-FORN01", "equipment": "VALVULA SEGURANCA FORNO 1", "workCenter": "1MDMANU10", "people": 2, "duration": "2.0" },
+        { "number": "0020", "title": "TESTAR PRESSAO DE ALIVIO", "code": "CSA-MEQ-FORN-DR10-PRES-FORN01", "equipment": "SISTEMA DE ALIVIO FORNO 1", "workCenter": "1MDMANU10", "people": 1, "duration": "0.5" }
       ],
       "documents": [
-        { "id": 1, "operation": "0010", "name": "000000000000000000000004 ZIT" },
-        { "id": 2, "operation": "0020", "name": "000000000000000000000005 ZIT" }
+        { "id": 1, "operation": "0010", "code": "000000000000000000000004 ZIT" },
+        { "id": 2, "operation": "0020", "code": "000000000000000000000005 ZIT" }
       ]
     },
     {
-      "id": 5, "code": "OS-58090", "type": "PM05",
+      "id": 5, "code": "OS-58090", "type": "PM05", "sapStatus": "I0045", "linkedNotice": false, "unsyncedEvents": false,
       "description": "Calibração dos sensores de temperatura do forno 2",
       "priority": "baixa", "status": "concluida",
       "locationCode": "CSA-ACI1-SAMA-FORNO02-SENS",
@@ -147,12 +198,12 @@
       "desiredStart": "2026-09-15", "desiredEnd": "2026-09-15",
       "systemStatus": "TECO CNPA", "userStatus": "", "headerText": "IM-2S - TML10 - OFICINA",
       "operations": [
-        { "number": "0010", "title": "CALIBRAR SENSOR DE TEMPERATURA", "code": "CSA-MEQ-FORN-DR10-SENS-FORN02", "equipment": "SENSOR TEMPERATURA FORNO 2", "workCenter": "1MDOPES10", "people": 1, "duration": "1.0", "released": true, "completed": true }
+        { "number": "0010", "title": "CALIBRAR SENSOR DE TEMPERATURA", "code": "CSA-MEQ-FORN-DR10-SENS-FORN02", "equipment": "SENSOR TEMPERATURA FORNO 2", "workCenter": "1MDOPES10", "people": 1, "duration": "1.0" }
       ],
       "documents": []
     },
     {
-      "id": 6, "code": "OS-58077", "type": "PM01",
+      "id": 6, "code": "OS-58077", "type": "PM01", "sapStatus": "I0045", "linkedNotice": false, "unsyncedEvents": false,
       "description": "Lubrificação geral dos rolamentos da linha 1",
       "priority": "normal", "status": "concluida",
       "locationCode": "CSA-ACI1-SAMA-LINHA01-ROL",
@@ -161,11 +212,11 @@
       "desiredStart": "2026-09-12", "desiredEnd": "2026-09-12",
       "systemStatus": "TECO CNPA", "userStatus": "", "headerText": "IM-2S - TML10 - MANUTENÇÃO",
       "operations": [
-        { "number": "0010", "title": "LUBRIFICAR ROLAMENTOS", "code": "CSA-MEQ-LINH-DR10-ROLM-LINH01", "equipment": "ROLAMENTOS LINHA 1", "workCenter": "1MDMANU10", "people": 1, "duration": "1.0", "released": true, "completed": true },
-        { "number": "0020", "title": "VERIFICAR FOLGA AXIAL", "code": "CSA-MEQ-LINH-DR10-FOLG-LINH01", "equipment": "EIXO LINHA 1", "workCenter": "1MDMANU10", "people": 1, "duration": "0.5", "released": true, "completed": true }
+        { "number": "0010", "title": "LUBRIFICAR ROLAMENTOS", "code": "CSA-MEQ-LINH-DR10-ROLM-LINH01", "equipment": "ROLAMENTOS LINHA 1", "workCenter": "1MDMANU10", "people": 1, "duration": "1.0" },
+        { "number": "0020", "title": "VERIFICAR FOLGA AXIAL", "code": "CSA-MEQ-LINH-DR10-FOLG-LINH01", "equipment": "EIXO LINHA 1", "workCenter": "1MDMANU10", "people": 1, "duration": "0.5" }
       ],
       "documents": [
-        { "id": 1, "operation": "0010", "name": "000000000000000000000006 ZIT" }
+        { "id": 1, "operation": "0010", "code": "000000000000000000000006 ZIT" }
       ]
     }
   ],
@@ -180,13 +231,17 @@
   ],
 
   "events": [
-    { "id": 9, "operation": "0010", "kind": "notificacao", "category": "administrativo", "categoryText": null, "message": "aguardando_sap", "createdAt": "2026-09-18T11:41:22", "status": "pendente" },
-    { "id": 8, "operation": "0010", "kind": "notificacao", "category": "administrativo", "categoryText": null, "message": "aguardando_sap", "createdAt": "2026-09-18T11:41:22", "status": "pendente" },
-    { "id": 7, "operation": "0010", "kind": "notificacao", "category": "administrativo", "categoryText": null, "message": "falha_conexao", "createdAt": "2026-09-18T11:41:22", "status": "erro" },
-    { "id": 6, "operation": "0010", "kind": "notificacao", "category": "administrativo", "categoryText": null, "message": "falha_conexao", "createdAt": "2026-09-18T11:41:22", "status": "erro" },
-    { "id": 5, "operation": "0010", "kind": "notificacao", "category": "administrativo", "categoryText": null, "message": "aguardando_sap", "createdAt": "2026-09-18T11:41:22", "status": "pendente" },
-    { "id": 2, "operation": "0040", "kind": "anexo", "category": null, "categoryText": "teste", "message": "aguardando_sap", "createdAt": "2026-09-16T08:17:29", "status": "pendente" },
-    { "id": 1, "operation": "0040", "kind": "notificacao", "category": "administrativo", "categoryText": null, "message": "confirmacao_ok", "createdAt": "2026-09-16T08:16:23", "status": "sincronizado" }
+    { "id": 14, "noteCode": "NT-1003", "orderCode": null, "operation": null, "kind": "nova_nota", "category": null, "categoryText": null, "createdAt": "2026-09-20T21:48:05", "status": "PE" },
+    { "id": 13, "noteCode": "NT-1002", "orderCode": null, "operation": null, "kind": "nova_nota", "category": null, "categoryText": null, "createdAt": "2026-09-17T09:34:10", "status": "LE" },
+    { "id": 12, "noteCode": "NT-1001", "orderCode": null, "operation": null, "kind": "anexo_nota", "category": null, "categoryText": null, "createdAt": "2026-09-15T08:06:41", "status": "ER" },
+    { "id": 11, "noteCode": "NT-1001", "orderCode": null, "operation": null, "kind": "nova_nota", "category": null, "categoryText": null, "createdAt": "2026-09-15T08:05:12", "status": "PR" },
+    { "id": 9, "noteCode": null, "orderCode": "OS-58204", "operation": "0010", "kind": "notificacao", "category": "administrativo", "categoryText": null, "createdAt": "2026-09-18T11:41:22", "status": "PE" },
+    { "id": 8, "noteCode": null, "orderCode": "OS-58204", "operation": "0010", "kind": "notificacao", "category": "administrativo", "categoryText": null, "createdAt": "2026-09-18T11:41:22", "status": "PRE" },
+    { "id": 7, "noteCode": null, "orderCode": "OS-58204", "operation": "0010", "kind": "notificacao", "category": "administrativo", "categoryText": null, "createdAt": "2026-09-18T11:41:22", "status": "ER" },
+    { "id": 6, "noteCode": null, "orderCode": "OS-58204", "operation": "0010", "kind": "notificacao", "category": "administrativo", "categoryText": null, "createdAt": "2026-09-18T11:41:22", "status": "ER" },
+    { "id": 5, "noteCode": null, "orderCode": "OS-58204", "operation": "0010", "kind": "notificacao", "category": "administrativo", "categoryText": null, "createdAt": "2026-09-18T11:41:22", "status": "LE" },
+    { "id": 2, "noteCode": null, "orderCode": "OS-58231", "operation": "0040", "kind": "anexo_operacao", "category": null, "categoryText": "teste", "createdAt": "2026-09-16T08:17:29", "status": "PER" },
+    { "id": 1, "noteCode": null, "orderCode": "OS-58231", "operation": "0040", "kind": "notificacao", "category": "administrativo", "categoryText": null, "createdAt": "2026-09-16T08:16:23", "status": "PR" }
   ],
 
   "notes": [

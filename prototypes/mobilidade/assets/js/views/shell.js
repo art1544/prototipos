@@ -5,29 +5,32 @@ import { esc, firstName, icon, signalIcon } from '../utils.js';
 import { t } from '../i18n/index.js';
 import { state } from '../store.js';
 import { hrefFor } from '../router.js';
-import { currentUser, unreadCount } from '../model.js';
-import { stateScreenHtml } from './components.js';
+import { currentUser, needsRegistration, unreadCount } from '../model.js';
+import { stateScreenHtml, tipAttrs } from './components.js';
 
-export function topbarHtml() {
+// `locked`: primeiro acesso — sem atalhos para o Início até informar a matrícula.
+export function topbarHtml({ locked = false } = {}) {
   const ready = state.status === 'ready';
   const unread = ready ? unreadCount() : 0;
   const level = NETWORK.levels[state.network] ? state.network : NETWORK.fallback;
   const levelLabel = t(`network.${level}`);
   const bellLabel = unread ? t('shell.notifications', { count: unread }) : t('shell.notificationsNone');
+  const brand = `
+      <img class="topbar__logo" src="assets/img/logo.png" alt="" width="34" height="34">
+      <span class="topbar__name">${esc(APP.name)}</span>
+      <span class="topbar__version"> | ${esc(t('shell.versionLabel', { version: APP.version, environment: APP.environment }))}</span>`;
 
   return `
   <header class="topbar">
-    <a class="topbar__brand" href="${hrefFor('')}" aria-label="${esc(APP.name)} – ${esc(t('shell.navHome'))}">
-      <img class="topbar__logo" src="assets/img/logo.png" alt="" width="34" height="34">
-      <span class="topbar__name">${esc(APP.name)}</span>
-      <span class="topbar__version"> | ${esc(t('shell.versionLabel', { version: APP.version, environment: APP.environment }))}</span>
-    </a>
+    ${locked
+      ? `<span class="topbar__brand">${brand}</span>`
+      : `<a class="topbar__brand" href="${hrefFor('')}" aria-label="${esc(APP.name)} – ${esc(t('shell.navHome'))}">${brand}</a>`}
     <div class="topbar__actions">
-      <span class="signal signal--${esc(level)}" role="img" aria-label="${esc(t('shell.network', { level: levelLabel }))}">
+      <span class="signal signal--${esc(level)}" aria-label="${esc(t('shell.network', { level: levelLabel }))}"${tipAttrs(t(`networkTips.${level}`), { focusable: true })}>
         ${signalIcon(NETWORK.levels[level].bars)}
         <span class="signal__label" aria-hidden="true">${esc(levelLabel)}</span>
       </span>
-      ${ready ? `
+      ${ready && !locked ? `
       <a id="topbar-bell" class="topbar__btn" href="${hrefFor('notificacoes')}" aria-label="${esc(bellLabel)}">
         ${icon('bell')}
         ${unread ? `<span class="topbar__badge" aria-hidden="true">${unread > 9 ? '9+' : unread}</span>` : ''}
@@ -36,6 +39,8 @@ export function topbarHtml() {
     </div>
   </header>`;
 }
+
+export const isLockedShell = () => state.status === 'ready' && needsRegistration();
 
 export function bottomNavHtml(active) {
   const user = currentUser();

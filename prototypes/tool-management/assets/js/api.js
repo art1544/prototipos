@@ -6,7 +6,7 @@
 // as mesmas assinaturas e o mesmo formato de erro; a interface não precisa mudar.
 
 import { APP, API_CONFIG, IMAGE, LIMITS, MESSAGES } from './config.js';
-import { addDaysISO, daysBetween, isValidISODate, normalize, nowISO, randomBetween, sleep, todayISO } from './utils.js';
+import { addDaysISO, daysBetween, formatDateBR, isValidISODate, normalize, nowISO, randomBetween, sleep, todayISO } from './utils.js';
 
 /* ---------- errors ---------- */
 
@@ -224,6 +224,19 @@ export function validateToolInput(rawInput, data) {
   return errors;
 }
 
+// Intervalo aceito para a previsão de devolução: de hoje até hoje + LIMITS.loanMaxDays.
+export function dueDateRange(today = todayISO()) {
+  return { min: today, max: addDaysISO(today, LIMITS.loanMaxDays) };
+}
+
+export function validateDueDate(dueDate) {
+  if (!dueDate) return MESSAGES.required;
+  if (!isValidISODate(dueDate)) return MESSAGES.invalidDate;
+  const { min, max } = dueDateRange();
+  if (dueDate < min || dueDate > max) return MESSAGES.dueDateRange(formatDateBR(min), formatDateBR(max));
+  return '';
+}
+
 export function validateLoanInput(input, data) {
   const errors = {};
   const tool = data.tools.find((t) => t.id === input.toolId);
@@ -231,9 +244,8 @@ export function validateLoanInput(input, data) {
   if (!input.toolId) errors.toolId = MESSAGES.toolRequired;
   else if (!tool || tool.status !== 'disponivel') errors.toolId = MESSAGES.toolUnavailable;
 
-  if (!input.dueDate) errors.dueDate = MESSAGES.required;
-  else if (!isValidISODate(input.dueDate)) errors.dueDate = MESSAGES.invalidDate;
-  else if (input.dueDate < todayISO()) errors.dueDate = MESSAGES.pastDueDate;
+  const dueError = validateDueDate(input.dueDate);
+  if (dueError) errors.dueDate = dueError;
 
   if (String(input.notes || '').length > LIMITS.textMax) errors.notes = MESSAGES.tooLong(LIMITS.textMax);
 
@@ -268,6 +280,16 @@ export const api = {
     saveSeed(fresh);
     db = fresh;
     return clone(db);
+  },
+
+  // POST /auth/login (mock: qualquer usuário e senha preenchidos entram como o usuário atual)
+  async login({ username, password }) {
+    const fields = {};
+    if (!String(username || '').trim()) fields.username = MESSAGES.required;
+    if (!password) fields.password = MESSAGES.required;
+    if (hasErrors(fields)) throw new ApiError(MESSAGES.loginRequired, { status: 422, code: 'VALIDATION', fields });
+    await simulateNetwork();
+    return clone(db.users.find((u) => u.id === APP.currentUserId));
   },
 
   // POST /tools
@@ -362,12 +384,15 @@ export const api = {
     });
   },
 
-  // POST /loans/:id/return
-  async returnLoan(loanId) {
+  // POST /loans/:id/return — inspectorId: quem está devolvendo (identificado por ID ou rosto)
+  async returnLoan(loanId, inspectorId) {
     await simulateNetwork();
     const loan = db.loans.find((l) => l.id === loanId);
     if (!loan) throw new ApiError(MESSAGES.loanNotFound, { status: 404, code: 'NOT_FOUND', fields: { loanId: MESSAGES.loanNotFound } });
     if (loan.returnedDate) throw new ApiError(MESSAGES.loanAlreadyReturned, { status: 409, code: 'CONFLICT', fields: { loanId: MESSAGES.loanAlreadyReturned } });
+    if (inspectorId && loan.inspectorId !== inspectorId) {
+      throw new ApiError(MESSAGES.loanOtherInspector, { status: 409, code: 'CONFLICT', fields: { loanId: MESSAGES.loanOtherInspector } });
+    }
 
     return commit((draft) => {
       const now = nowISO();

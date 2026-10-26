@@ -1,8 +1,8 @@
 // Interface do protótipo: estado, telas, ações e inicialização.
 
-import { APP, IMAGE, LOAN_STATUS_STYLE, MESSAGES, TOOL_STATUS_STYLE } from './config.js';
+import { APP, IMAGE, LIMITS, LOAN_STATUS_STYLE, LOGIN, MESSAGES, TOOL_STATUS_CHART_COLOR, TOOL_STATUS_STYLE } from './config.js';
 import { esc, formatDateBR, icon, imageToDataUrl, matchesSearch, todayISO } from './utils.js';
-import { ApiError, api, deriveLoanStatus, storageMode, validateLoanInput, validateToolInput } from './api.js';
+import { ApiError, api, deriveLoanStatus, dueDateRange, storageMode, validateDueDate, validateLoanInput, validateToolInput } from './api.js';
 
 /* ---------- state ---------- */
 
@@ -20,8 +20,31 @@ function emptyLoanForm() {
   return { step: 'identificar', badge: '', inspector: null, toolId: '', dueDate: '', notes: '', errors: {} };
 }
 
+// Devolução: identifica o inspetor (ID ou rosto) e lista só os empréstimos em aberto dele.
 function emptyReturnForm() {
-  return { loanId: '', errors: {} };
+  return { step: 'identificar', badge: '', inspector: null, loanId: '', errors: {} };
+}
+
+function emptyLoginForm() {
+  return { username: '', password: '', showPassword: false, errors: {} };
+}
+
+/* ---------- session ---------- */
+// Sem backend de autenticação: a sessão é só uma marca no sessionStorage (dura até fechar a aba).
+
+function readSession() {
+  try {
+    return window.sessionStorage.getItem(APP.sessionKey) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeSession(active) {
+  try {
+    if (active) window.sessionStorage.setItem(APP.sessionKey, '1');
+    else window.sessionStorage.removeItem(APP.sessionKey);
+  } catch { /* sessão só em memória */ }
 }
 
 let state = {
@@ -30,6 +53,9 @@ let state = {
   db: null,
   view: 'dashboard',
   prevView: null,
+  session: readSession(),
+  redirect: null, // tela pedida antes do login
+  loginForm: emptyLoginForm(),
   menuOpen: false,
   toast: null, // { message, type: 'success' | 'error' | 'warning' }
   pending: null, // operação assíncrona em andamento (bloqueia envios duplicados)
@@ -66,12 +92,13 @@ function showToast(message, type) {
 /* ---------- views & navigation ---------- */
 
 const VIEWS = {
-  dashboard:           { route: '',                      title: 'Início',               render: dashboardView },
+  login:               { route: 'login',                 title: 'Login',                render: loginView,      public: true, bare: true, autofocus: '#login-username', onEnter: () => ({ loginForm: emptyLoginForm() }) },
+  dashboard:          { route: '',                      title: 'Início',               render: dashboardView },
   ferramentas:         { route: 'ferramentas',           title: 'Ferramentas',          render: toolListView },
   cadastrarFerramenta: { route: 'ferramentas/cadastrar', title: 'Cadastrar Ferramenta', render: toolFormView,   parent: 'ferramentas', autofocus: '#tool-code',     onEnter: () => ({ toolForm: emptyToolForm() }) },
   emprestimos:         { route: 'emprestimos',           title: 'Empréstimos',          render: loanListView },
   novoEmprestimo:      { route: 'emprestimos/novo',      title: 'Novo Empréstimo',      render: loanFormView,   parent: 'emprestimos', autofocus: '#loan-badge',    onEnter: () => ({ loanForm: emptyLoanForm() }) },
-  registrarDevolucao:  { route: 'emprestimos/devolucao', title: 'Registrar Devolução',  render: returnFormView, parent: 'emprestimos', autofocus: '#return-loanId', onEnter: () => ({ returnForm: emptyReturnForm() }) },
+  registrarDevolucao:  { route: 'emprestimos/devolucao', title: 'Registrar Devolução',  render: returnFormView, parent: 'emprestimos', autofocus: '#return-badge',onEnter: () => ({ returnForm: emptyReturnForm() }) },
   notFound:            { route: null,                    title: 'Página não encontrada', render: notFoundView },
 };
 
@@ -128,8 +155,19 @@ function closedFilters() {
   };
 }
 
-function goTo(view, patch = {}) {
-  if (!VIEWS[view]) view = 'notFound';
+// Sem sessão, toda tela interna leva ao login (e volta para ela depois de entrar).
+function resolveView(view) {
+  if (!VIEWS[view]) return 'notFound';
+  if (!state.session && !VIEWS[view].public) {
+    state = { ...state, redirect: view === 'notFound' ? null : view };
+    return 'login';
+  }
+  if (state.session && view === 'login') return 'dashboard';
+  return view;
+}
+
+function goTo(requested, patch = {}) {
+  const view = resolveView(requested);
   const def = VIEWS[view];
   const changed = view !== state.view;
 
@@ -314,7 +352,7 @@ function headerHtml() {
         ${icon('user', 16, { sw: 1.8 })}
         <span class="user-chip__name">${esc(user.name)}</span>
       </div>` : ''}
-      <button type="button" class="icon-btn icon-btn--sm" data-action="logout" aria-label="Sair e voltar ao catálogo de protótipos" title="Sair">
+      <button type="button" class="icon-btn icon-btn--sm" data-action="logout" aria-label="Sair" title="Sair">
         ${icon('logout', 16, { sw: 1.8 })}
       </button>
     </div>
@@ -335,6 +373,10 @@ function sidebarHtml() {
         ${icon('refresh', 18, { style: 'color:var(--muted)' })}
         ${resetting ? 'Restaurando…' : 'Restaurar dados de exemplo'}
       </button>
+      <a class="nav-item" href="${esc(APP.overdueEmailUrl)}" target="_blank" rel="noopener">
+        ${icon('mail', 18, { style: 'color:var(--muted)' })}
+        E-mail de devolução em atraso
+      </a>
       <a class="nav-item" href="${esc(APP.hubUrl)}">
         ${icon('grid', 18, { style: 'color:var(--muted)' })}
         Todos os protótipos
@@ -427,6 +469,8 @@ function dashboardView() {
 
     <div class="grid grid--4">${stats.map(statCardHtml).join('')}</div>
 
+    ${availabilityHtml()}
+
     ${DASHBOARD_SECTIONS.map(dashboardSectionHtml).join('')}
   </div>`;
 }
@@ -440,6 +484,83 @@ function statCardHtml(stat) {
       <span class="stat-card__label">${esc(stat.label)}</span>
     </span>
   </button>`;
+}
+
+// Gráfico de rosca (% disponível) com legenda clicável e barras empilhadas por categoria.
+function availabilityHtml() {
+  const tools = decoratedTools();
+  const total = tools.length;
+  const pct = (count) => (total ? Math.round((count / total) * 100) : 0);
+  const segments = state.db.toolStatuses.map((s) => {
+    const count = tools.filter((t) => t.status === s.id).length;
+    return { ...s, count, pct: pct(count), color: TOOL_STATUS_CHART_COLOR[s.id] || 'var(--subtle)' };
+  });
+  const available = segments.find((s) => s.id === 'disponivel') || { count: 0, pct: 0 };
+
+  const R = 70;
+  const C = 2 * Math.PI * R;
+  const visible = segments.filter((s) => s.count);
+  const gap = visible.length > 1 ? 3 : 0;
+  let offset = 0;
+  const arcs = visible.map((s) => {
+    const len = (s.count / total) * C;
+    const arc = `<circle cx="100" cy="100" r="${R}" fill="none" stroke="${s.color}" stroke-width="26" stroke-dasharray="${Math.max(len - gap, 0.1)} ${C}" stroke-dashoffset="${-offset}" transform="rotate(-90 100 100)"/>`;
+    offset += len;
+    return arc;
+  }).join('');
+
+  const legend = segments.map((s) => `
+    <button type="button" class="legend-item" data-action="go" data-view="ferramentas" data-status="${esc(s.id)}">
+      <span class="legend-item__swatch" style="background:${s.color};"></span>
+      <span class="legend-item__label">${esc(s.label)}</span>
+      <span class="legend-item__count">${s.count}</span>
+      <span class="legend-item__pct">${s.pct}%</span>
+    </button>`).join('');
+
+  const byCategory = {};
+  tools.forEach((t) => {
+    const c = byCategory[t.categoryName] || (byCategory[t.categoryName] = { name: t.categoryName, total: 0, counts: {} });
+    c.total += 1;
+    c.counts[t.status] = (c.counts[t.status] || 0) + 1;
+  });
+  const bars = Object.values(byCategory)
+    .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name, 'pt-BR'))
+    .map((c) => {
+      const free = c.counts.disponivel || 0;
+      const segs = segments.filter((s) => c.counts[s.id])
+        .map((s) => `<span title="${esc(s.label)}: ${c.counts[s.id]}" style="width:${(c.counts[s.id] / c.total) * 100}%;background:${s.color};"></span>`).join('');
+      return `
+      <div class="category-bar">
+        <div class="category-bar__head">
+          <span class="category-bar__name">${esc(c.name)}</span>
+          <span class="category-bar__value">${free} de ${c.total} ${c.total === 1 ? 'disponível' : 'disponíveis'}</span>
+        </div>
+        <div class="category-bar__track">${segs}</div>
+      </div>`;
+    }).join('');
+
+  return `
+  <section class="section">
+    <h2 class="section-title">Disponibilidade das Ferramentas</h2>
+    <div class="card card--hover availability">
+      <div class="availability__summary">
+        <svg class="donut" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="Disponibilidade: ${available.count} de ${total} ferramentas disponíveis">
+          <circle cx="100" cy="100" r="${R}" fill="none" stroke="#eef0f3" stroke-width="26"/>
+          ${total ? arcs : ''}
+          <text x="100" y="100" text-anchor="middle" class="donut__value">${available.pct}%</text>
+          <text x="100" y="122" text-anchor="middle" class="donut__label">disponível</text>
+        </svg>
+        <div class="legend">
+          <div class="legend__total">${total} ${total === 1 ? 'ferramenta cadastrada' : 'ferramentas cadastradas'}</div>
+          ${legend}
+        </div>
+      </div>
+      <div class="availability__categories">
+        <div class="availability__subtitle">Por categoria</div>
+        ${bars || '<div class="field-hint">Nenhuma ferramenta cadastrada.</div>'}
+      </div>
+    </div>
+  </section>`;
 }
 
 function dashboardSectionHtml(section) {
@@ -663,30 +784,38 @@ function loanFormView() {
     ${pageHeaderHtml('Novo Empréstimo', identifying
       ? 'Identifique o inspetor para iniciar o registro do empréstimo'
       : 'Selecione a ferramenta e a previsão de devolução')}
-    ${identifying ? identifyStepHtml(f) : loanDetailsStepHtml(f)}
+    ${identifying ? identifyStepHtml('loanForm') : loanDetailsStepHtml(f)}
   </div>`;
 }
 
-function identifyStepHtml(f) {
+// Formulários que começam identificando o inspetor (ID do crachá ou reconhecimento facial).
+const IDENTIFY = {
+  loanForm:   { view: 'novoEmprestimo',     prefix: 'loan',   next: '#loan-toolId' },
+  returnForm: { view: 'registrarDevolucao', prefix: 'return', next: '#return-loanId' },
+};
+
+function identifyStepHtml(formKey) {
+  const f = state[formKey];
+  const { prefix } = IDENTIFY[formKey];
   const error = f.errors.badge;
   const checking = state.pending === 'findInspector';
   const recognizing = state.pending === 'recognizeFace';
 
   return `
   <div class="grid grid--2">
-    <form class="card identify-card" data-submit="confirmId" novalidate>
+    <form class="card identify-card" data-submit="confirmId" data-form="${formKey}" novalidate>
       <h2 class="identify-card__title">Inserir ID Manualmente</h2>
       <div class="identify-card__icon">${icon('barcode', 26, { sw: 1.8 })}</div>
       <p class="identify-card__text">Digite ou escaneie o ID do inspetor</p>
       <div class="form-group">
-        <label class="form-label" for="loan-badge">ID do Inspetor</label>
+        <label class="form-label" for="${prefix}-badge">ID do Inspetor</label>
         <div class="searchbox searchbox--field${error ? ' is-invalid' : ''}">
           ${icon('barcode', 16, { sw: 1.8 })}
-          <input ${fieldAttrs({ id: 'loan-badge', field: 'loanForm.badge', error })} type="text" inputmode="numeric" autocomplete="off" maxlength="20" placeholder="Digite ou escaneie o ID" value="${esc(f.badge)}">
+          <input ${fieldAttrs({ id: `${prefix}-badge`, field: `${formKey}.badge`, error })} type="text" inputmode="numeric" autocomplete="off" maxlength="20" placeholder="Digite ou escaneie o ID" value="${esc(f.badge)}">
         </div>
-        ${error ? `<span id="loan-badge-error" class="field-error">${esc(error)}</span>` : ''}
+        ${error ? `<span id="${prefix}-badge-error" class="field-error">${esc(error)}</span>` : ''}
       </div>
-      <button type="submit" id="loan-badge-submit" class="btn btn--primary btn--block mt-4${checking ? ' is-loading' : ''}"${state.pending ? ' disabled' : ''}>${checking ? 'Verificando…' : 'Confirmar Identificação'}</button>
+      <button type="submit" id="${prefix}-badge-submit"class="btn btn--primary btn--block mt-4${checking ? ' is-loading' : ''}"${state.pending ? ' disabled' : ''}>${checking ? 'Verificando…' : 'Confirmar Identificação'}</button>
     </form>
 
     <div class="card identify-card">
@@ -696,7 +825,7 @@ function identifyStepHtml(f) {
         <p class="identify-card__text">Posicione seu rosto na câmera para identificação automática</p>
         ${f.errors.face ? `<span class="field-error" role="alert">${esc(f.errors.face)}</span>` : ''}
       </div>
-      <button type="button" id="loan-face" class="btn btn--primary btn--block btn--bottom${recognizing ? ' is-loading' : ''}" data-action="facialRecognition"${state.pending ? ' disabled' : ''}${recognizing ? ' aria-busy="true"' : ''}>
+      <button type="button" id="${prefix}-face" class="btn btn--primary btn--block btn--bottom${recognizing ? ' is-loading' : ''}" data-action="facialRecognition" data-form="${formKey}"${state.pending ? ' disabled' : ''}${recognizing ? ' aria-busy="true"' : ''}>
         ${icon('camera', 16, { sw: 1.8 })}
         ${recognizing ? 'Reconhecendo…' : 'Iniciar Reconhecimento'}
       </button>
@@ -704,22 +833,8 @@ function identifyStepHtml(f) {
   </div>`;
 }
 
-function dueDateError(dueDate) {
-  if (!dueDate) return '';
-  return dueDate < todayISO() ? MESSAGES.pastDueDate : '';
-}
-
-function loanDetailsStepHtml(f) {
-  const tools = availableTools();
-  const saving = state.pending === 'createLoan';
-  const liveDueError = dueDateError(f.dueDate);
-  const dueError = f.errors.dueDate || liveDueError;
-  const toolError = f.errors.toolId;
-  const canSubmit = tools.some((t) => String(t.id) === f.toolId) && !!f.dueDate && !liveDueError;
-  const inspector = f.inspector;
-
+function inspectorNoticeHtml(inspector) {
   return `
-  <div class="form-stack">
     <div class="notice-success" role="status">
       <div class="notice-success__icon">${icon('user', 18, { sw: 1.8 })}</div>
       <div>
@@ -727,7 +842,22 @@ function loanDetailsStepHtml(f) {
         <div class="notice-success__title">${esc(inspector.name)}</div>
         <div class="notice-success__meta">ID: ${esc(inspector.badge)}${inspector.department ? ` · ${esc(inspector.department)}` : ''}</div>
       </div>
-    </div>
+    </div>`;
+}
+
+function loanDetailsStepHtml(f) {
+  const tools = availableTools();
+  const saving = state.pending === 'createLoan';
+  const range = dueDateRange();
+  const liveDueError = f.dueDate ? validateDueDate(f.dueDate) : '';
+  const dueError = f.errors.dueDate || liveDueError;
+  const dueHint = dueError ? '' : `Até ${LIMITS.loanMaxDays} dias: de ${formatDateBR(range.min)} a ${formatDateBR(range.max)}.`;
+  const toolError = f.errors.toolId;
+  const canSubmit = tools.some((t) => String(t.id) === f.toolId) && !!f.dueDate && !liveDueError;
+
+  return `
+  <div class="form-stack">
+    ${inspectorNoticeHtml(f.inspector)}
 
     <form class="card panel" data-submit="registrarEmprestimo" novalidate>
       ${formFieldHtml({
@@ -738,15 +868,15 @@ function loanDetailsStepHtml(f) {
         </select>`,
       })}
       ${formFieldHtml({
-        id: 'loan-dueDate', label: 'Previsão de Devolução', required: true, error: dueError,
-        control: `<input ${fieldAttrs({ id: 'loan-dueDate', field: 'loanForm.dueDate', error: dueError, live: true, required: true })} class="input input--muted${dueError ? ' is-invalid' : ''}" type="date" min="${todayISO()}" value="${esc(f.dueDate)}">`,
+        id: 'loan-dueDate', label: 'Previsão de Devolução', required: true, error: dueError, hint: dueHint,
+        control: `<input ${fieldAttrs({ id: 'loan-dueDate', field: 'loanForm.dueDate', error: dueError, hint: dueHint, live: true, required: true })} class="input input--muted${dueError ? ' is-invalid' : ''}" type="date" min="${range.min}" max="${range.max}" value="${esc(f.dueDate)}">`,
       })}
       ${formFieldHtml({
         id: 'loan-notes', label: 'Observações', error: f.errors.notes,
         control: `<textarea ${fieldAttrs({ id: 'loan-notes', field: 'loanForm.notes', error: f.errors.notes })} class="input${f.errors.notes ? ' is-invalid' : ''}" rows="4" maxlength="500" placeholder="Observações sobre o empréstimo...">${esc(f.notes)}</textarea>`,
       })}
       <div class="form-actions form-actions--inset">
-        <button type="button" class="btn btn--secondary" data-action="backToIdentify"${saving ? ' disabled' : ''}>Voltar</button>
+        <button type="button" class="btn btn--secondary" data-action="backToIdentify" data-form="loanForm"${saving ? ' disabled' : ''}>Voltar</button>
         ${submitButtonHtml({ id: 'loan-submit', label: 'Registrar Empréstimo', busyLabel: 'Registrando…', busy: saving, disabled: !canSubmit })}
       </div>
     </form>
@@ -757,27 +887,40 @@ function loanDetailsStepHtml(f) {
 
 function returnFormView() {
   const f = state.returnForm;
-  const loans = openLoans();
+  const identifying = f.step === 'identificar';
+  return `
+  <div class="page ${identifying ? 'page--md' : 'page--sm'}">
+    ${pageHeaderHtml('Registrar Devolução', identifying
+      ? 'Identifique o inspetor para listar os empréstimos ativos'
+      : 'Selecione o empréstimo ativo para registrar a devolução da ferramenta')}
+    ${identifying ? identifyStepHtml('returnForm') : returnDetailsStepHtml(f)}
+  </div>`;
+}
+
+// Lista os empréstimos em aberto do inspetor identificado, inclusive os atrasados.
+function returnDetailsStepHtml(f) {
+  const loans = openLoans().filter((l) => l.inspectorId === f.inspector.id);
   const selected = loans.find((l) => String(l.id) === f.loanId);
   const saving = state.pending === 'returnLoan';
   const error = f.errors.loanId;
-  const optionLabel = (l) => `${l.tool.code} - ${l.tool.name} (${l.inspector.name})${l.status === 'atrasado' ? ' · Atrasado' : ''}`;
+  const optionLabel = (l) => `${l.tool.code} - ${l.tool.name}${l.status === 'atrasado' ? ' · Atrasado' : ''}`;
   const selectClass = ['input', selected && 'is-selected', error && 'is-invalid'].filter(Boolean).join(' ');
 
   return `
-  <div class="page page--sm">
-    ${pageHeaderHtml('Registrar Devolução', 'Selecione o empréstimo ativo para registrar a devolução da ferramenta')}
+  <div class="form-stack">
+    ${inspectorNoticeHtml(f.inspector)}
     <form class="card panel" data-submit="registrarDevolucao" novalidate>
       ${formFieldHtml({
         id: 'return-loanId', label: 'Empréstimo Ativo', required: true, error,
         control: `<select ${fieldAttrs({ id: 'return-loanId', field: 'returnForm.loanId', error, live: true, required: true })} class="${selectClass}"${loans.length ? '' : ' disabled'}>
-          ${optionHtml('', loans.length ? 'Selecione um empréstimo' : 'Nenhum empréstimo em aberto', false)}
+          ${optionHtml('', loans.length ? 'Selecione um empréstimo' : 'Nenhum empréstimo ativo', false)}
           ${loans.map((l) => optionHtml(l.id, optionLabel(l), selected && l.id === selected.id)).join('')}
         </select>`,
       })}
+      ${loans.length ? '' : '<p class="notice-muted">Este inspetor não possui empréstimos ativos para devolução.</p>'}
       ${selected ? loanSummaryHtml(selected) : ''}
       <div class="form-actions form-actions--inset">
-        <button type="button" class="btn btn--secondary" data-action="cancel">Cancelar</button>
+        <button type="button" class="btn btn--secondary" data-action="backToIdentify" data-form="returnForm"${saving ? ' disabled' : ''}>Voltar</button>
         ${submitButtonHtml({ id: 'return-submit', label: 'Registrar Devolução', busyLabel: 'Registrando…', busy: saving, disabled: !selected })}
       </div>
     </form>
@@ -801,6 +944,64 @@ function loanSummaryHtml(loan) {
       ${item('Data Empréstimo:', formatDateBR(loan.loanDate))}
       ${item('Prev. Devolução:', `${formatDateBR(loan.dueDate)}${late ? ' (atrasado)' : ''}`, late)}
     </div>
+  </div>`;
+}
+
+/* ---------- markup: login ---------- */
+
+function loginView() {
+  const f = state.loginForm;
+  const busy = state.pending === 'login';
+  const userError = f.errors.username;
+  const passError = f.errors.password;
+
+  return `
+  <div class="login">
+    <section class="login__brand">
+      <img class="login__mark" src="assets/img/marca-login.png" alt="" width="92">
+      <p class="login__title">${esc(APP.name)}</p>
+      <p class="login__subtitle">Sistema de Gestão de Ferramentas</p>
+      <span class="login__version">${esc(APP.version)}</span>
+    </section>
+
+    <section class="login__panel">
+      <img class="login__org" src="assets/img/ternium.png" alt="${esc(APP.company)}">
+      <form class="login__box" data-submit="login" novalidate>
+        <h1 id="page-title" class="login__heading" tabindex="-1">Fazer Login</h1>
+        <p class="page-subtitle">Acesse a gestão de ferramentas</p>
+
+        <div class="form-group">
+          <div class="login__label-row">
+            <label class="form-label" for="login-username">Usuário</label>
+            <span class="login__counter" aria-hidden="true">${f.username.length}/${LIMITS.usernameMax}</span>
+          </div>
+          <div class="searchbox searchbox--field${userError ? ' is-invalid' : ''}">
+            ${icon('user', 16, { sw: 1.8 })}
+            <input ${fieldAttrs({ id: 'login-username', field: 'loginForm.username', error: userError, live: true, required: true })} type="text" maxlength="${LIMITS.usernameMax}" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Digite seu usuário 8ID" value="${esc(f.username)}">
+          </div>
+          ${userError ? `<span id="login-username-error" class="field-error">${esc(userError)}</span>` : ''}
+        </div>
+
+        <div class="form-group">
+          <div class="login__label-row">
+            <label class="form-label" for="login-password">Senha</label>
+            <a class="login__forgot" href="${esc(LOGIN.forgotPasswordUrl)}" target="_blank" rel="noopener noreferrer">Esqueci minha senha</a>
+          </div>
+          <div class="searchbox searchbox--field${passError ? ' is-invalid' : ''}">
+            ${icon('lock', 16, { sw: 1.8 })}
+            <input ${fieldAttrs({ id: 'login-password', field: 'loginForm.password', error: passError, required: true })} type="${f.showPassword ? 'text' : 'password'}" autocomplete="current-password" placeholder="Digite sua senha" value="${esc(f.password)}">
+            <button type="button" id="login-toggle-password" class="icon-btn icon-btn--sm" data-action="togglePassword" aria-label="${f.showPassword ? 'Ocultar senha' : 'Mostrar senha'}" aria-pressed="${f.showPassword}">
+              ${icon(f.showPassword ? 'eyeOff' : 'eye', 18, { sw: 1.8 })}
+            </button>
+          </div>
+          ${passError ? `<span id="login-password-error" class="field-error">${esc(passError)}</span>` : ''}
+        </div>
+
+        <button type="submit" id="login-submit" class="btn btn--primary btn--block login__submit${busy ? ' is-loading' : ''}"${state.pending ? ' disabled' : ''}${busy ? ' aria-busy="true"' : ''}>${busy ? 'Entrando…' : 'Entrar'}</button>
+        <p class="field-hint login__hint">Protótipo: qualquer usuário e senha entram.</p>
+        <a class="login__hub" href="${esc(APP.hubUrl)}">${icon('grid', 14, { sw: 1.8 })}Todos os protótipos</a>
+      </form>
+    </section>
   </div>`;
 }
 
@@ -863,8 +1064,12 @@ async function withPending(key, task) {
 const ACTIONS = {
   toggleMenu: () => setState({ menuOpen: !state.menuOpen, ...closedFilters() }),
   closeMenu: () => setState({ menuOpen: false }),
-  // Sem tela de login no protótipo: sair leva de volta ao catálogo de protótipos.
-  logout: () => window.location.assign(APP.hubUrl),
+  logout: () => {
+    writeSession(false);
+    state = { ...state, session: false, redirect: null };
+    goTo('login');
+  },
+  togglePassword: () => patchForm('loginForm', { showPassword: !state.loginForm.showPassword }),
   reload: () => window.location.reload(),
   retryBoot: () => boot(),
 
@@ -901,21 +1106,22 @@ const ACTIONS = {
     focusElement('#tool-image');
   },
 
-  facialRecognition: () => withPending('recognizeFace', async () => {
-    patchForm('loanForm', { errors: {} });
+  facialRecognition: ({ form }) => withPending('recognizeFace', async () => {
+    const { view } = IDENTIFY[form];
+    patchForm(form, { errors: {} });
     try {
       const inspector = await api.recognizeFace();
-      if (stillOn('novoEmprestimo')) identifyInspector(inspector);
+      if (stillOn(view)) identifyInspector(form, inspector);
     } catch (err) {
-      if (!stillOn('novoEmprestimo')) return;
-      if (err instanceof ApiError && err.code === 'NOT_RECOGNIZED') patchForm('loanForm', { errors: { face: err.message } });
+      if (!stillOn(view)) return;
+      if (err instanceof ApiError && err.code === 'NOT_RECOGNIZED') patchForm(form, { errors: { face: err.message } });
       else handleError(err);
     }
   }),
 
-  backToIdentify: () => {
-    setState({ loanForm: emptyLoanForm() });
-    if (!IS_TOUCH) focusElement('#loan-badge');
+  backToIdentify: ({ form }) => {
+    setState({ [form]: form === 'loanForm' ? emptyLoanForm() : emptyReturnForm() });
+    if (!IS_TOUCH) focusElement(`#${IDENTIFY[form].prefix}-badge`);
   },
 
   resetData: () => {
@@ -933,9 +1139,9 @@ const ACTIONS = {
   },
 };
 
-function identifyInspector(inspector) {
-  setState({ pending: null, loanForm: { ...state.loanForm, step: 'formulario', inspector, errors: {} } });
-  if (!IS_TOUCH) focusElement('#loan-toolId');
+function identifyInspector(form, inspector) {
+  setState({ pending: null, [form]: { ...state[form], step: 'formulario', inspector, errors: {} } });
+  if (!IS_TOUCH) focusElement(IDENTIFY[form].next);
 }
 
 function toolInputFromForm(f) {
@@ -972,16 +1178,38 @@ const SUBMITS = {
     });
   },
 
-  confirmId: () => {
-    const badge = state.loanForm.badge.trim();
-    if (!badge) return showFieldErrors('loanForm', 'loan', { badge: MESSAGES.badgeRequired });
+  login: () => {
+    const { username, password } = state.loginForm;
+    const errors = {};
+    if (!username.trim()) errors.username = MESSAGES.required;
+    if (!password) errors.password = MESSAGES.required;
+    if (Object.keys(errors).length) return showFieldErrors('loginForm', 'login', errors);
+
+    return withPending('login', async () => {
+      try {
+        await api.login({ username, password });
+        if (!stillOn('login')) return;
+        writeSession(true);
+        const target = state.redirect || 'dashboard';
+        state = { ...state, session: true, redirect: null, pending: null };
+        goTo(target);
+      } catch (err) {
+        if (stillOn('login')) handleError(err, { form: 'loginForm', prefix: 'login' });
+      }
+    });
+  },
+
+  confirmId: ({ form }) => {
+    const { view, prefix } = IDENTIFY[form];
+    const badge = state[form].badge.trim();
+    if (!badge) return showFieldErrors(form, prefix, { badge: MESSAGES.badgeRequired });
 
     return withPending('findInspector', async () => {
       try {
         const inspector = await api.findInspectorByBadge(badge);
-        if (stillOn('novoEmprestimo')) identifyInspector(inspector);
+        if (stillOn(view)) identifyInspector(form, inspector);
       } catch (err) {
-        if (stillOn('novoEmprestimo')) handleError(err, { form: 'loanForm', prefix: 'loan' });
+        if (stillOn(view)) handleError(err, { form, prefix });
       }
     });
   },
@@ -1010,7 +1238,7 @@ const SUBMITS = {
 
     return withPending('returnLoan', async () => {
       try {
-        await api.returnLoan(loanId);
+        await api.returnLoan(loanId, state.returnForm.inspector.id);
         queueToast('Devolução registrada com sucesso!');
         if (stillOn('registrarDevolucao')) goTo('emprestimos', { db: api.snapshot(), pending: null, loanList: { ...EMPTY_LIST } });
         else setState({ db: api.snapshot() });
@@ -1091,9 +1319,10 @@ function mainHtml() {
 
 function render() {
   const saved = captureFocus();
+  const bare = state.status === 'ready' && VIEWS[state.view].bare; // login: tela cheia, sem topo e menu
   appEl.innerHTML = `
-    ${headerHtml()}
-    ${sidebarHtml()}
+    ${bare ? '' : headerHtml()}
+    ${bare ? '' : sidebarHtml()}
     <main id="main">${mainHtml()}</main>
     ${toastHtml()}`;
   restoreFocus(saved);
@@ -1129,7 +1358,7 @@ appEl.addEventListener('change', (e) => {
 appEl.addEventListener('submit', (e) => {
   e.preventDefault();
   const handler = SUBMITS[e.target.dataset.submit];
-  if (handler) run(handler);
+  if (handler) run(handler, e.target.dataset);
 });
 
 document.addEventListener('keydown', (e) => {
@@ -1189,9 +1418,11 @@ async function boot() {
   setState({ status: 'loading', bootError: null });
   try {
     const db = await api.load();
-    const view = viewFromHash();
+    const requested = viewFromHash();
+    const view = resolveView(requested);
     const def = VIEWS[view];
     state = { ...state, ...(def.onEnter ? def.onEnter() : null), db, view, status: 'ready' };
+    if (view !== requested && def.route !== null) history.replaceState(null, '', `#/${def.route}`);
     if (storageMode === 'memory') queueToast(MESSAGES.storageUnavailable, 'warning');
     updateTitle(view);
     render();

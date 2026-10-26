@@ -6,21 +6,30 @@ import { isLeaf, locationAncestors, locationByCode, locationChildren } from './m
 
 const firstId = (db, table) => (db[table][0] ? db[table][0].id : '');
 
+export const emptyBatch = () => ({ active: false, selected: [] });
+
 export function defaultUi() {
   return {
     notifications: { expanded: [] },
-    orders: { tab: 'todas', search: '' },
-    orderDetail: { tab: 'operacoes' },
+    orders: { tab: 'todas', search: '', batch: emptyBatch() },
+    // collapsed: operações recolhidas · panels: painel aberto por operação (relogio | anexos | notas | lupa)
+    // closedConfirmations: confirmações recolhidas ('0040:0') · slides: slide atual do carrossel por operação
+    orderDetail: { tab: 'operacoes', collapsed: [], panels: {}, closedConfirmations: [], slides: {} },
     myRequests: { tab: 'todas', search: '' },
     notes: { search: '' },
     events: { search: '' },
-    eventsOrder: { tab: 'todos', search: '' },
+    eventsGroup: { tab: 'todos', search: '' },
   };
 }
+
+export const loginForm = () => ({ username: '', password: '', showPassword: false, errors: {} });
 
 export const requestForm = () => ({ orderCode: '', errors: {} });
 
 export const registrationForm = () => ({ value: '', errors: {} });
+
+// Seleção de pessoas para a operação. `start`: depois de incluir, inicia a operação (fluxo do Play).
+export const peopleForm = ({ orderCode, operation, start = false }) => ({ orderCode, operation, start, selected: [], search: '' });
 
 export function emergencyForm(db) {
   const location = locationByCode(EMERGENCY_ORDER.defaultLocationCode);
@@ -52,12 +61,41 @@ export function operationForm(emergency) {
   };
 }
 
-export function noteForm(db) {
-  return {
+const toInput = (iso) => (iso ? iso.slice(0, 16) : '');
+
+// Formulário de nota. `note`: edição de nota existente (tipo e número da ordem ficam travados).
+// `link`: nota criada a partir de uma operação ({ orderCode, operation, point, locationCode }).
+export function noteForm(db, { note = null, link = null } = {}) {
+  const base = {
     draftId: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    editCode: note ? note.code : null,
+    link,
+    photoProcessing: false,
+    errors: {},
+  };
+  if (note) {
+    return {
+      ...base,
+      type: note.type,
+      orderNumber: note.orderNumber,
+      locationCode: note.locationCode,
+      description: note.description,
+      longText: note.longText,
+      startAt: toInput(note.startAt),
+      endAt: toInput(note.endAt),
+      planningGroupId: note.planningGroupId,
+      workCenterId: note.workCenterId,
+      failureProbability: note.failureProbability,
+      maintenanceImpact: note.maintenanceImpact,
+      priority: note.priority,
+      photos: (note.photos || []).slice(),
+    };
+  }
+  return {
+    ...base,
     type: '',
     orderNumber: '',
-    locationCode: '',
+    locationCode: link && link.locationCode ? link.locationCode : '',
     description: '',
     longText: '',
     startAt: nowForInput(),
@@ -68,8 +106,6 @@ export function noteForm(db) {
     maintenanceImpact: NOTE_DEFAULTS.maintenanceImpact,
     priority: NOTE_DEFAULTS.priority,
     photos: [],
-    photoProcessing: false,
-    errors: {},
   };
 }
 

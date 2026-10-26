@@ -91,13 +91,67 @@ export function dialogHeaderHtml(title) {
 }
 
 // Confirmação estilizada no lugar do window.confirm. Resolve true/false.
-export async function confirmDialog({ title, text, confirmLabel = t('common.confirm'), danger = false }) {
+// `html` (confiável) entra abaixo do texto, ex.: um aviso destacado.
+export async function confirmDialog({ title, text = '', html = '', confirmLabel = t('common.confirm'), cancelLabel = t('common.cancel'), danger = false }) {
   const result = await openDialog(`
     ${dialogHeaderHtml(title)}
-    <p class="dialog__text">${esc(text)}</p>
+    ${text ? `<p class="dialog__text">${esc(text)}</p>` : ''}
+    ${html ? `<div class="dialog__body">${html}</div>` : ''}
     <div class="dialog__actions">
-      <button type="button" class="btn btn--secondary" data-dialog-close="cancel">${esc(t('common.cancel'))}</button>
+      <button type="button" class="btn btn--secondary" data-dialog-close="cancel">${esc(cancelLabel)}</button>
       <button type="button" class="btn ${danger ? 'btn--danger' : 'btn--primary'}" data-dialog-close="confirm" autofocus>${esc(confirmLabel)}</button>
     </div>`, { variant: 'confirm' });
   return result === 'confirm';
+}
+
+// Mensagens de erro nos campos do diálogo: <p data-error="campo"> e o contêiner [data-name="campo"].
+function showDialogErrors(errors) {
+  dialogEl.querySelectorAll('[data-error]').forEach((el) => {
+    const error = errors[el.dataset.error];
+    el.textContent = error ? t(error.key, error.vars) : '';
+    el.hidden = !error;
+  });
+  dialogEl.querySelectorAll('[data-name]').forEach((el) => el.classList.toggle('is-invalid', !!errors[el.dataset.name]));
+  const first = Object.keys(errors).map((name) => dialogEl.querySelector(`[data-name="${name}"] input, [data-name="${name}"] select, [data-name="${name}"] textarea`)).find(Boolean);
+  if (first) first.focus();
+}
+
+// Diálogo com formulário (registro de desvio, título da foto, inclusão de pessoas…).
+// O HTML traz um <form> com botão submit. `read(form)` lê os valores e `validate(values)` devolve
+// erros por campo ({ campo: { key, vars } }): com erro o diálogo continua aberto e mostra as
+// mensagens. `onChange(form, event)` trata interações (ex.: "Selecionar tudo").
+// Resolve com os valores confirmados ou null (cancelado).
+export async function formDialog(html, { read, validate = () => ({}), onChange = null } = {}) {
+  let values = null;
+  const controller = new AbortController();
+  const { signal } = controller;
+  const result = openDialog(html, { variant: 'form' });
+
+  dialogEl.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const current = read(e.target);
+    const errors = validate(current);
+    if (Object.keys(errors).length) {
+      showDialogErrors(errors);
+      return;
+    }
+    values = current;
+    closeDialog('confirm');
+  }, { signal });
+
+  const changed = (e) => {
+    const wrap = e.target.closest('[data-name]');
+    if (wrap && wrap.classList.contains('is-invalid')) {
+      wrap.classList.remove('is-invalid');
+      const error = dialogEl.querySelector(`[data-error="${wrap.dataset.name}"]`);
+      if (error) error.hidden = true;
+    }
+    if (onChange) onChange(e.target.form || dialogEl.querySelector('form'), e);
+  };
+  dialogEl.addEventListener('change', changed, { signal });
+  dialogEl.addEventListener('input', changed, { signal });
+
+  const closed = await result;
+  controller.abort();
+  return closed === 'confirm' ? values : null;
 }

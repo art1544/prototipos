@@ -30,7 +30,7 @@ function operationsHtml(f) {
     <div class="panel">
       <div class="panel__header">
         <span class="panel__cols"><span>${esc(t('emergency.colOperation'))}</span><span>${esc(t('emergency.colDescription'))}</span></span>
-        <a id="em-operations" class="icon-btn" href="${hrefFor('solicitacao/emergencia/operacao')}" aria-label="${esc(t('emergency.addOpAria'))}"${error ? ' aria-describedby="em-operations-error"' : ''}>${icon('plus')}</a>
+        <a id="em-operations" class="tool-btn tool-btn--primary" href="${hrefFor('solicitacao/emergencia/operacao')}" aria-label="${esc(t('emergency.addOpAria'))}"${error ? ' aria-describedby="em-operations-error"' : ''}>${icon('plus')}<span>${esc(t('emergency.addOpButton'))}</span></a>
       </div>
       ${rows}
     </div>
