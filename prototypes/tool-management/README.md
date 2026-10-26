@@ -30,7 +30,7 @@ index.html                  casca da página
 emails/devolucao-atrasada.html  modelo do e-mail de alerta ao gestor (link no menu lateral)
 data/db.json                banco de dados de exemplo (todas as entidades)
 assets/css/styles.css       estilos (tokens de cor/tipografia no topo)
-assets/img/favicon.svg
+assets/img/logo.png         logo do app (topo, favicon e catálogo)
 assets/img/marca-login.png, ternium.png   imagens da tela de login
 assets/js/config.js         identidade, regras, textos de erro e cores de status
 assets/js/utils.js          datas, texto, imagens e ícones

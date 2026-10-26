@@ -340,7 +340,7 @@ function headerHtml() {
         ${icon('menu', 20, { sw: 1.9 })}
       </button>
       <button type="button" class="brand" data-action="go" data-view="dashboard" aria-label="${esc(APP.name)} – ir para o início">
-        <span class="brand__logo">${icon('wrench', 16, { sw: 2 })}</span>
+        <img class="brand__logo" src="assets/img/logo.png" alt="" width="26" height="26">
         <span class="brand__name">${esc(APP.name)}</span>
       </button>
       <span class="topbar__divider" aria-hidden="true"></span>

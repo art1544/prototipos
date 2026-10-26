@@ -24,7 +24,7 @@
       "version": "1.0.0",
       "updatedAt": "2026-10-26",
       "path": "prototypes/tool-management/",
-      "icon": "prototypes/tool-management/assets/img/favicon.svg",
+      "icon": "prototypes/tool-management/assets/img/logo.png",
       "accent": "#ff7800",
       "tags": ["Inventário", "Empréstimos", "Dashboard"]
     }
