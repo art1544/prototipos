@@ -118,7 +118,6 @@ export default {
     orderNumberInvalid: 'Use solo números (hasta {max} dígitos).',
     registrationRequired: 'Ingrese la nueva matrícula.',
     registrationFirst: 'Ingrese su matrícula.',
-    registrationInvalid: 'Use solo números ({min} a {max} dígitos).',
     registrationSame: 'La nueva matrícula debe ser diferente de la actual.',
     photoType: 'Formato no admitido. Elija una imagen.',
     photoSize: 'La foto debe tener como máximo {max} MB.',

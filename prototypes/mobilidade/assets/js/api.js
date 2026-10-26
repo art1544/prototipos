@@ -436,9 +436,9 @@ export function validateNoteInput(input, data) {
 export function validateRegistration(value, user) {
   const errors = {};
   const text = String(value || '').trim();
-  const pattern = new RegExp(`^\\d{${LIMITS.registrationMin},${LIMITS.registrationMax}}$`);
+  // A matrícula pode ter letras e números: só é obrigatória e precisa ser diferente da atual.
   if (!text) errors.registration = msg(user && user.registration ? 'validation.registrationRequired' : 'validation.registrationFirst');
-  else if (!pattern.test(text)) errors.registration = msg('validation.registrationInvalid', { min: LIMITS.registrationMin, max: LIMITS.registrationMax });
+  else if (text.length > LIMITS.registrationMax) errors.registration = msg('validation.tooLong', { max: LIMITS.registrationMax });
   else if (user && user.registration && text === user.registration) errors.registration = msg('validation.registrationSame');
   return errors;
 }

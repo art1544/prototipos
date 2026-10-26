@@ -22,7 +22,7 @@ export function registrationView({ first = false } = {}) {
       ${inputFieldHtml({
         id: 'rg-registration', path: 'forms.registration.value', label: t(first ? 'fields.registration' : 'fields.registrationNew'), value: f.value, required: true,
         error: f.errors.registration, placeholder: t(first ? 'placeholders.registrationFirst' : 'placeholders.registration'),
-        attrs: `inputmode="numeric" maxlength="${LIMITS.registrationMax}" enterkeyhint="done"`,
+        attrs: `maxlength="${LIMITS.registrationMax}" autocapitalize="none" autocomplete="off" spellcheck="false" enterkeyhint="done"`,
       })}
     </form>
     ${actionBarHtml({ form: 'form-registration', submitLabel: t('common.save'), busyLabel: t('common.saving'), busy: isBusy('registration'), noBack: first })}`, { cls: 'view--form' });

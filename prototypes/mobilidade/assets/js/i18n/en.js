@@ -118,7 +118,6 @@ export default {
     orderNumberInvalid: 'Use only numbers (up to {max} digits).',
     registrationRequired: 'Enter the new employee ID.',
     registrationFirst: 'Enter your employee ID.',
-    registrationInvalid: 'Use only numbers ({min} to {max} digits).',
     registrationSame: 'The new employee ID must be different from the current one.',
     photoType: 'Unsupported format. Choose an image.',
     photoSize: 'The photo must be at most {max} MB.',

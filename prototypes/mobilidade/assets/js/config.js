@@ -75,8 +75,7 @@ export const PHOTO = {
 
 export const LIMITS = {
   orderCodeMax: 20,
-  registrationMin: 4,
-  registrationMax: 10,
+  registrationMax: 20,
   shortTextMax: 120,
   longTextMax: 1000,
   peopleMax: 99,

@@ -27,7 +27,7 @@ npm run dev
   No navegador do celular, **Adicionar à tela inicial** abre o protótipo em tela cheia, como app.
 
 **Login:** qualquer usuário e senha preenchidos entram. Na primeira vez o app pede a matrícula
-(4 a 10 dígitos) antes de liberar o Início.
+(letras e números) antes de liberar o Início.
 
 ## Layout responsivo
 
@@ -176,7 +176,7 @@ Ao mudar a estrutura do `db.json`, incremente `_meta.schemaVersion` e `API_CONFI
   (PE/PER → LE) e recebe o retorno dos que estavam no SAP (LE → PR); *Reprocessar* devolve os com
   erro para a fila do aparelho (ER → PER), todos ou um a um.
 - **Local de instalação:** só locais sem filhos podem ser escolhidos; há busca por código/descrição.
-- **Matrícula:** só números (4 a 10 dígitos), diferente da atual.
+- **Matrícula:** obrigatória, pode ter letras e números (até 20 caracteres) e precisa ser diferente da atual.
 - **Qualidade da rede (topo):** vem do navegador (`navigator.connection` / offline); tocar explica o
   nível.
 
