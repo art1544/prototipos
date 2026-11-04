@@ -27,6 +27,20 @@
       "icon": "prototypes/tool-management/assets/img/logo.png",
       "accent": "#ff7800",
       "tags": ["Inventário", "Empréstimos", "Dashboard"]
+    },
+    {
+      "id": "monitor-mobilidade",
+      "name": "Monitor Mobilidade",
+      "client": "Ternium",
+      "project": "Saúde diária do app Mobilidade",
+      "description": "Monitor da rotina diária do Mobilidade: as 7 perguntas de saúde (filas, ordens recebidas, retornos ao SAP, apontamentos, login) com a explicação de cada número, resultado do despacho para a área de negócio com filtros e Excel, histórico em mapa de calor, PDF e resumo para e-mail/Teams.",
+      "platform": "web",
+      "version": "1.0.0",
+      "updatedAt": "2026-11-04",
+      "path": "prototypes/monitor-mobilidade/",
+      "icon": "prototypes/monitor-mobilidade/assets/img/mobilidade.png",
+      "accent": "#f37021",
+      "tags": ["Monitoramento", "Despacho", "SAP", "Relatório"]
     }
   ]
 }

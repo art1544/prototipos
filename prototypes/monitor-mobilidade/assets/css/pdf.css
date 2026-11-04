@@ -1,0 +1,50 @@
+/* Relatório em PDF (A4): layout de impressão usado pelo botão "Exportar PDF".
+   A tela lê este arquivo e o embute no HTML do relatório, que o MonitorLocal imprime com o Edge/Chrome
+   (ou o navegador imprime, quando não há Edge/Chrome). Cores fixas: o PDF não segue o tema da tela. */
+
+@page{size:A4;margin:16mm 15mm 18mm;@bottom-left{content:"Monitor Mobilidade · Ternium";font:8.5px "Red Hat Text",Arial,sans-serif;color:#A1A1AA}@bottom-right{content:"Página " counter(page) " de " counter(pages);font:8.5px "Red Hat Text",Arial,sans-serif;color:#A1A1AA}}
+*{box-sizing:border-box}html,body{margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{font:10.5px/1.5 "Red Hat Text","Segoe UI",Arial,sans-serif;color:#18181B}
+.mono{font-family:"Red Hat Mono",Consolas,monospace}
+h1,h2,h3,h4{margin:0;letter-spacing:-.01em;line-height:1.25}
+.cab{display:flex;align-items:flex-start;gap:14px;padding-bottom:12px}
+.cab img{width:34px;height:34px;border-radius:8px;flex:none}
+.cab .t{flex:1}.cab h1{font-size:17px;font-weight:650}.cab .sub{color:#71717A;font-size:10.5px;margin-top:2px}
+.cab .dt{text-align:right}.cab .dt b{display:block;font-size:20px;font-weight:650;letter-spacing:-.02em}.cab .dt span{color:#71717A;font-size:9.5px}
+.faixa{height:3px;border-radius:2px;background:linear-gradient(90deg,#FAAF40,#F05D22);margin-bottom:16px}
+.amb{display:inline-block;font:600 8.5px "Red Hat Mono",monospace;letter-spacing:.05em;padding:2px 6px;border-radius:4px;border:1px solid #E4E4E7;color:#52525B;vertical-align:2px;margin-left:6px}
+.amb.PRODUÇÃO{border-color:#FCA5A5;color:#B91C1C;background:#FEF2F2}
+.ver{display:flex;gap:14px;align-items:center;border:1px solid #E4E4E7;border-left:4px solid #A1A1AA;border-radius:8px;padding:12px 14px;margin-bottom:12px}
+.ver.OK{border-left-color:#16A34A}.ver.ATENCAO{border-left-color:#F59E0B}.ver.CRITICO{border-left-color:#DC2626}
+.ver h2{font-size:15px;font-weight:650}.ver .c{display:flex;gap:14px;margin-top:4px;color:#52525B}
+.ver .c i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:0}
+.ver .n{color:#71717A;font-size:9.5px;margin-top:3px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.kpi{border:1px solid #E4E4E7;border-radius:8px;padding:9px 11px;background:#FAFAFA}
+.kpi span{display:block;color:#52525B;font-size:9.5px}.kpi b{display:block;font-size:18px;font-weight:650;letter-spacing:-.02em;margin-top:2px}
+.kpi small{color:#71717A;font-size:9px}.kpi .bar{height:4px;border-radius:2px;background:#E4E4E7;margin-top:6px;overflow:hidden}.kpi .bar i{display:block;height:100%;background:#F36F21}
+h3.sec{font-size:11.5px;font-weight:650;margin:18px 0 8px;display:flex;align-items:center;gap:8px}
+h3.sec::before{content:"";width:3px;height:12px;border-radius:2px;background:#F36F21}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:5px 8px;border-bottom:1px solid #EDEDF0;vertical-align:top}
+th{font:600 8.5px "Red Hat Mono",monospace;text-transform:uppercase;letter-spacing:.05em;color:#71717A;background:#FAFAFA;border-bottom:1px solid #E4E4E7}
+td.n,th.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}td.n small{color:#A1A1AA;margin-left:5px}
+.st{display:inline-block;font-size:9px;font-weight:600;padding:1px 6px;border-radius:4px;border:1px solid #E4E4E7;color:#52525B;background:#F4F4F5;white-space:nowrap}
+.st.OK{color:#15803D;background:#F0FDF4;border-color:#BBF7D0}.st.ATENCAO{color:#B45309;background:#FFFBEB;border-color:#FDE68A}.st.CRITICO{color:#B91C1C;background:#FEF2F2;border-color:#FECACA}
+.num{font:600 10px "Red Hat Mono",monospace;color:#C2510F}
+.perg{break-inside:avoid;border:1px solid #E4E4E7;border-radius:9px;margin-bottom:10px;overflow:hidden}
+.perg .pc{display:flex;align-items:center;gap:9px;padding:8px 12px;background:#FAFAFA;border-bottom:1px solid #E4E4E7}
+.perg .pc h4{flex:1;font-size:11px;font-weight:600}
+.perg .pb{padding:10px 12px 10px 33px}
+.perg .resp{margin:0 0 8px;color:#27272A}
+.perg .dest{display:flex;align-items:baseline;gap:8px;margin:0 0 8px}.perg .dest b{font-size:17px;font-weight:650;letter-spacing:-.02em}.perg .dest span{color:#71717A}
+.duas{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+h5{margin:8px 0 4px;font:600 8.5px "Red Hat Mono",monospace;text-transform:uppercase;letter-spacing:.05em;color:#A1A1AA}
+.mot td:first-child{color:#3F3F46}.mot .acao{display:block;color:#A1A1AA;font-size:9px;margin-top:1px}
+ul.ach{margin:4px 0 0;padding-left:14px;color:#3F3F46}ul.ach li{margin:2px 0}ul.ach li::marker{color:#F36F21}
+.regra{margin-top:8px;padding-top:6px;border-top:1px dashed #E4E4E7;color:#71717A;font-size:9.5px}.regra b{color:#52525B;font-weight:600}
+.indice td:first-child{width:28px}.indice td:last-child{width:120px}
+.desp{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;border:1px solid #E4E4E7;border-radius:8px;padding:10px 12px}.desp dt{color:#71717A}.desp dd{margin:0;font-weight:500}
+.quebra{break-before:page}
+h1,h2,h3,h4,.dt b,.kpi b,.perg .dest b{font-family:"Red Hat Display","Red Hat Text",Arial,sans-serif;color:#000050}
+body{color:#2A2A4D}.kpi,.perg,.ver,.desp{border-radius:12px}.kpi{background:#F7F8FA}.num{color:#F37021}
+h3.sec::before{width:4px;height:13px}
