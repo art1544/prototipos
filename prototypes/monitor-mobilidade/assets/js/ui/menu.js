@@ -1,37 +1,63 @@
 /**
  * Menu "•••" do topo: abre e fecha com animação, fecha ao clicar fora ou num item, e navega pelo teclado
- * (setas, Esc devolve o foco ao botão).
+ * (setas; Esc devolve o foco ao botão).
  */
-import {$} from '../util/formato.js';
-import {moverRealce} from './realce.js';
+import { $ } from '../util/formato.js';
+import { moverRealce } from './realce.js';
+
+const DURACAO_FECHAR_MS = 200;
 
 export function iniciarMenu() {
-  const menu = $('menu'), bMais = $('bMais');
+  const menu = $('menu');
+  const botao = $('bMais');
+  const fechando = () => menu.classList.contains('fechando');
+  const aberto = () => !menu.hidden && !fechando();
 
   function abrir() {
-    menu.hidden = false; menu.classList.remove('fechando'); void menu.offsetWidth; menu.classList.add('abrindo');
-    bMais.setAttribute('aria-expanded', 'true');
-  }
-  function fechar(foco) {
-    if (menu.hidden || menu.classList.contains('fechando')) return;
-    bMais.setAttribute('aria-expanded', 'false');
-    menu.classList.remove('abrindo'); menu.classList.add('fechando');
-    const r = menu.querySelector('.realce'); if (r) r.classList.remove('on');
-    setTimeout(function () { if (menu.classList.contains('fechando')) { menu.hidden = true; menu.classList.remove('fechando'); } }, 200);
-    if (foco) bMais.focus();
+    menu.hidden = false;
+    menu.classList.remove('fechando');
+    void menu.offsetWidth; // reinicia a animação de abrir
+    menu.classList.add('abrindo');
+    botao.setAttribute('aria-expanded', 'true');
   }
 
-  bMais.addEventListener('click', function (ev) { ev.stopPropagation(); if (menu.hidden || menu.classList.contains('fechando')) abrir(); else fechar(); });
-  menu.addEventListener('click', function (ev) { if (ev.target.closest('[role=menuitem]')) fechar(); });
-  document.addEventListener('click', function (ev) { if (!menu.hidden && !ev.target.closest('.mais')) fechar(); });
-  document.addEventListener('keydown', function (ev) {
+  function fechar(devolverFoco = false) {
+    if (!aberto()) return;
+    botao.setAttribute('aria-expanded', 'false');
+    menu.classList.replace('abrindo', 'fechando') || menu.classList.add('fechando');
+    menu.querySelector('.realce')?.classList.remove('on');
+    setTimeout(() => {
+      if (!fechando()) return;
+      menu.hidden = true;
+      menu.classList.remove('fechando');
+    }, DURACAO_FECHAR_MS);
+    if (devolverFoco) botao.focus();
+  }
+
+  function navegar(evento) {
+    const itens = [...menu.querySelectorAll('[role=menuitem]:not([hidden])')];
+    const atual = itens.indexOf(document.activeElement);
+    const proximo =
+      evento.key === 'ArrowDown' ? (atual + 1) % itens.length : atual <= 0 ? itens.length - 1 : atual - 1;
+    evento.preventDefault();
+    itens[proximo].focus();
+    moverRealce(itens[proximo]);
+  }
+
+  botao.addEventListener('click', (evento) => {
+    evento.stopPropagation();
+    if (aberto()) fechar();
+    else abrir();
+  });
+  menu.addEventListener('click', (evento) => {
+    if (evento.target.closest('[role=menuitem]')) fechar();
+  });
+  document.addEventListener('click', (evento) => {
+    if (!menu.hidden && !evento.target.closest('.mais')) fechar();
+  });
+  document.addEventListener('keydown', (evento) => {
     if (menu.hidden) return;
-    const itens = [].slice.call(menu.querySelectorAll('[role=menuitem]')), i = itens.indexOf(document.activeElement);
-    if (ev.key === 'Escape') { fechar(true); }
-    else if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
-      ev.preventDefault();
-      const n = ev.key === 'ArrowDown' ? (i + 1) % itens.length : (i <= 0 ? itens.length - 1 : i - 1);
-      itens[n].focus(); moverRealce(itens[n]);
-    }
+    if (evento.key === 'Escape') fechar(true);
+    else if (evento.key === 'ArrowDown' || evento.key === 'ArrowUp') navegar(evento);
   });
 }

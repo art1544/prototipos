@@ -1,73 +1,126 @@
 /**
- * Login e saída. O login é o mesmo do app Mobilidade (/login devolve um JWT); só entram as chaves liberadas
+ * Login, saída e ambiente. O login é o mesmo do app Mobilidade (/login devolve um JWT); só entram as chaves liberadas
  * no backend (monitor-usuarios-permitidos). O token fica só na memória da página.
- * No protótipo, qualquer usuário e senha preenchidos entram (ver api.js).
  */
-import {$} from './util/formato.js';
-import {estado} from './estado.js';
-import {cabecalhos, servidor} from './api.js';
+import { APP } from './config.js';
+import { $ } from './util/formato.js';
+import { estado } from './estado.js';
+import { login, buscarAmbiente } from './api.js';
 
 /**
- * Mostra no topo o 8ID de quem entrou: claim nameid do token (DOMINIO\8ID) ou, sem ele, o usuário digitado.
+ * 8ID de quem entrou: claim nameid do token (DOMINIO\8ID) ou, sem ele, o usuário digitado.
  * O token não é validado aqui (isso é papel do backend); só é lido para exibir o nome.
  */
-function mostrarUsuario(tk, digitado) {
+function idDoUsuario(token, digitado) {
   let id = '';
   try {
-    const b = String(tk).split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    const c = JSON.parse(atob(b + '==='.slice((b.length + 3) % 4)));
-    id = String(c.nameid || c.unique_name || c.sub || '');
-  } catch (e) { /* token sem payload legível */ }
-  if (!id) id = String(digitado || '');
-  id = id.split('\\').pop().split('@')[0].trim().toUpperCase();
-  $('quemId').textContent = id; $('quem').hidden = !id;
+    const base64 = String(token).split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const claims = JSON.parse(atob(base64 + '==='.slice((base64.length + 3) % 4)));
+    id = String(claims.nameid || claims.unique_name || claims.sub || '');
+  } catch {
+    // token sem payload legível
+  }
+  return (id || String(digitado || '')).split('\\').pop().split('@')[0].trim().toUpperCase();
 }
 
-/** Volta para o login, limpando a sessão. msg aparece embaixo do formulário (ex.: sessão expirada). */
-export function sair(msg) {
+function mostrarUsuario(id) {
+  $('quemId').textContent = id;
+  $('quem').hidden = !id;
+}
+
+function ocultarSenha() {
+  const senha = $('senha');
+  const botao = $('bOlho');
+  senha.type = 'password';
+  botao.setAttribute('aria-pressed', 'false');
+}
+
+/** Volta para o login, limpando a sessão. A mensagem aparece embaixo do formulário (ex.: sessão expirada). */
+export function sair(mensagem = '') {
   estado.token = null;
   $('quem').hidden = true;
-  $('senha').type = 'password'; $('bOlho').setAttribute('aria-pressed', 'false');
-  $('app').hidden = true; $('login').hidden = false;
-  $('erroLogin').textContent = msg || '';
+  ocultarSenha();
+  $('app').hidden = true;
+  $('login').hidden = false;
+  $('erroLogin').textContent = mensagem;
+}
+
+function alternarSenha() {
+  const senha = $('senha');
+  const botao = $('bOlho');
+  const mostrar = senha.type === 'password';
+  const rotulo = mostrar ? 'Ocultar senha' : 'Mostrar senha';
+  senha.type = mostrar ? 'text' : 'password';
+  botao.setAttribute('aria-pressed', String(mostrar));
+  botao.setAttribute('aria-label', rotulo);
+  botao.title = rotulo;
+  senha.focus();
+}
+
+/** Lê e valida o formulário; espaços nas pontas são removidos. @returns {{usuario, senha} | null} */
+function lerFormulario() {
+  const campoUsuario = $('usuario');
+  const campoSenha = $('senha');
+  const usuario = campoUsuario.value.trim();
+  const senha = campoSenha.value.trim();
+  campoUsuario.value = usuario;
+  campoSenha.value = senha;
+  if (usuario && senha) return { usuario, senha };
+  $('erroLogin').textContent = usuario ? 'Informe a senha.' : 'Informe o usuário.';
+  (usuario ? campoSenha : campoUsuario).focus();
+  return null;
+}
+
+async function entrar(aoEntrar) {
+  const credenciais = lerFormulario();
+  if (!credenciais) return;
+  $('erroLogin').textContent = '';
+  $('bEntrar').disabled = true;
+  try {
+    const { token } = await login(credenciais.usuario, credenciais.senha);
+    estado.token = token;
+    mostrarUsuario(idDoUsuario(token, credenciais.usuario));
+    $('senha').value = '';
+    $('login').hidden = true;
+    $('app').hidden = false;
+    aoEntrar();
+  } catch (erro) {
+    $('erroLogin').textContent = erro.message;
+  } finally {
+    $('bEntrar').disabled = false;
+  }
 }
 
 /**
- * Liga o formulário de login (espaços nas pontas são removidos), o olho da senha e o botão Sair.
+ * Liga o formulário de login, o olho da senha e o botão Sair.
  * @param {() => void} aoEntrar chamado depois de um login aceito, com a tela principal já visível
  */
 export function iniciarSessao(aoEntrar) {
-  $('usuario').addEventListener('blur', function () { this.value = this.value.trim(); });
-
-  $('bOlho').addEventListener('click', function () {
-    const s = $('senha'), ver = s.type === 'password';
-    s.type = ver ? 'text' : 'password';
-    this.setAttribute('aria-pressed', ver ? 'true' : 'false');
-    this.setAttribute('aria-label', ver ? 'Ocultar senha' : 'Mostrar senha'); this.title = this.getAttribute('aria-label');
-    s.focus();
+  const campoUsuario = $('usuario');
+  campoUsuario.addEventListener('blur', () => (campoUsuario.value = campoUsuario.value.trim()));
+  $('bOlho').addEventListener('click', alternarSenha);
+  $('fLogin').addEventListener('submit', (evento) => {
+    evento.preventDefault();
+    entrar(aoEntrar);
   });
+  $('bSair').addEventListener('click', () => sair());
 
-  $('fLogin').addEventListener('submit', function (ev) {
-    ev.preventDefault();
-    const usuario = $('usuario').value.trim(), senha = $('senha').value.trim();
-    $('usuario').value = usuario; $('senha').value = senha;
-    if (!usuario || !senha) {
-      $('erroLogin').textContent = !usuario ? 'Informe o usuário.' : 'Informe a senha.';
-      (!usuario ? $('usuario') : $('senha')).focus();
-      return;
-    }
-    $('erroLogin').textContent = ''; $('bEntrar').disabled = true;
-    servidor('login', {method: 'POST', headers: cabecalhos(), body: JSON.stringify({usuario: usuario, senha: senha})})
-      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.message || ('Erro ' + r.status)); return j; }); })
-      .then(function (j) {
-        estado.token = j.token;
-        mostrarUsuario(j.token, $('usuario').value);
-        $('senha').value = ''; $('login').hidden = true; $('app').hidden = false;
-        aoEntrar();
-      })
-      .catch(function (e) { $('erroLogin').textContent = e.message; })
-      .then(function () { $('bEntrar').disabled = false; });
-  });
+  if (APP.avisoLogin) $('notaLogin').innerHTML = APP.avisoLogin;
+}
 
-  $('bSair').addEventListener('click', function () { sair(); });
+/**
+ * Mostra o ambiente (DEV, PRODUÇÃO, LOCAL...) ao lado do título e no login (em vermelho quando é produção) e no
+ * título da aba do navegador. Também vai no nome do PDF.
+ */
+export async function carregarAmbiente() {
+  const ambiente = await buscarAmbiente();
+  if (!ambiente?.nome) return;
+  estado.ambiente = ambiente;
+  for (const etiqueta of document.querySelectorAll('.amb')) {
+    etiqueta.textContent = ambiente.nome;
+    etiqueta.className = `amb ${ambiente.nome}`;
+    etiqueta.title = ambiente.url;
+    etiqueta.hidden = false;
+  }
+  document.title = `${APP.nome} · ${ambiente.nome}`;
 }

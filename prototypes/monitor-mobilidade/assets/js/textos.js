@@ -3,7 +3,7 @@
  * Chave = nome do campo no resumo do despacho, id do check (C03, C06...) ou bloco da tela.
  * Os números que chegam da API trazem a própria explicação (campo "explicacao"); aqui ficam só os da tela.
  */
-export const EXPL = {
+export const EXPLICACOES = {
   veredito: 'Pior status entre as perguntas do dia: Crítico vence Atenção, que vence OK. Perguntas "fora do monitor" ou "sem dados" não entram no veredito. A análise roda todo dia às 05:30 (novas tentativas às 06:30 e 08:00) e também quando uma lista de despacho é enviada.',
   usuariosEnvolvidos: 'Usuários diferentes que receberam ao menos uma ordem da lista no despacho. Coleta: OBJETOUSUARIO das ordens da lista, TIPO_OBJETO = ORDEN, ordem liberada e FECHA_MODIFICACION a partir do início do despacho. Cálculo: contagem de IDs de usuário distintos; é a base do % dos usuários.',
   semPendencia: 'Usuários do despacho sem nenhuma ordem nem retorno pendente por motivo do negócio. Pendências técnicas (da TI) não contam aqui. Cálculo: contagem; o % é sobre os usuários envolvidos.',
@@ -22,5 +22,5 @@ export const EXPL = {
   C06: 'Valor principal da pergunta 5 em cada dia, na visão geral (sem recorte de despacho): envios de ordem sem confirmação do app há mais de 2 h, com vínculo de até 1 mês, mais os que esgotaram as 8 tentativas. Fonte: OBJETOUSUARIO.',
   C07: 'Valor principal da pergunta 6 em cada dia, na visão geral: retornos do SAP sem confirmação do aparelho há mais de 2 h, mais os que esgotaram as 3 tentativas. Fonte: EVENT_NOTIFICATION_CONTROL.',
   C03: 'Valor principal da pergunta 3 em cada dia: apontamentos em LE com 3 envios ou mais ao Service Bus, sem retorno do SAP. Fonte: EVENTOS (15 dias de histórico).',
-  C09: 'Tempo de resposta, em milissegundos, do serviço de login do app na chamada de teste de cada dia.'
+  C09: 'Tempo de resposta, em milissegundos, do serviço de login do app na chamada de teste de cada dia.',
 };

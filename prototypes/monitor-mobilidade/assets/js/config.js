@@ -1,37 +1,69 @@
-// Configuração central do protótipo: identidade, regras do backend simuladas e parâmetros de teste.
+/**
+ * Configuração do protótipo: a mesma da tela real (APP, URLS, AMBIENTE_PRODUCAO, LIMITES) mais o que só o simulador
+ * usa (API_CONFIG, REGRAS, AMBIENTE, MESSAGES). Nada aqui é segredo.
+ */
 
-const params = new URLSearchParams(window.location.search);
+const parametros = new URLSearchParams(location.search);
 
-function numberParam(name, fallback) {
-  const raw = params.get(name);
-  if (raw === null || raw.trim() === '') return fallback;
-  const value = Number(raw);
-  return Number.isFinite(value) ? value : fallback;
+/** Parâmetro numérico da URL (?latencia=2000), ou o padrão quando ausente ou inválido. */
+function numeroDaUrl(nome, padrao) {
+  const bruto = parametros.get(nome);
+  if (bruto === null || bruto.trim() === '') return padrao;
+  const valor = Number(bruto);
+  return Number.isFinite(valor) ? valor : padrao;
 }
 
+// ---------- iguais à tela real (exceto onde indicado) ----------
+
 export const APP = {
-  name: 'Monitor Mobilidade',
-  version: '1.0.0',
-  hubUrl: '../../', // catálogo de protótipos (raiz do repositório)
+  nome: 'Monitor Mobilidade',
+  /** Link "Todos os protótipos" do menu: o catálogo na raiz do repositório. */
+  hubUrl: '../../',
+  /** Substitui a nota embaixo do formulário de login. */
+  avisoLogin: 'Protótipo: qualquer usuário e senha preenchidos entram.<br><a href="../../">Todos os protótipos</a>',
 };
+
+export const URLS = {
+  /** SheetJS (xlsx 0.18.5) local: a CSP do catálogo só aceita scripts da própria origem. */
+  sheetjs: 'assets/js/vendor/xlsx.full.min.js',
+  pdfCss: 'assets/css/pdf.css',
+  logo: 'assets/img/mobilidade.png',
+};
+
+export const AMBIENTE_PRODUCAO = 'PRODUÇÃO';
+
+export const LIMITES = {
+  diasHistorico: 30,
+  linhasTabela: 500,
+  acompanhamentoIntervaloMs: 15_000,
+  acompanhamentoPrazoMs: 8 * 60_000,
+  horaRelatorioAtrasado: 8,
+};
+
+// ---------- só do simulador ----------
 
 export const API_CONFIG = {
   dbUrl: 'data/db.json',
-  storageKey: 'monitor-mobilidade:db', // sempre prefixada pelo id: todos os protótipos dividem o mesmo localStorage
-  schemaVersion: 1, // incremente junto com _meta.schemaVersion do db.json ao mudar a estrutura
-  requestTimeoutMs: 10000,
-  // ?latencia=0 | ?latencia=2000 · ?erros=1 | ?erros=0.3
-  latencyMs: numberParam('latencia', null),
+  /** Sempre prefixada pelo id: todos os protótipos dividem o mesmo localStorage. */
+  storageKey: 'monitor-mobilidade:db',
+  /** Incremente junto com _meta.schemaVersion do db.json ao mudar a estrutura. */
+  schemaVersion: 1,
+  requestTimeoutMs: 10_000,
+  /** ?latencia=0 | ?latencia=2000 fixa a latência; sem o parâmetro ela varia dentro de latencyRangeMs. */
+  latencyMs: numeroDaUrl('latencia', null),
   latencyRangeMs: [200, 500],
-  failureRate: Math.min(1, Math.max(0, numberParam('erros', 0))),
-  // tempo que o "backend" leva para calcular o despacho ou refazer a análise (?calculo=<ms>)
-  calculoMs: Math.max(0, numberParam('calculo', 20000)),
+  /** ?erros=1 | ?erros=0.3: fração das chamadas que falham com 503. */
+  failureRate: Math.min(1, Math.max(0, numeroDaUrl('erros', 0))),
+  /** Tempo que o "backend" leva para calcular o despacho ou refazer a análise (?calculo=<ms>). */
+  calculoMs: Math.max(0, numeroDaUrl('calculo', 20_000)),
 };
 
-// Mesmas regras do backend real (MonitorAuth, MonitorService, MonitorStore).
+/** Mesmas regras do backend real (MonitorAuth, MonitorService, MonitorStore). */
 export const REGRAS = {
-  sessaoMs: 8 * 60 * 60000, // validade da sessão do monitor
-  minutosEntreManuais: 10, // envio de lista e "Rodar agora": no máximo 1 a cada 10 min
+  /** Validade da sessão do monitor. */
+  sessaoMs: 8 * 60 * 60_000,
+  /** Envio de lista e "Rodar agora": no máximo 1 a cada 10 min. */
+  minutosEntreManuais: 10,
   maxOrdens: 5000,
 };
 

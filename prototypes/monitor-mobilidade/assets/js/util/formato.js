@@ -1,39 +1,52 @@
 /**
- * Utilitários de DOM e de formatação (pt-BR). Toda saída que vai para innerHTML passa por esc() ou fmt().
+ * Atalhos de DOM e formatação pt-BR. As funções de formatação devolvem texto puro: o escape fica com html``.
  */
 
 /** Atalho para document.getElementById. */
 export const $ = (id) => document.getElementById(id);
 
-/** Escapa texto para uso seguro em HTML (conteúdo e atributos). */
-export function esc(v) {
-  return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
-    return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
-  });
-}
-
 /** Formatador de números do Brasil (1.234). */
-export const nf = new Intl.NumberFormat('pt-BR');
+export const numero = new Intl.NumberFormat('pt-BR');
 
-/** Número formatado; texto vem escapado; vazio vira "—". */
-export function fmt(n) {
-  return n == null || n === '' ? '—' : (typeof n === 'number' ? nf.format(n) : esc(n));
+const PERCENTUAL = { minimumFractionDigits: 1, maximumFractionDigits: 1 };
+
+/** Número formatado ("1.234"); texto passa como está; vazio vira "—". */
+export function fmt(valor) {
+  if (valor == null || valor === '') return '—';
+  return typeof valor === 'number' ? numero.format(valor) : String(valor);
 }
 
-/** Percentual de a sobre b com 1 casa ("12,5%"); sem base vira "—". */
-export function pct(a, b) {
-  return b ? (a * 100 / b).toLocaleString('pt-BR', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + '%' : '—';
+/** Percentual de parte sobre total com 1 casa ("12,5%"); sem total vira "—". */
+export function pct(parte, total) {
+  return total ? `${((parte * 100) / total).toLocaleString('pt-BR', PERCENTUAL)}%` : '—';
 }
 
 /** "2026-11-04" ou "2026-11-04T05:30" para "04/11/2026" ou "04/11/2026 05:30" (sem conversão de fuso). */
-export function dataBr(v) {
-  if (!v) return '';
-  const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/);
-  return m ? m[3] + '/' + m[2] + '/' + m[1] + (m[4] ? ' ' + m[4] + ':' + m[5] : '') : esc(v);
+export function dataBr(valor) {
+  if (!valor) return '';
+  const m = String(valor).match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/);
+  if (!m) return String(valor);
+  const [, ano, mes, dia, hora, minuto] = m;
+  return `${dia}/${mes}/${ano}${hora ? ` ${hora}:${minuto}` : ''}`;
 }
 
-/** Nome de coluna técnico para rótulo ("por_status" para "Por status"). */
-export function humano(k) {
-  const s = String(k).replace(/_/g, ' ');
-  return s.charAt(0).toUpperCase() + s.slice(1);
+/** "dd/mm" de uma data ISO. */
+export const diaMes = (valor) => dataBr(valor).slice(0, 5);
+
+/** "hh:mm" de um carimbo ISO ("2026-11-04T05:31:10" → "05:31"). */
+export const horaDe = (carimbo) => String(carimbo ?? '').slice(11, 16);
+
+/** Valor parece data ISO (aaaa-mm-dd...). */
+export const ehDataIso = (valor) => /^\d{4}-\d{2}-\d{2}/.test(String(valor));
+
+/** Nome de coluna técnico para rótulo ("por_status" → "Por status"). */
+export function humano(chave) {
+  const texto = String(chave).replace(/_/g, ' ');
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
+
+/** Número com dois dígitos ("3" → "03"), como nas perguntas. */
+export const doisDigitos = (n) => String(n).padStart(2, '0');
+
+/** Lê a mensagem de qualquer erro (ApiError, Error ou texto). */
+export const mensagemDe = (erro) => erro?.message ?? String(erro);

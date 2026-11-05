@@ -7,8 +7,9 @@ Tela que a equipe de sustentação e a área de negócio usam todo dia para sabe
 o resultado do despacho de ordens para a área de negócio e o histórico dos últimos dias.
 
 É a mesma tela da ferramenta real (`inspector-mantenimiento-backend`, pasta `ferramentas/monitor-local/web`), com o
-mesmo design e o mesmo comportamento. Só a origem dos dados muda: aqui `assets/js/api.js` responde as rotas
-`/v2/monitor/*` com dados fictícios em vez de chamar o backend pelo APIM.
+mesmo design e o mesmo comportamento. Só a origem dos dados muda: aqui `assets/js/http.js` entrega as chamadas ao
+`assets/js/simulador.js`, que responde as rotas `/v2/monitor/*` com dados fictícios em vez de chamar o backend pelo
+APIM.
 
 ## Rodar
 
@@ -39,19 +40,24 @@ login, como na tela real). O 8ID que aparece no topo é o usuário digitado.
 ## Arquivos
 
 ```
-index.html                 marcação (igual à da tela real) + link para o catálogo
+index.html                 marcação igual à da tela real (+ noscript e aviso de file://)
 data/db.json               respostas de exemplo das rotas do monitor
-assets/css/styles.css      as 8 camadas de estilo da tela real, na mesma ordem (tokens no topo)
-assets/css/pdf.css         layout A4 do relatório em PDF
+assets/css/                os mesmos 6 arquivos da tela real (tokens → movimento) + pdf.css
 assets/img/                logos do Mobilidade e da Ternium
 assets/js/
-  config.js                identidade, regras do backend, mensagens e parâmetros de teste
-  api.js                   camada de dados: simula as rotas /v2/monitor/* (única parte diferente da tela real)
-  main.js                  ponto de entrada
-  estado.js, ambiente.js, sessao.js, relatorio.js, graficos.js, componentes.js, textos.js
-  ui/ telas/ exportar/ util/   mesmos módulos da tela real
+  config.js                o da tela real (catálogo, aviso no login, SheetJS local) + regras, mensagens e parâmetros
+                           de teste do simulador
+  http.js                  troca o fetch da tela real pelo simulador
+  simulador.js             backend simulado: rotas /v2/monitor/* sobre data/db.json + localStorage
   vendor/xlsx.full.min.js  SheetJS 0.18.5 (na tela real vem do cdnjs; a CSP do catálogo só aceita scripts locais)
+  file-protocol-warning.js aviso para quem abre o index.html direto do disco
+  demais arquivos          idênticos aos da tela real (main.js, api.js, sessao.js, ui/, telas/, exportar/, util/...)
 ```
+
+Para atualizar o protótipo depois de mudar a tela real, copie `assets/css/`, `assets/img/` e `assets/js/` de
+`ferramentas/monitor-local/web` por cima destes, mantendo `config.js`, `http.js`, `simulador.js`, `vendor/` e
+`file-protocol-warning.js`, e copie o `index.html` refazendo as três diferenças (comentário do topo,
+`data-chave-tema="monitor-mobilidade:tema"`, noscript e aviso de file:// no fim do body).
 
 ## Dados (`data/db.json`)
 

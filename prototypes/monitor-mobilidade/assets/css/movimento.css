@@ -1,0 +1,113 @@
+/* Movimento: animações de entrada, transições e respeito a prefers-reduced-motion. */
+
+/* Entrada de cartões e barras */
+.grade > .card,
+.topo-rel > *,
+.tiles > .tile,
+#despachoAtual > * {
+  animation: sobe .5s cubic-bezier(.2,.8,.2,1) both;
+  animation-delay: calc(var(--i,0) * 50ms);
+}
+
+.barra i,
+.pilha i {
+  transform-origin: left;
+  animation: cresce .9s cubic-bezier(.2,.8,.2,1) both;
+  animation-delay: .25s;
+}
+
+/* Transições dos controles */
+.btn,
+.aba,
+.sub-abas button,
+.tema button,
+.menu-lista > button,
+.ver,
+.mh-cel {
+  transition: transform .12s ease,background .15s,border-color .15s,color .15s;
+}
+
+/* Movimento reduzido */
+
+@media (prefers-reduced-motion:reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none!important;
+    transition: none!important;
+  }
+}
+
+/* Keyframes */
+
+@keyframes pulso {
+  40% {
+    transform: scale(1.14);
+  }
+}
+
+@keyframes sobe {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes cresce {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes cresceY {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+@keyframes menuAbre {
+  from {
+    opacity: 0;
+    transform: scale(.25,.18);
+    filter: blur(10px);
+    border-radius: 28px;
+  }
+  60% {
+    filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes menuFecha {
+  to {
+    opacity: 0;
+    transform: scale(.25,.18);
+    filter: blur(10px);
+    border-radius: 28px;
+  }
+}
+
+@keyframes itemEntra {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes toastEntra {
+  from {
+    opacity: 0;
+    transform: translate(-50%,14px) scale(.96);
+  }
+}
+
+@keyframes toastSai {
+  to {
+    opacity: 0;
+    transform: translate(-50%,10px);
+  }
+}

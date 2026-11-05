@@ -1,19 +1,33 @@
 /**
- * Aviso flutuante (toast) no rodapé: confirmações curtas, como "Resumo do dia copiado".
+ * Aviso flutuante (toast) no rodapé: confirmações curtas ("Resumo do dia copiado") e erros de ações.
  */
-import {$} from '../util/formato.js';
+import { $ } from '../util/formato.js';
 
-let tempo = null;
+const DURACAO_MS = 3800;
+const DURACAO_ERRO_MS = 6000;
+const DURACAO_SAIDA_MS = 220;
+
+let temporizador = null;
 
 /**
- * @param {string} msg texto do aviso
- * @param {boolean} [erro] em vermelho e por mais tempo (6 s em vez de 3,8 s)
+ * @param {string} mensagem texto do aviso
+ * @param {{erro?: boolean}} [opcoes] erro: em vermelho e por mais tempo
  */
-export function avisar(msg, erro) {
-  const t = $('toast'); clearTimeout(tempo);
-  t.textContent = msg; t.className = 'toast' + (erro ? ' erro' : ''); t.hidden = false; void t.offsetWidth; t.classList.add('entra');
-  tempo = setTimeout(function () {
-    t.classList.remove('entra'); t.classList.add('sai');
-    tempo = setTimeout(function () { t.hidden = true; }, 220);
-  }, erro ? 6000 : 3800);
+export function avisar(mensagem, { erro = false } = {}) {
+  const toast = $('toast');
+  clearTimeout(temporizador);
+  toast.textContent = mensagem;
+  toast.className = erro ? 'toast erro' : 'toast';
+  toast.hidden = false;
+  void toast.offsetWidth; // reinicia a animação de entrada
+  toast.classList.add('entra');
+  temporizador = setTimeout(() => {
+    toast.classList.replace('entra', 'sai');
+    temporizador = setTimeout(() => {
+      toast.hidden = true;
+    }, DURACAO_SAIDA_MS);
+  }, erro ? DURACAO_ERRO_MS : DURACAO_MS);
 }
+
+/** Aviso de erro, com a mensagem do erro recebido. */
+export const avisarErro = (prefixo, erro) => avisar(`${prefixo}${erro?.message ?? erro}`, { erro: true });

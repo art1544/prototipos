@@ -1,0 +1,100 @@
+/* Base: reset, tipografia, utilitários e barra de rolagem. */
+
+/* Reset e tipografia */
+* {
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--barra-rol) transparent;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--fundo);
+  color: var(--texto);
+  font: 14.5px/1.5 var(--fonte);
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  line-height: 1.25;
+  letter-spacing: -.01em;
+}
+
+html,
+body {
+  background: var(--pagina);
+}
+
+h1,
+h2,
+h3,
+.login-tit {
+  font-family: var(--titulo);
+  color: var(--forte);
+}
+
+/* Utilitários */
+.hidden,
+[hidden] {
+  display: none!important;
+}
+
+.tiny {
+  font-size: 12.5px;
+  color: var(--texto-2);
+}
+
+a {
+  color: var(--laranja-escuro);
+}
+
+::selection {
+  background: var(--laranja-borda);
+}
+.impressao {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  width: 0;
+  height: 0;
+  border: 0;
+}
+
+/* Barra de rolagem */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--barra-rol);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--barra-rol-hover);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}

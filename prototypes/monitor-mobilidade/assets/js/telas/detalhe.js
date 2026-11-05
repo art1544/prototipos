@@ -1,52 +1,95 @@
 /**
- * Modal "Detalhes" de uma pergunta: resposta, e para cada check os números, achados, motivos, tabelas de apoio,
+ * Modal "Detalhes" de uma pergunta: resposta e, para cada check, os números, achados, motivos, tabelas de apoio,
  * exemplos e como é calculado (regra, definição, elo da cadeia, consulta).
  */
-import {$, esc, fmt, pct} from '../util/formato.js';
-import {chip} from '../util/status.js';
-import {info} from '../ui/popover.js';
-import {listaMotivos, tabelaSimples} from '../componentes.js';
+import { html } from '../util/html.js';
+import { $, fmt, doisDigitos } from '../util/formato.js';
+import { chip } from '../util/status.js';
+import { info } from '../ui/popover.js';
+import { motivosOuNenhum, tabelaSimples, valorComPercentual } from '../componentes.js';
+import { achadosNovos, chaveDosMotivos } from '../relatorio.js';
 
 /** Tabelas de apoio que um check pode trazer em "resumo", com o título exibido. */
-const TABELAS = [['filas', 'Filas do Service Bus'], ['por_tipo', 'Por tipo'], ['por_status', 'Por status no SAP']];
+const TABELAS_DE_APOIO = [
+  ['filas', 'Filas do Service Bus'],
+  ['por_tipo', 'Por tipo'],
+  ['por_status', 'Por status no SAP'],
+];
+
+const bloco = (titulo, conteudo) => html`<div class="det-bloco"><h5>${titulo}</h5>${conteudo}</div>`;
+
+function numeros(check) {
+  if (!check.numeros?.length) return '';
+  return html`<div class="det-nums">
+    ${check.numeros.map(
+      (n) => html`<div class="det-num">
+        <span>${n.rotulo}${info(n.explicacao, n.rotulo)}</span><b>${valorComPercentual(n)}</b>
+      </div>`,
+    )}
+  </div>`;
+}
+
+function motivos(check) {
+  const despacho = check.resumo?.despacho;
+  if (!despacho || !(despacho.porMotivo || despacho.tiPorMotivo)) return '';
+  const chave = chaveDosMotivos(check.id);
+  const tituloNegocio = `Motivo do usuário${check.id === 'C07' ? ' ou do SAP' : ''} · negócio`;
+  return html`<div class="duas">
+    ${bloco(tituloNegocio, motivosOuNenhum(despacho.porMotivo, chave))}
+    ${bloco('Com o sistema · TI', motivosOuNenhum(despacho.tiPorMotivo, chave, { ti: true }))}
+  </div>`;
+}
+
+function comoCalculado(check) {
+  const itens = [
+    ['Regra', check.regra],
+    ['Como é medido', check.definicao],
+    ['Elo da cadeia', check.elo],
+    ['Referência 7 dias', check.referencia7d != null ? `${fmt(check.referencia7d)} (mediana)` : null],
+  ].filter(([, valor]) => valor);
+  const definicoes = itens.map(([termo, valor]) => html`<dt>${termo}</dt><dd>${valor}</dd>`);
+  if (check.consulta) definicoes.push(html`<dt>Consulta</dt><dd class="mono">${check.consulta}</dd>`);
+  if (!definicoes.length) return '';
+  return html`<details class="dobra"><summary>Como é calculado</summary><dl class="meta">${definicoes}</dl></details>`;
+}
+
+function secaoDoCheck(check, resposta) {
+  const achados = achadosNovos(check, resposta);
+  const tabelas = TABELAS_DE_APOIO.filter(([campo]) => check.resumo?.[campo]?.length);
+  const amostra = check.amostra?.length
+    ? html`<details class="dobra">
+        <summary>Exemplos <span>${fmt(check.amostra.length)}</span></summary>${tabelaSimples(check.amostra)}
+      </details>`
+    : '';
+  return html`<section class="det-sec">
+    <div class="det-cab"><span class="num">${check.id}</span><h4>${check.titulo}</h4>${chip(check.status)}</div>
+    <div class="det-corpo">
+      ${check.erro ? html`<div class="aviso cr">Sem dados: ${check.erro}</div>` : ''}
+      ${numeros(check)}
+      ${achados.length
+        ? bloco('O que foi encontrado', html`<ul class="achados">${achados.map((a) => html`<li>${a}</li>`)}</ul>`)
+        : ''}
+      ${motivos(check)}
+      ${tabelas.map(([campo, titulo]) => bloco(titulo, tabelaSimples(check.resumo[campo])))}
+      ${amostra}
+      ${comoCalculado(check)}
+    </div>
+  </section>`;
+}
 
 /** Liga o fechar do modal (botão e clique fora). */
 export function iniciarDetalhe() {
-  $('dlgFechar').addEventListener('click', function () { $('dlg').close(); });
-  $('dlg').addEventListener('click', function (ev) { if (ev.target === $('dlg')) $('dlg').close(); });
+  const modal = $('dlg');
+  $('dlgFechar').addEventListener('click', () => modal.close());
+  modal.addEventListener('click', (evento) => {
+    if (evento.target === modal) modal.close();
+  });
 }
 
-export function abrirDetalhe(p, porId) {
-  $('dlgTit').innerHTML = '<span class="num">' + String(p.numero).padStart(2, '0') + '</span>' + esc(p.pergunta);
-  $('dlgCorpo').innerHTML = '<div class="det-resp">' + chip(p.status) + '<p>' + esc(p.resposta) + '</p></div>' +
-    p.checks.map(function (id) { return porId[id] ? detalheCheck(porId[id], p.resposta) : ''; }).join('');
+/** Abre o modal com os detalhes de uma pergunta. */
+export function abrirDetalhe(pergunta, porId) {
+  $('dlgTit').innerHTML = html`<span class="num">${doisDigitos(pergunta.numero)}</span>${pergunta.pergunta}`;
+  $('dlgCorpo').innerHTML = html`<div class="det-resp">${chip(pergunta.status)}<p>${pergunta.resposta}</p></div>
+    ${pergunta.checks.map((id) => (porId[id] ? secaoDoCheck(porId[id], pergunta.resposta) : ''))}`;
   $('dlg').showModal();
-}
-
-function detalheCheck(c, resposta) {
-  let h = '<section class="det-sec"><div class="det-cab"><span class="num">' + esc(c.id) + '</span><h4>' + esc(c.titulo) + '</h4>' + chip(c.status) + '</div><div class="det-corpo">';
-  if (c.erro) h += '<div class="aviso cr">Sem dados: ' + esc(c.erro) + '</div>';
-  if (c.numeros && c.numeros.length) h += '<div class="det-nums">' + c.numeros.map(function (n) {
-    return '<div class="det-num"><span>' + esc(n.rotulo) + info(n.explicacao, n.rotulo) + '</span><b>' + fmt(n.valor) + (n.base ? '<small>' + pct(n.valor, n.base) + '</small>' : '') + '</b></div>';
-  }).join('') + '</div>';
-  // achados iguais à resposta da pergunta não se repetem
-  const achados = (c.achados || []).filter(function (x) { return String(x).trim() !== String(resposta || '').trim(); });
-  if (achados.length) h += '<div class="det-bloco"><h5>O que foi encontrado</h5><ul class="achados">' + achados.map(function (a) { return '<li>' + esc(a) + '</li>'; }).join('') + '</ul></div>';
-  const d = c.resumo && c.resumo.despacho;
-  if (d && (d.porMotivo || d.tiPorMotivo)) {
-    const chave = c.id === 'C06' ? 'ordens' : 'retornos';
-    h += '<div class="duas">' +
-      '<div class="det-bloco"><h5>Motivo do usuário' + (c.id === 'C07' ? ' ou do SAP' : '') + ' · negócio</h5>' + (listaMotivos(d.porMotivo, chave, false) || '<span class="tiny">Nenhum.</span>') + '</div>' +
-      '<div class="det-bloco"><h5>Com o sistema · TI</h5>' + (listaMotivos(d.tiPorMotivo, chave, true) || '<span class="tiny">Nenhum.</span>') + '</div></div>';
-  }
-  TABELAS.forEach(function (t) { const l = c.resumo && c.resumo[t[0]]; if (l && l.length) h += '<div class="det-bloco"><h5>' + t[1] + '</h5>' + tabelaSimples(l) + '</div>'; });
-  if (c.amostra && c.amostra.length) h += '<details class="dobra"><summary>Exemplos <span>' + fmt(c.amostra.length) + '</span></summary>' + tabelaSimples(c.amostra) + '</details>';
-  let meta = '';
-  if (c.regra) meta += '<dt>Regra</dt><dd>' + esc(c.regra) + '</dd>';
-  if (c.definicao) meta += '<dt>Como é medido</dt><dd>' + esc(c.definicao) + '</dd>';
-  if (c.elo) meta += '<dt>Elo da cadeia</dt><dd>' + esc(c.elo) + '</dd>';
-  if (c.referencia7d != null) meta += '<dt>Referência 7 dias</dt><dd>' + fmt(c.referencia7d) + ' (mediana)</dd>';
-  if (c.consulta) meta += '<dt>Consulta</dt><dd class="mono">' + esc(c.consulta) + '</dd>';
-  if (meta) h += '<details class="dobra"><summary>Como é calculado</summary><dl class="meta">' + meta + '</dl></details>';
-  return h + '</div></section>';
 }

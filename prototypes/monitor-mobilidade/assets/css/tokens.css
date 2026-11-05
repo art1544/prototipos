@@ -1,0 +1,112 @@
+/* Tokens de design: cores, sombras, raios e fontes do tema claro e do tema escuro (data-tema="escuro"). */
+
+:root {
+  /* Superfícies e linhas */
+  --pagina: #F3F5F7;
+  --fundo: #FFFFFF;
+  --fundo-2: #F7F8FA;
+  --fundo-3: #EEF0F3;
+  --linha: #E5E5E5;
+  --linha-2: #D8D8CF;
+  --hover: rgba(0,0,80,.05);
+  --realce: rgba(0,0,80,.06);
+  --trilha: #EEF0F3;
+
+  /* Texto */
+  --forte: #000050;
+  --texto: #2A2A4D;
+  --texto-2: #5B5B72;
+  --texto-3: #9A9AAC;
+
+  /* Marca */
+  --laranja: #F37021;
+  --laranja-hover: #E0540A;
+  --laranja-escuro: #D45A0F;
+  --laranja-claro: rgba(243,112,33,.10);
+  --laranja-borda: rgba(243,112,33,.35);
+  --amarelo: #FAAF40;
+
+  /* Status */
+  --ok: #1A9D5C;
+  --ok-bg: rgba(26,157,92,.10);
+  --at: #9A6200;
+  --at-bg: rgba(249,189,93,.18);
+  --at-dot: #F5A524;
+  --cr: #E5484D;
+  --cr-bg: rgba(229,72,77,.10);
+  --fora: #A1A1AA;
+  --sd: #71717A;
+  --sd-bg: #F4F4F5;
+
+  /* Popover e aviso flutuante */
+  --pop: #000050;
+  --pop-txt: #FFFFFF;
+
+  /* Sombras e foco */
+  --sombra: 0 2px 10px rgba(0,0,80,.07);
+  --sombra-alta: 0 14px 40px rgba(0,0,80,.14);
+  --sombra-pop: 0 12px 40px rgba(0,0,80,.16);
+  --anel-foco: 0 0 0 3px rgba(0,0,80,.08);
+
+  /* Forma e fontes */
+  --raio: 20px;
+  --fonte: "Red Hat Text","Segoe UI",Tahoma,sans-serif;
+  --titulo: "Red Hat Display","Segoe UI",sans-serif;
+  --mono: "Red Hat Mono",ui-monospace,Consolas,monospace;
+
+  /* Barra de rolagem */
+  color-scheme: light;
+  --barra-rol: #C9CCD6;
+  --barra-rol-hover: #9A9AAC;
+}
+
+:root[data-tema="escuro"] {
+  /* Superfícies e linhas */
+  --pagina: #0A0B1E;
+  --fundo: #121433;
+  --fundo-2: #0E1029;
+  --fundo-3: #1B1E42;
+  --linha: #252852;
+  --linha-2: #363A6B;
+  --hover: rgba(255,255,255,.05);
+  --realce: rgba(255,255,255,.08);
+  --trilha: #252852;
+
+  /* Texto */
+  --forte: #FFFFFF;
+  --texto: #E4E5F2;
+  --texto-2: #A3A5C2;
+  --texto-3: #6E7196;
+
+  /* Marca */
+  --laranja-escuro: #FF9A5C;
+  --laranja-claro: rgba(243,112,33,.14);
+  --laranja-borda: rgba(243,112,33,.4);
+
+  /* Status */
+  --ok: #2FBF76;
+  --ok-bg: rgba(47,191,118,.12);
+  --at: #F9BD5D;
+  --at-bg: rgba(249,189,93,.12);
+  --at-dot: #F59E0B;
+  --cr: #FF6B70;
+  --cr-bg: rgba(229,72,77,.14);
+  --fora: #52525B;
+  --sd: #A1A1AA;
+  --sd-bg: #18181B;
+
+  /* Popover e aviso flutuante */
+  --pop: #E4E5F2;
+  --pop-txt: #000050;
+
+  /* Sombras e foco */
+  --sombra: 0 2px 10px rgba(0,0,0,.35);
+  --sombra-alta: 0 14px 40px rgba(0,0,0,.5);
+  --sombra-pop: 0 12px 40px rgba(0,0,0,.55);
+  --anel-foco: 0 0 0 3px rgba(255,255,255,.08);
+
+  /* Barra de rolagem */
+  color-scheme: dark;
+  --barra-rol: #363A6B;
+  --barra-rol-hover: #4B5090;
+}

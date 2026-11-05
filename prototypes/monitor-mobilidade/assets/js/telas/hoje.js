@@ -1,116 +1,231 @@
 /**
- * Aba "Saúde do dia": veredito, quatro destaques, um cartão por pergunta da rotina diária e o cartão do
- * despacho em análise. Também liga o "Rodar agora" do menu.
+ * Aba "Saúde do dia": veredito, quatro destaques, um cartão por pergunta da rotina diária e o cartão do despacho em
+ * análise. Também liga o "Rodar agora" do menu.
  */
-import {$, esc, fmt, dataBr} from '../util/formato.js';
-import {ICONE, chip, tituloVeredito} from '../util/status.js';
-import {estado} from '../estado.js';
-import {api, falha} from '../api.js';
-import {EXPL} from '../textos.js';
-import {info} from '../ui/popover.js';
-import {destaque, animar} from '../graficos.js';
-import {linhas, listaMotivos, semAcao} from '../componentes.js';
-import {perguntasDe, checksPorId, numeroDe, statusDe, contarStatus} from '../relatorio.js';
-import {abrirDetalhe} from './detalhe.js';
+import { LIMITES } from '../config.js';
+import { html } from '../util/html.js';
+import { $, fmt, dataBr, horaDe, doisDigitos } from '../util/formato.js';
+import { ICONE, chip, tituloVeredito } from '../util/status.js';
+import { estado } from '../estado.js';
+import { buscarHoje, definirAtivo, executarAgora, sessaoExpirada } from '../api.js';
+import { EXPLICACOES } from '../textos.js';
+import { info } from '../ui/popover.js';
+import { avisar, avisarErro } from '../ui/toast.js';
+import { irPara } from '../ui/abas.js';
+import { destaque, animar } from '../graficos.js';
+import { linhas, motivosOuNenhum, mostrarFalha } from '../componentes.js';
+import {
+  CHECKS_DO_DESPACHO,
+  chaveDosMotivos,
+  checksDa,
+  checksPorId,
+  contarStatus,
+  destaquesDoDia,
+  numerosDa,
+  perguntasDe,
+  principal,
+  statusDe,
+} from '../relatorio.js';
+import { abrirDetalhe } from './detalhe.js';
 
-/** Checks que ocupam duas colunas na grade (perguntas do despacho, com motivos lado a lado). */
-const LARGAS_P = {C06: 1, C07: 1};
+/** Contagem por status no cabeçalho, do pior para o melhor; OK aparece sempre. */
+const CONTAGEM = [
+  ['CRITICO', (n) => `${n} crítica(s)`],
+  ['ATENCAO', (n) => `${n} com atenção`],
+  ['OK', (n) => `${n} ok`, true],
+  ['FORA', (n) => `${n} fora do monitor`],
+  ['SEM', (n) => `${n} sem dados`],
+];
+
+// ---------- avisos ----------
+
+function avisoDesligado(dados) {
+  return html`<div class="aviso cr">
+    <b>Monitor desligado.</b> ${dados.pausaMotivo || 'A chave "ativo" está em 0.'}<button class="btn" id="bLigar"
+      type="button">Religar</button>
+  </div>`;
+}
+
+function avisoAtrasado(dados) {
+  const critico = new Date().getHours() >= LIMITES.horaRelatorioAtrasado;
+  const dia = dados.dataRelatorio ? dataBr(dados.dataRelatorio) : 'nenhum dia';
+  return html`<div class="aviso${critico ? ' cr' : ''}"><b>Relatório de ${dia}.</b> O de hoje ainda não foi gerado
+    (a análise roda às 05:30, com novas tentativas às 06:30 e 08:00).</div>`;
+}
+
+function avisos(dados) {
+  const falhas = (dados.execucoesHoje || []).filter((execucao) => execucao.status === 'FALHOU');
+  return html`${dados.ativo ? '' : avisoDesligado(dados)}${dados.desatualizado ? avisoAtrasado(dados) : ''}${falhas.map(
+    (e) => html`<div class="aviso">Execução ${e.tipo} falhou na tentativa ${e.tentativa}: ${e.erro}</div>`,
+  )}`;
+}
+
+// ---------- cabeçalho ----------
+
+function contagem(perguntas) {
+  const total = contarStatus(perguntas);
+  return CONTAGEM.filter(([status, , sempre]) => sempre || total[status]).map(
+    ([status, texto]) => html`<span><i data-st="${status}"></i>${texto(total[status])}</span>`,
+  );
+}
+
+function cabecalho(relatorio, perguntas, porId) {
+  const veredito = relatorio.veredito;
+  const consultas = relatorio.completo ? 'todas as consultas responderam' : 'alguma consulta não respondeu';
+  return html`<div class="topo-rel">
+    <div class="card pad">
+      <div class="resumo">
+        <div class="selo ${veredito}">${ICONE[veredito] || ICONE.SEM_DADOS}</div>
+        <div>
+          <h2>${tituloVeredito(veredito)}${info(EXPLICACOES.veredito, 'Veredito do dia')}</h2>
+          <div class="contagem">${contagem(perguntas)}</div>
+          <div class="tiny resumo-nota">${perguntas.length} perguntas da rotina diária · ${consultas}</div>
+        </div>
+      </div>
+    </div>
+    <div class="tiles">${tilesDoDia(porId)}</div>
+  </div>`;
+}
+
+function tile(rotulo, n, { status = null, vazio, sufixo } = {}) {
+  const conteudo = n
+    ? destaque(n, status, { pequeno: true, rotulo: false, info: false, sufixo })
+    : html`<div class="valor sem-valor"><b>—</b><span class="de">${vazio}</span></div>`;
+  return html`<div class="tile"><span>${rotulo}${n ? info(n.explicacao, n.rotulo) : ''}</span>${conteudo}</div>`;
+}
+
+function tilesDoDia(porId) {
+  const { recebidas, entregues, esgotados, login } = destaquesDoDia(porId);
+  return [
+    tile('Ordens recebidas', recebidas, { status: statusDe(porId, 'C06'), vazio: 'sem lista' }),
+    tile('Retornos entregues', entregues, { status: statusDe(porId, 'C07'), vazio: 'sem lista' }),
+    tile('Apontamentos esgotados', esgotados, { vazio: 'sem dados' }),
+    tile('Login do app', login, { vazio: 'sem dados', sufixo: ' ms' }),
+  ];
+}
+
+// ---------- cartões ----------
+
+/** Números e motivos negócio × TI das perguntas do despacho, lado a lado. */
+function ladoDespacho(checks, numeros) {
+  const despacho = checks.findLast((check) => check.resumo?.despacho)?.resumo.despacho;
+  let motivos = html`<div class="tiny">Envie a lista do despacho para separar por motivo.</div>`;
+  if (despacho) {
+    const chave = chaveDosMotivos(checks[0].id);
+    motivos = html`<div>
+      <h4>Por motivo do usuário${info(EXPLICACOES.motivoUsuario)}</h4>
+      ${motivosOuNenhum(despacho.porMotivo, chave, { comAcao: false })}
+      <h4 class="depois-lista">Com o sistema (TI)${info(EXPLICACOES.motivoSistema)}</h4>
+      ${motivosOuNenhum(despacho.tiPorMotivo, chave, { ti: true })}
+    </div>`;
+  }
+  return html`<div class="lado"><div><h4>Números</h4>${linhas(numeros)}</div>${motivos}</div>`;
+}
+
+/** Cartão de uma pergunta: número principal em destaque, demais números e, no despacho, motivos negócio × TI. */
+function cartaoPergunta(pergunta, porId) {
+  const checks = checksDa(pergunta, porId);
+  const numPrincipal = principal(pergunta, porId);
+  const outros = numerosDa(pergunta, porId).filter((n) => n !== numPrincipal);
+  const largo = checks.some((check) => CHECKS_DO_DESPACHO.has(check.id));
+  const fora = pergunta.status === 'FORA';
+
+  let corpo = html``;
+  if (fora) corpo = html`<div class="dest fora"><b>Fora do monitor</b></div>`;
+  else if (numPrincipal) corpo = destaque(numPrincipal, pergunta.status);
+  // o texto da resposta fica no "Detalhes"; no cartão só quando não há número para mostrar
+  if (!numPrincipal || fora) corpo = html`${corpo}<p class="resp-c">${pergunta.resposta}</p>`;
+  if (largo) corpo = html`${corpo}${ladoDespacho(checks, outros)}`;
+  else if (outros.length) corpo = html`${corpo}${linhas(outros)}`;
+
+  return html`<article class="card rel ${pergunta.status}${largo ? ' largo2' : ''}" id="p${pergunta.numero}">
+    <div class="rel-cab">
+      <div class="num">${doisDigitos(pergunta.numero)}</div>
+      <h3>${pergunta.pergunta}</h3>
+      ${chip(pergunta.status)}
+    </div>
+    <div class="rel-corpo">
+      ${corpo}
+      <button class="ver" type="button" data-det="${pergunta.numero - 1}">Detalhes →</button>
+    </div>
+  </article>`;
+}
+
+/** Cartão do despacho em análise, ou o convite para enviar a lista. */
+function cartaoDespacho(despacho) {
+  const corpo = despacho
+    ? html`<dl>
+          <dt>Início</dt><dd>${dataBr(despacho.inicio)}</dd>
+          <dt>Ordens na lista</dt><dd>${fmt(despacho.total)}</dd>
+          <dt>Enviada por</dt><dd>${despacho.enviadoPor} em ${dataBr(despacho.enviadoEm)}</dd>
+        </dl>
+        ${despacho.erro ? html`<div class="aviso cr">Falha ao calcular: ${despacho.erro}</div>` : ''}
+        <button class="ver" type="button" id="irDespacho">Resultado para o negócio →</button>`
+    : html`<p class="resp-c">Nenhuma lista enviada. Suba a lista de ordens e o início do despacho para responder às
+          perguntas 4, 5 e 6.</p>
+        <button class="ver" type="button" id="irDespacho">Enviar lista →</button>`;
+  return html`<article class="card rel largo2 desp-card">
+    <div class="rel-cab"><div class="num" aria-hidden="true">D</div><h3>Despacho em análise</h3></div>
+    <div class="rel-corpo">${corpo}</div>
+  </article>`;
+}
+
+// ---------- tela ----------
+
+function desenhar(relatorio, htmlAvisos) {
+  const aba = $('aba-hoje');
+  if (!relatorio) {
+    aba.innerHTML = html`${htmlAvisos}<div class="card vazio">Ainda não há relatório. A análise roda todo dia às 05:30;
+      use "Rodar agora" para gerar o primeiro.</div>`;
+    return;
+  }
+  const perguntas = perguntasDe(relatorio);
+  const porId = checksPorId(relatorio);
+  const cartoes = [...perguntas.map((pergunta) => cartaoPergunta(pergunta, porId)), cartaoDespacho(relatorio.despacho)];
+  aba.innerHTML = html`${htmlAvisos}${cabecalho(relatorio, perguntas, porId)}<div class="grade">${cartoes}</div>`;
+  animar(aba);
+  for (const botao of aba.querySelectorAll('[data-det]')) {
+    botao.addEventListener('click', () => abrirDetalhe(perguntas[Number(botao.dataset.det)], porId));
+  }
+  $('irDespacho')?.addEventListener('click', () => irPara('despacho'));
+}
+
+function subtitulo(relatorio) {
+  return relatorio
+    ? `Relatório de ${dataBr(relatorio.dataRef)} · gerado às ${horaDe(relatorio.geradoEm)}`
+    : 'Sem relatório';
+}
+
+async function religar() {
+  try {
+    await definirAtivo(true);
+    carregarHoje();
+  } catch (erro) {
+    if (!sessaoExpirada(erro)) avisarErro('Não foi possível religar o monitor: ', erro);
+  }
+}
 
 /** Busca /hoje e redesenha a aba, com os avisos (monitor desligado, relatório atrasado, execução que falhou). */
-export function carregarHoje() {
-  api('hoje').then(function (d) {
-    estado.relatorio = d.relatorio;
-    let av = '';
-    if (!d.ativo) av += '<div class="aviso cr"><b>Monitor desligado.</b> ' + esc(d.pausaMotivo || 'A chave "ativo" está em 0.') + '<button class="btn" id="bLigar" type="button">Religar</button></div>';
-    if (d.desatualizado) av += '<div class="aviso' + (new Date().getHours() >= 8 ? ' cr' : '') + '"><b>Relatório de ' + (d.dataRelatorio ? dataBr(d.dataRelatorio) : 'nenhum dia') + '.</b> O de hoje ainda não foi gerado (a análise roda às 05:30, com novas tentativas às 06:30 e 08:00).</div>';
-    (d.execucoesHoje || []).forEach(function (e) { if (e.status === 'FALHOU') av += '<div class="aviso">Execução ' + esc(e.tipo) + ' falhou na tentativa ' + esc(e.tentativa) + ': ' + esc(e.erro) + '</div>'; });
-    desenharHoje(d.relatorio, av);
-    if ($('bLigar')) $('bLigar').addEventListener('click', function () { api('ativo', {method: 'POST', corpo: {ativo: true}}).then(carregarHoje); });
-    $('sub').textContent = d.relatorio ? 'Relatório de ' + dataBr(d.relatorio.dataRef) + ' · gerado às ' + String(d.relatorio.geradoEm).slice(11, 16) : 'Sem relatório';
-  }).catch(function (e) { falha($('aba-hoje'), e); });
+export async function carregarHoje() {
+  try {
+    const dados = await buscarHoje();
+    estado.relatorio = dados.relatorio;
+    desenhar(dados.relatorio, avisos(dados));
+    $('bLigar')?.addEventListener('click', religar);
+    $('sub').textContent = subtitulo(dados.relatorio);
+  } catch (erro) {
+    mostrarFalha($('aba-hoje'), erro);
+  }
 }
 
 /** Liga o "Rodar agora" do menu (o backend limita a uma análise manual a cada 10 min). */
 export function iniciarHoje() {
-  $('bRodar').addEventListener('click', function () {
-    api('executar', {method: 'POST'}).then(function (r) { alert(r.mensagem); }).catch(function (e) { if (e.message !== '401') alert(e.message); });
+  $('bRodar').addEventListener('click', async () => {
+    try {
+      const { mensagem } = await executarAgora();
+      avisar(mensagem);
+    } catch (erro) {
+      if (!sessaoExpirada(erro)) avisarErro('', erro);
+    }
   });
-}
-
-function desenharHoje(r, avisos) {
-  const el = $('aba-hoje');
-  if (!r) { el.innerHTML = avisos + '<div class="card vazio">Ainda não há relatório. A análise roda todo dia às 05:30; use "Rodar agora" para gerar o primeiro.</div>'; return; }
-  const ps = perguntasDe(r), porId = checksPorId(r), cont = contarStatus(ps);
-
-  // cabeçalho: veredito + destaques do dia
-  let h = avisos + '<div class="topo-rel"><div class="card pad"><div class="resumo"><div class="selo ' + esc(r.veredito) + '">' + (ICONE[r.veredito] || ICONE.SEM_DADOS) + '</div><div>' +
-    '<h2>' + esc(tituloVeredito(r.veredito)) + info(EXPL.veredito, 'Veredito do dia') + '</h2><div class="contagem">' +
-    (cont.CRITICO ? '<span><i style="background:var(--cr)"></i>' + cont.CRITICO + ' crítica(s)</span>' : '') +
-    (cont.ATENCAO ? '<span><i style="background:var(--at-dot)"></i>' + cont.ATENCAO + ' com atenção</span>' : '') +
-    '<span><i style="background:var(--ok)"></i>' + cont.OK + ' ok</span>' +
-    (cont.FORA ? '<span><i style="background:var(--fora)"></i>' + cont.FORA + ' fora do monitor</span>' : '') +
-    (cont.SEM ? '<span><i style="background:var(--texto-3)"></i>' + cont.SEM + ' sem dados</span>' : '') +
-    '</div><div class="tiny" style="margin-top:4px">' + ps.length + ' perguntas da rotina diária · ' + (r.completo ? 'todas as consultas responderam' : 'alguma consulta não respondeu') + '</div></div></div></div>' +
-    '<div class="tiles">' + destaques(porId) + '</div></div>';
-
-  // grade: perguntas em ordem; as do despacho ocupam 2 colunas
-  h += '<div class="grade">';
-  ps.forEach(function (p) { h += cardPergunta(p, porId); });
-  h += cardDespacho(r.despacho);
-  el.innerHTML = h + '</div>';
-  animar(el);
-  el.querySelectorAll('[data-det]').forEach(function (b) { b.addEventListener('click', function () { abrirDetalhe(ps[+b.dataset.det], porId); }); });
-  if ($('irDespacho')) $('irDespacho').addEventListener('click', function () { document.querySelector('[data-aba=despacho]').click(); });
-}
-
-/** Os quatro destaques do topo: ordens recebidas, retornos entregues, apontamentos esgotados e login. */
-function destaques(porId) {
-  const rec = numeroDe(porId, 'C06', 'Recebidos'), ent = numeroDe(porId, 'C07', 'Entregues aos aparelhos');
-  const esg = numeroDe(porId, 'C03', 'Apontamentos esgotados'), lg = numeroDe(porId, 'C09', 'Tempo de resposta do login (ms)');
-  return tileN('Ordens recebidas', rec && rec.base ? rec : null, statusDe(porId, 'C06'), 'sem lista') +
-    tileN('Retornos entregues', ent && ent.base ? ent : null, statusDe(porId, 'C07'), 'sem lista') +
-    tileN('Apontamentos esgotados', esg, null, 'sem dados') +
-    tileN('Login do app', lg, null, 'sem dados', ' ms');
-}
-
-function tileN(rot, n, status, vazio, sufixo) {
-  return '<div class="tile"><span>' + esc(rot) + (n ? info(n.explicacao, n.rotulo) : '') + '</span>' +
-    (n ? destaque(n, status, {peq: true, rotulo: false, info: false, sufixo: sufixo}) : '<div class="valor" style="margin-top:8px"><b>—</b><span class="de">' + esc(vazio) + '</span></div>') + '</div>';
-}
-
-/** Cartão de uma pergunta: número principal em destaque, demais números e, no despacho, motivos negócio × TI. */
-function cardPergunta(p, porId) {
-  const cs = p.checks.map(function (id) { return porId[id]; }).filter(Boolean);
-  const nums = []; cs.forEach(function (c) { (c.numeros || []).forEach(function (n) { nums.push(n); }); });
-  const largo = cs.some(function (c) { return LARGAS_P[c.id]; });
-  let princ = null;
-  nums.forEach(function (n) { if (!princ && n.base) princ = n; });
-  if (!princ) princ = nums[0] || null;
-  let h = '<article class="card rel ' + esc(p.status) + (largo ? ' largo2' : '') + '" id="p' + p.numero + '">' +
-    '<div class="rel-cab"><div class="num">' + String(p.numero).padStart(2, '0') + '</div><h3>' + esc(p.pergunta) + '</h3>' + chip(p.status) + '</div><div class="rel-corpo">';
-  if (p.status === 'FORA') h += '<div class="dest fora"><b>Fora do monitor</b></div>';
-  else if (princ) h += destaque(princ, p.status);
-  // o texto da resposta fica no "Detalhes"; no card só quando não há número para mostrar
-  if (!princ || p.status === 'FORA') h += '<p class="resp-c">' + esc(p.resposta) + '</p>';
-  const resto = nums.filter(function (n) { return n !== princ; });
-  if (largo) {
-    let d = null; cs.forEach(function (c) { if (c.resumo && c.resumo.despacho) d = c.resumo.despacho; });
-    h += '<div class="lado"><div><h4>Números</h4>' + linhas(resto) + '</div>';
-    if (d) {
-      const chave = cs[0].id === 'C06' ? 'ordens' : 'retornos';
-      h += '<div><h4>Por motivo do usuário' + info(EXPL.motivoUsuario) + '</h4>' + (listaMotivos(semAcao(d.porMotivo), chave) || '<span class="tiny">Nenhum.</span>') +
-        '<h4 style="margin-top:14px">Com o sistema (TI)' + info(EXPL.motivoSistema) + '</h4>' + (listaMotivos(d.tiPorMotivo, chave, true) || '<span class="tiny">Nenhum.</span>') + '</div>';
-    } else h += '<div class="tiny">Envie a lista do despacho para separar por motivo.</div>';
-    h += '</div>';
-  } else if (resto.length) h += linhas(resto);
-  return h + '<button class="ver" type="button" data-det="' + (p.numero - 1) + '">Detalhes →</button></div></article>';
-}
-
-/** Cartão do despacho em análise, ou o convite para enviar a lista. */
-function cardDespacho(d) {
-  const h = '<article class="card rel largo2 desp-card"><div class="rel-cab"><div class="num" aria-hidden="true">D</div><h3>Despacho em análise</h3></div><div class="rel-corpo">';
-  if (!d) return h + '<p class="resp-c">Nenhuma lista enviada. Suba a lista de ordens e o início do despacho para responder às perguntas 4, 5 e 6.</p><button class="ver" type="button" id="irDespacho">Enviar lista →</button></div></article>';
-  return h + '<dl><dt>Início</dt><dd>' + dataBr(d.inicio) + '</dd><dt>Ordens na lista</dt><dd>' + fmt(d.total) + '</dd><dt>Enviada por</dt><dd>' + esc(d.enviadoPor) + ' em ' + dataBr(d.enviadoEm) + '</dd></dl>' +
-    (d.erro ? '<div class="aviso cr">Falha ao calcular: ' + esc(d.erro) + '</div>' : '') +
-    '<button class="ver" type="button" id="irDespacho">Resultado para o negócio →</button></div></article>';
 }

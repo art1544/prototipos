@@ -1,18 +1,24 @@
 /**
- * Carrega o SheetJS (xlsx 0.18.5) sob demanda: só quando o usuário lê uma planilha ou baixa o Excel.
- * No protótipo vem de assets/js/vendor/ (cópia do cdnjs): a CSP do catálogo só aceita scripts do próprio site.
+ * Carrega o SheetJS sob demanda: só quando o usuário lê uma planilha ou baixa o Excel.
  * A planilha é lida no navegador; só os números das ordens vão para o servidor.
  */
-const URL_SHEETJS = 'assets/js/vendor/xlsx.full.min.js';
+import { URLS } from '../config.js';
+
+let carregando = null;
 
 /** @returns {Promise<any>} o objeto global XLSX */
 export function carregarSheetJS() {
-  return new Promise(function (ok, nao) {
-    if (window.XLSX) return ok(window.XLSX);
-    const s = document.createElement('script');
-    s.src = URL_SHEETJS;
-    s.onload = function () { ok(window.XLSX); };
-    s.onerror = function () { nao(new Error('Não foi possível carregar o leitor de planilhas.')); };
-    document.head.appendChild(s);
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  carregando ??= new Promise((resolver, rejeitar) => {
+    const script = document.createElement('script');
+    script.src = URLS.sheetjs;
+    script.onload = () => resolver(window.XLSX);
+    script.onerror = () => {
+      carregando = null;
+      script.remove();
+      rejeitar(new Error('Não foi possível carregar o leitor de planilhas.'));
+    };
+    document.head.appendChild(script);
   });
+  return carregando;
 }

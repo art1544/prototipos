@@ -1,26 +1,33 @@
 /**
- * Abas da tela: Saúde do dia, Despacho e Histórico. O despacho carrega na primeira visita; o histórico, a cada visita.
+ * Abas da tela: Saúde do dia, Despacho e Histórico. Cada aba registra o que fazer ao ser aberta.
  */
-import {$} from '../util/formato.js';
-import {estado} from '../estado.js';
-import {carregarDespacho} from '../telas/despacho.js';
-import {carregarHistorico} from '../telas/historico.js';
+import { $ } from '../util/formato.js';
 
-const ABAS = ['hoje', 'despacho', 'historico'];
+/** @type {Map<string, () => void>} */
+const aoAbrir = new Map();
+
+/** Registra o que carregar quando a aba é aberta (ex.: o histórico é buscado a cada visita). */
+export function registrarAba(nome, callback) {
+  aoAbrir.set(nome, callback);
+}
+
+function selecionar(botaoAtivo) {
+  const nome = botaoAtivo.dataset.aba;
+  for (const botao of document.querySelectorAll('.aba')) {
+    botao.setAttribute('aria-selected', String(botao === botaoAtivo));
+    $(`aba-${botao.dataset.aba}`).classList.toggle('hidden', botao !== botaoAtivo);
+  }
+  aoAbrir.get(nome)?.();
+  window.scrollTo(0, 0);
+}
 
 export function iniciarAbas() {
-  document.querySelectorAll('.aba').forEach(function (b) {
-    b.addEventListener('click', function () {
-      document.querySelectorAll('.aba').forEach(function (t) { t.setAttribute('aria-selected', t === b ? 'true' : 'false'); });
-      ABAS.forEach(function (a) { $('aba-' + a).classList.toggle('hidden', a !== b.dataset.aba); });
-      if (b.dataset.aba === 'despacho' && !estado.despacho) carregarDespacho();
-      if (b.dataset.aba === 'historico') carregarHistorico();
-      window.scrollTo(0, 0);
-    });
-  });
+  for (const botao of document.querySelectorAll('.aba')) {
+    botao.addEventListener('click', () => selecionar(botao));
+  }
 }
 
 /** Troca de aba por código (ex.: botão "Enviar lista →" do cartão do despacho). */
-export function irPara(aba) {
-  document.querySelector('[data-aba=' + aba + ']').click();
+export function irPara(nome) {
+  selecionar(document.querySelector(`.aba[data-aba="${nome}"]`));
 }

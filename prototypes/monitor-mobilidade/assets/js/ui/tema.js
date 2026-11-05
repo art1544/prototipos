@@ -1,20 +1,31 @@
 /**
- * Alternância de tema claro/escuro no topo. A escolha fica no localStorage ("monitor-mobilidade:tema") e é aplicada
- * antes da primeira pintura por tema-inicial.js.
+ * Alternância de tema claro/escuro no topo. A escolha fica no localStorage, na chave definida em
+ * <html data-chave-tema>, e é aplicada antes da primeira pintura por tema-inicial.js.
  */
 
-function marcarTema() {
-  const t = document.documentElement.dataset.tema;
-  document.querySelectorAll('.tema button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.tema === t ? 'true' : 'false'); });
+const raiz = document.documentElement;
+
+function marcarBotoes() {
+  for (const botao of document.querySelectorAll('.tema button')) {
+    botao.setAttribute('aria-pressed', String(botao.dataset.tema === raiz.dataset.tema));
+  }
+}
+
+function salvar(tema) {
+  try {
+    localStorage.setItem(raiz.dataset.chaveTema, tema);
+  } catch {
+    // armazenamento bloqueado: a escolha vale só nesta visita
+  }
 }
 
 export function iniciarTema() {
-  document.querySelectorAll('.tema button').forEach(function (b) {
-    b.addEventListener('click', function () {
-      document.documentElement.dataset.tema = b.dataset.tema;
-      try { localStorage.setItem('monitor-mobilidade:tema', b.dataset.tema); } catch (e) { /* armazenamento bloqueado: vale só nesta visita */ }
-      marcarTema();
+  for (const botao of document.querySelectorAll('.tema button')) {
+    botao.addEventListener('click', () => {
+      raiz.dataset.tema = botao.dataset.tema;
+      salvar(botao.dataset.tema);
+      marcarBotoes();
     });
-  });
-  marcarTema();
+  }
+  marcarBotoes();
 }

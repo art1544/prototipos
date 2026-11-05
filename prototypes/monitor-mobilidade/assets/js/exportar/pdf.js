@@ -1,147 +1,303 @@
 /**
- * "Exportar PDF": monta o relatório do dia como um HTML estático (sem scripts, A4, estilos de css/pdf.css e o logo
- * embutidos) e o envia ao MonitorLocal (POST /pdf), que o imprime em PDF com o Edge/Chrome em modo headless.
- * Sem Edge/Chrome (501), abre a impressão do próprio navegador ("Salvar como PDF"). O texto continua selecionável.
+ * "Exportar PDF": monta o relatório do dia como um HTML estático (sem scripts, A4, com o pdf.css e o logo embutidos)
+ * e o envia ao MonitorLocal, que o imprime em PDF com o Edge/Chrome em modo headless. Sem Edge/Chrome, abre a
+ * impressão do próprio navegador ("Salvar como PDF"). O texto continua selecionável.
  */
-import {servidor} from '../api.js';
-import {$, esc, fmt, pct, dataBr} from '../util/formato.js';
-import {ROTULO, tituloVeredito} from '../util/status.js';
-import {estado} from '../estado.js';
-import {perguntasDe, checksPorId, numeroDe, principal, contarStatus} from '../relatorio.js';
+import { APP, URLS } from '../config.js';
+import { html, raw } from '../util/html.js';
+import { $, fmt, pct, dataBr, horaDe, doisDigitos } from '../util/formato.js';
+import { rotuloDe, tituloVeredito } from '../util/status.js';
+import { estado, ambienteDeTeste } from '../estado.js';
+import { gerarPdf } from '../api.js';
+import { avisar, avisarErro } from '../ui/toast.js';
+import {
+  achadosNovos,
+  chaveDosMotivos,
+  checksDa,
+  checksPorId,
+  contarStatus,
+  destaquesDoDia,
+  perguntasDe,
+  principal,
+} from '../relatorio.js';
+
+const FONTES =
+  'https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@600;700&family=Red+Hat+Text:wght@400;500;600' +
+  '&family=Red+Hat+Mono:wght@500;600&display=block';
+const ESPERA_IMPRESSAO_MS = 500;
+const VIDA_IFRAME_MS = 60_000;
+
+/** Contagem por status no veredito, do pior para o melhor; OK aparece sempre. */
+const CONTAGEM = [
+  ['CRITICO', (n) => `${n} crítica(s)`],
+  ['ATENCAO', (n) => `${n} com atenção`],
+  ['OK', (n) => `${n} ok`, true],
+  ['FORA', (n) => `${n} fora do monitor`],
+  ['SEM', (n) => `${n} sem dados`],
+];
+
+// ---------- recursos embutidos ----------
+
+let recursos = null;
+
+function lerComoDataUri(blob) {
+  return new Promise((resolver, rejeitar) => {
+    const leitor = new FileReader();
+    leitor.onload = () => resolver(leitor.result);
+    leitor.onerror = rejeitar;
+    leitor.readAsDataURL(blob);
+  });
+}
+
+async function buscarRecursos() {
+  const [respostaCss, respostaLogo] = await Promise.all([fetch(URLS.pdfCss), fetch(URLS.logo)]);
+  if (!respostaCss.ok) throw new Error(`${URLS.pdfCss}: ${respostaCss.status}`);
+  return { css: await respostaCss.text(), logo: await lerComoDataUri(await respostaLogo.blob()) };
+}
 
 /** CSS do PDF e logo em data URI, carregados uma vez: o HTML do relatório precisa ser autossuficiente. */
-let recursos = null;
 function carregarRecursos() {
-  if (!recursos) {
-    const css = fetch('assets/css/pdf.css').then(function (r) { if (!r.ok) throw new Error('assets/css/pdf.css: ' + r.status); return r.text(); });
-    const logo = fetch('assets/img/mobilidade.png').then(function (r) { return r.blob(); }).then(function (b) {
-      return new Promise(function (ok, nao) { const f = new FileReader(); f.onload = function () { ok(f.result); }; f.onerror = nao; f.readAsDataURL(b); });
-    });
-    recursos = Promise.all([css, logo]).then(function (r) { return {css: r[0], logo: r[1]}; });
-    recursos.catch(function () { recursos = null; }); // falhou: tenta de novo no próximo clique
-  }
+  recursos ??= buscarRecursos().catch((erro) => {
+    recursos = null; // tenta de novo no próximo clique
+    throw erro;
+  });
   return recursos;
 }
 
+// ---------- HTML do relatório ----------
+
 /** Nome do arquivo sem extensão: monitor-mobilidade-aaaa-mm-dd (com o ambiente quando não é produção). */
-function nomePdf(r) {
-  const a = estado.ambiente;
-  return 'monitor-mobilidade-' + r.dataRef + (a && a.nome && a.nome !== 'PRODUÇÃO' ? '-' + a.nome.toLowerCase() : '');
+function nomeDoArquivo(relatorio) {
+  const ambiente = ambienteDeTeste();
+  return `monitor-mobilidade-${relatorio.dataRef}${ambiente ? `-${ambiente.toLowerCase()}` : ''}`;
 }
 
-function stP(s) { return '<span class="st ' + esc(s) + '">' + esc(ROTULO[s] || s) + '</span>'; }
+const status = (codigo) => html`<span class="st ${codigo}">${rotuloDe(codigo)}</span>`;
 
-function tabMot(itens, chave) {
-  if (!itens || !itens.length) return '<p style="color:#A1A1AA;margin:2px 0">Nenhum.</p>';
-  return '<table class="mot"><tbody>' + itens.map(function (x) {
-    return '<tr><td>' + esc(x.motivo) + (x.acao ? '<span class="acao">Ação: ' + esc(x.acao) + '</span>' : '') + '</td><td class="n">' + fmt(x[chave]) + '</td></tr>';
-  }).join('') + '</tbody></table>';
+function tabelaDeMotivos(itens, chave) {
+  if (!itens?.length) return html`<p class="nenhum">Nenhum.</p>`;
+  return html`<table class="mot">
+    <tbody>
+      ${itens.map(
+        (item) => html`<tr>
+          <td>${item.motivo}${item.acao ? html`<span class="acao">Ação: ${item.acao}</span>` : ''}</td>
+          <td class="n">${fmt(item[chave])}</td>
+        </tr>`,
+      )}
+    </tbody>
+  </table>`;
 }
 
 /** Indicador do topo do PDF; sem número mostra "—" e o motivo. */
-function kp(rot, n, suf, vazio) {
-  if (!n) return '<div class="kpi"><span>' + esc(rot) + '</span><b>—</b><small>' + esc(vazio) + '</small></div>';
-  let t = '<div class="kpi"><span>' + esc(rot) + '</span><b>' + fmt(n.valor) + (suf || '') + '</b>';
-  if (n.base) t += '<small>de ' + fmt(n.base) + ' · ' + pct(n.valor, n.base) + '</small><div class="bar"><i style="width:' + Math.min(100, n.valor * 100 / n.base).toFixed(1) + '%"></i></div>';
-  return t + '</div>';
+function indicador(rotulo, n, { sufixo = '', vazio }) {
+  if (!n) return html`<div class="kpi"><span>${rotulo}</span><b>—</b><small>${vazio}</small></div>`;
+  const barra = n.base
+    ? html`<small>de ${fmt(n.base)} · ${pct(n.valor, n.base)}</small>
+        <div class="bar"><i style="width:${Math.min(100, (n.valor * 100) / n.base).toFixed(1)}%"></i></div>`
+    : '';
+  return html`<div class="kpi"><span>${rotulo}</span><b>${fmt(n.valor)}${sufixo}</b>${barra}</div>`;
+}
+
+const valorComPercentual = (n) => html`${fmt(n.valor)}${n.base ? html`<small>${pct(n.valor, n.base)}</small>` : ''}`;
+
+function cabecalho(relatorio, logo) {
+  const ambiente = estado.ambiente?.nome;
+  return html`<div class="cab">
+      <img alt="Mobilidade" src="${logo}">
+      <div class="t">
+        <h1>${APP.nome}${ambiente ? html`<span class="amb ${ambiente}">${ambiente}</span>` : ''}</h1>
+        <div class="sub">Relatório diário de saúde do app Mobilidade</div>
+      </div>
+      <div class="dt"><b>${dataBr(relatorio.dataRef)}</b><span>gerado às ${horaDe(relatorio.geradoEm)} (Brasília)</span></div>
+    </div>
+    <div class="faixa"></div>`;
+}
+
+function veredito(relatorio, perguntas) {
+  const total = contarStatus(perguntas);
+  const consultas = relatorio.completo ? 'todas as consultas responderam' : 'alguma consulta não respondeu';
+  const contagem = CONTAGEM.filter(([codigo, , sempre]) => sempre || total[codigo]).map(
+    ([codigo, texto]) => html`<span><i data-st="${codigo}"></i>${texto(total[codigo])}</span>`,
+  );
+  return html`<div class="ver ${relatorio.veredito}">
+    <div class="corpo">
+      <h2>${tituloVeredito(relatorio.veredito)}</h2>
+      <div class="c">${contagem}</div>
+      <div class="n">${perguntas.length} perguntas da rotina diária · ${consultas}</div>
+    </div>
+    ${status(relatorio.veredito)}
+  </div>`;
+}
+
+function indicadores(porId) {
+  const { recebidas, entregues, esgotados, login } = destaquesDoDia(porId);
+  return html`<div class="kpis">${[
+    indicador('Ordens recebidas', recebidas, { vazio: 'sem lista do despacho' }),
+    indicador('Retornos entregues', entregues, { vazio: 'sem lista do despacho' }),
+    indicador('Apontamentos esgotados', esgotados, { vazio: 'sem dados' }),
+    indicador('Login do app', login, { sufixo: ' ms', vazio: 'sem dados' }),
+  ]}</div>`;
+}
+
+function indice(perguntas, porId) {
+  const linhas = perguntas.map((p) => {
+    const numPrincipal = principal(p, porId);
+    return html`<tr>
+      <td class="num">${doisDigitos(p.numero)}</td>
+      <td>${p.pergunta}</td>
+      <td class="n">${numPrincipal ? valorComPercentual(numPrincipal) : '—'}</td>
+      <td>${status(p.status)}</td>
+    </tr>`;
+  });
+  return html`<h3 class="sec">Resumo das perguntas</h3>
+    <table class="indice">
+      <thead><tr><th>#</th><th>Pergunta</th><th class="n">Principal</th><th>Status</th></tr></thead>
+      <tbody>${linhas}</tbody>
+    </table>`;
+}
+
+function despacho(dados) {
+  if (!dados) return '';
+  return html`<h3 class="sec">Despacho analisado</h3>
+    <dl class="desp">
+      <dt>Início</dt><dd>${dataBr(dados.inicio)}</dd>
+      <dt>Ordens na lista</dt><dd>${fmt(dados.total)}</dd>
+      <dt>Enviada por</dt><dd>${dados.enviadoPor} em ${dataBr(dados.enviadoEm)}</dd>
+    </dl>`;
+}
+
+function detalheDoCheck(check, pergunta, numPrincipal, varios) {
+  const numeros = (check.numeros || []).filter((n) => n !== numPrincipal);
+  const motivos = check.resumo?.despacho;
+  const chave = chaveDosMotivos(check.id);
+  const achados = achadosNovos(check, pergunta.resposta);
+  return html`${numeros.length
+      ? html`<table>
+          <thead><tr><th>Indicador${varios ? ` · ${check.titulo}` : ''}</th><th class="n">Valor</th></tr></thead>
+          <tbody>${numeros.map((n) => html`<tr><td>${n.rotulo}</td><td class="n">${valorComPercentual(n)}</td></tr>`)}</tbody>
+        </table>`
+      : ''}
+    ${motivos && (motivos.porMotivo || motivos.tiPorMotivo)
+      ? html`<div class="duas">
+          <div><h5>Por motivo do usuário · negócio</h5>${tabelaDeMotivos(motivos.porMotivo, chave)}</div>
+          <div><h5>Com o sistema · TI</h5>${tabelaDeMotivos(motivos.tiPorMotivo, chave)}</div>
+        </div>`
+      : ''}
+    ${achados.length
+      ? html`<h5>O que foi encontrado</h5><ul class="ach">${achados.map((a) => html`<li>${a}</li>`)}</ul>`
+      : ''}
+    ${check.erro ? html`<p class="regra"><b>Sem dados:</b> ${check.erro}</p>` : ''}
+    ${check.regra
+      ? html`<p class="regra"><b>Regra:</b> ${check.regra}${check.elo ? html` · <b>Elo:</b> ${check.elo}` : ''}</p>`
+      : ''}`;
+}
+
+function detalheDaPergunta(pergunta, porId) {
+  const checks = checksDa(pergunta, porId);
+  const numPrincipal = principal(pergunta, porId);
+  const destaque =
+    numPrincipal && pergunta.status !== 'FORA'
+      ? html`<div class="dest">
+          <b>${fmt(numPrincipal.valor)}</b>
+          <span>${numPrincipal.base
+              ? `de ${fmt(numPrincipal.base)} (${pct(numPrincipal.valor, numPrincipal.base)}) · `
+              : ''}${numPrincipal.rotulo}</span>
+        </div>`
+      : '';
+  return html`<div class="perg">
+    <div class="pc">
+      <span class="num">${doisDigitos(pergunta.numero)}</span>
+      <h4>${pergunta.pergunta}</h4>
+      ${status(pergunta.status)}
+    </div>
+    <div class="pb">
+      ${destaque}
+      <p class="resp">${pergunta.resposta}</p>
+      ${checks.map((check) => detalheDoCheck(check, pergunta, numPrincipal, checks.length > 1))}
+    </div>
+  </div>`;
 }
 
 /**
- * HTML completo do relatório: cabeçalho, veredito, indicadores, índice das perguntas, despacho e,
- * a partir da página 2, cada pergunta em detalhe.
+ * HTML completo do relatório: cabeçalho, veredito, indicadores, índice das perguntas, despacho e, a partir da
+ * página 2, cada pergunta em detalhe.
  */
-function relatorioPdfHtml(r, css, logo) {
-  const ps = perguntasDe(r), porId = checksPorId(r), cont = contarStatus(ps);
-  const a = estado.ambiente;
-  const amb = a && a.nome ? '<span class="amb ' + esc(a.nome) + '">' + esc(a.nome) + '</span>' : '';
+function htmlDoRelatorio(relatorio, css, logo) {
+  const perguntas = perguntasDe(relatorio);
+  const porId = checksPorId(relatorio);
   // o título vira o nome sugerido em "Salvar como PDF" na impressão do navegador
-  let h = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>' + esc(nomePdf(r)) + '</title>' +
-    '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@600;700&family=Red+Hat+Text:wght@400;500;600&family=Red+Hat+Mono:wght@500;600&display=block">' +
-    '<style>' + css + '</style></head><body>';
-
-  h += '<div class="cab"><img alt="Mobilidade" src="' + logo + '"><div class="t"><h1>Monitor Mobilidade' + amb + '</h1><div class="sub">Relatório diário de saúde do app Mobilidade</div></div>' +
-    '<div class="dt"><b>' + dataBr(r.dataRef) + '</b><span>gerado às ' + esc(String(r.geradoEm).slice(11, 16)) + ' (Brasília)</span></div></div><div class="faixa"></div>';
-
-  h += '<div class="ver ' + esc(r.veredito) + '"><div style="flex:1"><h2>' + esc(tituloVeredito(r.veredito)) + '</h2><div class="c">' +
-    (cont.CRITICO ? '<span><i style="background:#DC2626"></i>' + cont.CRITICO + ' crítica(s)</span>' : '') +
-    (cont.ATENCAO ? '<span><i style="background:#F59E0B"></i>' + cont.ATENCAO + ' com atenção</span>' : '') +
-    '<span><i style="background:#16A34A"></i>' + cont.OK + ' ok</span>' +
-    (cont.FORA ? '<span><i style="background:#D4D4D8"></i>' + cont.FORA + ' fora do monitor</span>' : '') +
-    (cont.SEM ? '<span><i style="background:#A1A1AA"></i>' + cont.SEM + ' sem dados</span>' : '') +
-    '</div><div class="n">' + ps.length + ' perguntas da rotina diária · ' + (r.completo ? 'todas as consultas responderam' : 'alguma consulta não respondeu') + '</div></div>' + stP(r.veredito) + '</div>';
-
-  // indicadores do dia
-  const rec = numeroDe(porId, 'C06', 'Recebidos'), ent = numeroDe(porId, 'C07', 'Entregues aos aparelhos');
-  const esg = numeroDe(porId, 'C03', 'Apontamentos esgotados'), lg = numeroDe(porId, 'C09', 'Tempo de resposta do login (ms)');
-  h += '<div class="kpis">' + kp('Ordens recebidas', rec && rec.base ? rec : null, '', 'sem lista do despacho') + kp('Retornos entregues', ent && ent.base ? ent : null, '', 'sem lista do despacho') +
-    kp('Apontamentos esgotados', esg, '', 'sem dados') + kp('Login do app', lg, ' ms', 'sem dados') + '</div>';
-
-  // índice
-  h += '<h3 class="sec">Resumo das perguntas</h3><table class="indice"><thead><tr><th>#</th><th>Pergunta</th><th class="n">Principal</th><th>Status</th></tr></thead><tbody>';
-  ps.forEach(function (p) {
-    const pr = principal(p, porId);
-    h += '<tr><td class="num">' + String(p.numero).padStart(2, '0') + '</td><td>' + esc(p.pergunta) + '</td><td class="n">' + (pr ? fmt(pr.valor) + (pr.base ? '<small>' + pct(pr.valor, pr.base) + '</small>' : '') : '—') + '</td><td>' + stP(p.status) + '</td></tr>';
-  });
-  h += '</tbody></table>';
-
-  if (r.despacho) h += '<h3 class="sec">Despacho analisado</h3><dl class="desp"><dt>Início</dt><dd>' + dataBr(r.despacho.inicio) + '</dd><dt>Ordens na lista</dt><dd>' + fmt(r.despacho.total) + '</dd><dt>Enviada por</dt><dd>' + esc(r.despacho.enviadoPor) + ' em ' + dataBr(r.despacho.enviadoEm) + '</dd></dl>';
-
-  // detalhe de cada pergunta
-  h += '<h3 class="sec quebra">Respostas em detalhe</h3>';
-  ps.forEach(function (p) {
-    const cs = p.checks.map(function (id) { return porId[id]; }).filter(Boolean), pr = principal(p, porId);
-    h += '<div class="perg"><div class="pc"><span class="num">' + String(p.numero).padStart(2, '0') + '</span><h4>' + esc(p.pergunta) + '</h4>' + stP(p.status) + '</div><div class="pb">';
-    if (pr && p.status !== 'FORA') h += '<div class="dest"><b>' + fmt(pr.valor) + '</b><span>' + (pr.base ? 'de ' + fmt(pr.base) + ' (' + pct(pr.valor, pr.base) + ') · ' : '') + esc(pr.rotulo) + '</span></div>';
-    h += '<p class="resp">' + esc(p.resposta) + '</p>';
-    cs.forEach(function (c) {
-      const nums = (c.numeros || []).filter(function (n) { return n !== pr; });
-      if (nums.length) h += '<table><thead><tr><th>Indicador' + (cs.length > 1 ? ' · ' + esc(c.titulo) : '') + '</th><th class="n">Valor</th></tr></thead><tbody>' +
-        nums.map(function (n) { return '<tr><td>' + esc(n.rotulo) + '</td><td class="n">' + fmt(n.valor) + (n.base ? '<small>' + pct(n.valor, n.base) + '</small>' : '') + '</td></tr>'; }).join('') + '</tbody></table>';
-      const d = c.resumo && c.resumo.despacho, chave = c.id === 'C06' ? 'ordens' : 'retornos';
-      if (d && (d.porMotivo || d.tiPorMotivo)) h += '<div class="duas"><div><h5>Por motivo do usuário · negócio</h5>' + tabMot(d.porMotivo, chave) + '</div><div><h5>Com o sistema · TI</h5>' + tabMot(d.tiPorMotivo, chave) + '</div></div>';
-      const ach = (c.achados || []).filter(function (x) { return String(x).trim() !== String(p.resposta || '').trim(); });
-      if (ach.length) h += '<h5>O que foi encontrado</h5><ul class="ach">' + ach.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>';
-      if (c.erro) h += '<p class="regra"><b>Sem dados:</b> ' + esc(c.erro) + '</p>';
-      if (c.regra) h += '<p class="regra"><b>Regra:</b> ' + esc(c.regra) + (c.elo ? ' · <b>Elo:</b> ' + esc(c.elo) : '') + '</p>';
-    });
-    h += '</div></div>';
-  });
-  return h + '</body></html>';
+  const documento = html`<!DOCTYPE html>
+    <html lang="pt-BR">
+      <head>
+        <meta charset="utf-8">
+        <title>${nomeDoArquivo(relatorio)}</title>
+        <link rel="stylesheet" href="${FONTES}">
+        <style>${raw(css)}</style>
+      </head>
+      <body>
+        ${cabecalho(relatorio, logo)}
+        ${veredito(relatorio, perguntas)}
+        ${indicadores(porId)}
+        ${indice(perguntas, porId)}
+        ${despacho(relatorio.despacho)}
+        <h3 class="sec quebra">Respostas em detalhe</h3>
+        ${perguntas.map((pergunta) => detalheDaPergunta(pergunta, porId))}
+      </body>
+    </html>`;
+  return String(documento);
 }
+
+// ---------- saída ----------
 
 /** Impressão do navegador, num iframe invisível (removido depois de 1 min). */
-function imprimirNoNavegador(html) {
-  const f = document.createElement('iframe'); f.style.cssText = 'position:fixed;width:0;height:0;border:0;right:0;bottom:0';
-  f.srcdoc = html; document.body.appendChild(f);
-  f.onload = function () { setTimeout(function () { f.contentWindow.print(); setTimeout(function () { f.remove(); }, 60000); }, 500); };
+function imprimirNoNavegador(documento) {
+  const quadro = Object.assign(document.createElement('iframe'), { srcdoc: documento, className: 'impressao' });
+  quadro.onload = () =>
+    setTimeout(() => {
+      quadro.contentWindow.print();
+      setTimeout(() => quadro.remove(), VIDA_IFRAME_MS);
+    }, ESPERA_IMPRESSAO_MS);
+  document.body.appendChild(quadro);
 }
 
-/** Baixa o PDF gerado pelo servidor (no protótipo não há: vale a impressão do navegador). */
+/** Baixa o PDF gerado pelo MonitorLocal. */
 function baixar(blob, nome) {
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nome; document.body.appendChild(a); a.click();
-  setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+  const link = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: nome });
+  document.body.appendChild(link);
+  link.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(link.href);
+    link.remove();
+  }, 2000);
+}
+
+async function exportar() {
+  const relatorio = estado.relatorio;
+  if (!relatorio) {
+    avisar('Ainda não há relatório para exportar.', { erro: true });
+    return;
+  }
+  const botao = $('bPdf');
+  const rotulo = botao.querySelector('.rot');
+  const textoOriginal = rotulo.textContent;
+  const nome = `${nomeDoArquivo(relatorio)}.pdf`;
+  botao.disabled = true;
+  rotulo.textContent = 'Gerando…';
+  try {
+    const { css, logo } = await carregarRecursos();
+    const documento = htmlDoRelatorio(relatorio, css, logo);
+    const pdf = await gerarPdf(nome, documento);
+    if (pdf) baixar(pdf, nome);
+    else imprimirNoNavegador(documento);
+  } catch (erro) {
+    avisarErro('Não foi possível gerar o PDF: ', erro);
+  } finally {
+    botao.disabled = false;
+    rotulo.textContent = textoOriginal;
+  }
 }
 
 export function iniciarPdf() {
-  carregarRecursos().catch(function () { /* nova tentativa no clique */ });
-  $('bPdf').addEventListener('click', function () {
-    const r = estado.relatorio;
-    if (!r) { alert('Ainda não há relatório para exportar.'); return; }
-    const b = $('bPdf'), rot = b.querySelector('.rot'), antes = rot.textContent, nome = nomePdf(r) + '.pdf';
-    let html = null;
-    b.disabled = true; rot.textContent = 'Gerando…';
-    carregarRecursos()
-      .then(function (x) {
-        html = relatorioPdfHtml(r, x.css, x.logo);
-        return servidor('pdf?nome=' + encodeURIComponent(nome), {method: 'POST', headers: {'Content-Type': 'text/html; charset=utf-8'}, body: html});
-      })
-      .then(function (resp) {
-        if (resp.status === 501) return null; // sem Edge/Chrome: imprime pelo navegador
-        if (!resp.ok) return resp.text().then(function (t) { let m = t; try { m = JSON.parse(t).message || t; } catch (e) { /* texto puro */ } throw new Error(m); });
-        return resp.blob();
-      })
-      .then(function (blob) { if (blob) baixar(blob, nome); else imprimirNoNavegador(html); })
-      .catch(function (e) { alert('Não foi possível gerar o PDF: ' + e.message); })
-      .then(function () { b.disabled = false; rot.textContent = antes; });
-  });
+  carregarRecursos().catch(() => {}); // adianta o download; se falhar, tenta de novo no clique
+  $('bPdf').addEventListener('click', exportar);
 }
