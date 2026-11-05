@@ -1,0 +1,193 @@
+<!doctype html>
+<!--
+================================================================================
+ ENCO – Portal Web · Protótipo modular (v3.0.0 - DEV)
+ Abra este arquivo direto no navegador (duplo clique). Não precisa de Node,
+ servidor ou build: só HTML, CSS e JavaScript clássico (scripts sem "module",
+ que funcionam em file://).
+
+ ESTRUTURA
+ index.html              shell: topbar, menu lateral e carregamento dos módulos
+ css/base.css            estilos comuns a todas as telas
+ css/shell.css           estrutura da SPA
+ css/screens/<tela>.css  estilos próprios de cada tela (escopo body[data-screen])
+ js/core/enco.js         registro de telas, roteador (#hash) e barramento
+ js/core/features.js     feature flags (ex.: Coletas desligada)
+ js/core/layout.js       comportamento do menu, topbar e seletor de perfil
+ js/core/login.js        tela de login (o portal só inicia depois de entrar)
+ js/core/exporta.js      geração de relatórios em Excel (.xlsx) e PDF, sem bibliotecas
+ js/data/dominio.js      domínio real do ENCO (status, funcionalidades, limites)
+ js/screens/<tela>.js    template + comportamento de cada tela
+ assets/img/             logo e imagens
+
+ Para abrir direto uma tela use o hash: index.html#planos
+
+ TELAS
+ home (Início) · planos (Gestão de Planos, com geração de relatório) · dashboards · rotas
+ coletas (desligada por feature flag, ver js/core/features.js)
+ veiculos · tipos · macro · pontos (Pontos de descarga) · nc (Não conformidades)
+ prioridades · movimentos (Parâmetros) · perfis · areas · usuarios · configuracoes · logs (aba de Configurações)
+
+ PONTOS DE OBSERVAÇÃO GERAIS
+ [OBS-01] Todos os dados são fictícios (planos, pontos, e-mails, 8IDs, números SAP).
+ [OBS-02] Os planos de exemplo têm datas de setembro/2026, mas a Home e o Dashboard
+          trabalham com datas relativas a "hoje". Na implementação, tudo vem da API.
+ [OBS-03] Alterações em cadastros ficam só em memória: recarregar volta ao início.
+ [OBS-04] Comentários "[OBS-xx]" dentro das telas marcam decisões pendentes ou
+          regras a confirmar com o negócio. "[REAL]" marca ajustes feitos para
+          refletir o código atual (API .NET / Angular / banco).
+================================================================================
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ENCO – Portal Web</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="assets/img/logo-enco.png">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/shell.css">
+<link rel="stylesheet" href="css/screens/home.css">
+<link rel="stylesheet" href="css/screens/planos.css">
+<link rel="stylesheet" href="css/screens/dashboards.css">
+<link rel="stylesheet" href="css/screens/rotas.css">
+<link rel="stylesheet" href="css/screens/coletas.css">
+<link rel="stylesheet" href="css/screens/veiculos.css">
+<link rel="stylesheet" href="css/screens/tipos.css">
+<link rel="stylesheet" href="css/screens/macro.css">
+<link rel="stylesheet" href="css/screens/pontos.css">
+<link rel="stylesheet" href="css/screens/nc.css">
+<link rel="stylesheet" href="css/screens/prioridades.css">
+<link rel="stylesheet" href="css/screens/movimentos.css">
+<link rel="stylesheet" href="css/screens/perfis.css">
+<link rel="stylesheet" href="css/screens/areas.css">
+<link rel="stylesheet" href="css/screens/usuarios.css">
+<link rel="stylesheet" href="css/screens/configuracoes.css">
+<link rel="stylesheet" href="css/screens/logs.css">
+<link rel="stylesheet" href="css/ajustes.css">
+<link rel="stylesheet" href="css/login.css">
+</head>
+<body>
+<div class="app" id="app">
+
+  <header class="topbar">
+    <button class="ib" style="color:#F26A1B" aria-label="Recolher menu" id="toggleSide">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg>
+    </button>
+    <a class="logo-link" href="#home" title="Ir para o Início" aria-label="ENCO – ir para o Início"><img class="logo-img" alt="" src="assets/img/logo-enco.png"></a>
+    <div class="brand">
+      <span class="brand-name">ENCO - Portal web</span>
+      <span class="divider"></span>
+      <span class="version">v3.0.0 - DEV</span>
+    </div>
+    <div class="spacer"></div>
+    <label class="profile">Área
+      <select class="inp" style="height:36px;width:170px;font-weight:600">
+        <option>Almoxarifado</option>
+      </select>
+    </label>
+    <span class="divider" style="height:24px;background:#E8E9F0"></span>
+    <div class="user">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+      <span class="user-name">Paola Santiago</span>
+    </div>
+    <a class="ib" href="../../" aria-label="Todos os protótipos" title="Todos os protótipos">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    </a>
+    <button class="ib" aria-label="Sair" title="Sair">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
+    </button>
+  </header>
+
+  <div class="body">
+    <nav class="sidebar" aria-label="Menu principal">
+      <button class="nav" title="Início" data-go="home">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></svg>
+        <span class="txt">Início</span>
+      </button>
+      <div class="sec">Planos</div>
+      <button class="nav" title="Gestão de Planos" data-go="planos">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
+        <span class="txt">Gestão de Planos</span>
+      </button>
+      <button class="nav" title="Dashboards" data-go="dashboards">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        <span class="txt">Dashboards</span>
+      </button>
+
+      <div class="sec">Operação</div>
+      <button class="nav" title="Rotas" data-go="rotas">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg>
+        <span class="txt">Rotas</span>
+      </button>
+      <button class="nav" title="Coletas" data-go="coletas">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7 12 12l8.7-5"/><path d="M12 22V12"/></svg>
+        <span class="txt">Coletas</span>
+      </button>
+
+      <div class="sec">Cadastros</div>
+      <button class="nav" title="Cadastros">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>
+        <span class="txt">Cadastros</span>
+        <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B8FA6" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+<div class="subnav" id="subCad">
+<button class="nav sub" title="Veículos" data-go="veiculos"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 17H3v-5l2-5h14l2 5v5h-2"/><circle cx="7.5" cy="17" r="1.8"/><circle cx="16.5" cy="17" r="1.8"/><path d="M3 12h18"/></svg><span class="txt">Veículos</span></button>
+<button class="nav sub" title="Pontos de descarga" data-go="pontos"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"/><path d="M12 7v6M9 10h6"/></svg><span class="txt">Pontos de descarga</span></button>
+<button class="nav sub" title="Parâmetros" data-go="movimentos"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M1 14h6"/><path d="M9 8h6"/><path d="M17 16h6"/></svg><span class="txt">Parâmetros</span></button>
+</div>
+      <button class="nav" title="Gestão de Perfis" data-go="perfis">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M15 9h3"/><path d="M15 13h3"/><path d="M6 16c.6-1.2 1.7-2 3-2s2.4.8 3 2"/></svg>
+        <span class="txt">Gestão de Perfis</span>
+      </button>
+      <button class="nav" title="Áreas Responsáveis" data-go="areas">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M12 6h.01"/><path d="M16 6h.01"/><path d="M8 10h.01"/><path d="M12 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/></svg>
+        <span class="txt">Áreas Responsáveis</span>
+      </button>
+      <button class="nav" title="Usuários" data-go="usuarios">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span class="txt">Usuários</span>
+      </button>
+
+      <div class="sec">Sistema</div>
+      <button class="nav" title="Configurações" data-go="configuracoes">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span class="txt">Configurações</span>
+      </button>
+    </nav>
+
+    <div id="view"></div>
+  </div>
+</div>
+
+<script src="js/core/enco.js"></script>
+<script src="js/core/features.js"></script>
+<script src="js/core/layout.js"></script>
+<script src="js/core/login.js"></script>
+<script src="js/core/filtros.js"></script>
+<script src="js/core/exporta.js"></script>
+<script src="js/data/dominio.js"></script>
+<script src="js/data/imagens.js"></script>
+<script src="js/data/usuarios.js"></script>
+<script src="js/data/recebedores.js"></script>
+<script src="js/screens/home.js"></script>
+<script src="js/screens/planos.js"></script>
+<script src="js/screens/dashboards.js"></script>
+<script src="js/screens/rotas.js"></script>
+<script src="js/screens/coletas.js"></script>
+<script src="js/screens/veiculos.js"></script>
+<script src="js/screens/tipos.js"></script>
+<script src="js/screens/macro.js"></script>
+<script src="js/screens/pontos.js"></script>
+<script src="js/screens/nc.js"></script>
+<script src="js/screens/prioridades.js"></script>
+<script src="js/screens/movimentos.js"></script>
+<script src="js/screens/perfis.js"></script>
+<script src="js/screens/areas.js"></script>
+<script src="js/screens/usuarios.js"></script>
+<script src="js/screens/configuracoes.js"></script>
+<script src="js/screens/logs.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

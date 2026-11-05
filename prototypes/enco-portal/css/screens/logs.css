@@ -1,0 +1,42 @@
+/* Tela: Logs do sistema (dentro de Configurações) - regras válidas só com body[data-screen="logs"]. */
+:where(body[data-screen="logs"]) .badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px}
+:where(body[data-screen="logs"]) .mono{font-variant-numeric:tabular-nums}
+:where(body[data-screen="logs"]) .tools{display:flex;align-items:center;gap:12px;padding:16px 24px;flex-wrap:wrap}
+:where(body[data-screen="logs"]) .search{position:relative;flex:1;min-width:220px;max-width:360px}
+:where(body[data-screen="logs"]) .search svg{position:absolute;left:12px;top:12px;color:#8B8FA6}
+:where(body[data-screen="logs"]) .search .inp{padding-left:38px}
+:where(body[data-screen="logs"]) .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1B1A4A;color:#fff;padding:12px 18px;border-radius:12px;font-size:14px;font-weight:600;display:flex;gap:10px;align-items:center;z-index:60;box-shadow:0 10px 30px rgba(27,26,74,.3)}
+:where(body[data-screen="logs"]) .t-card{overflow:clip}
+:where(body[data-screen="logs"]) .content{flex-grow:1;min-width:0;min-height:0;display:flex;flex-direction:column}
+:where(body[data-screen="logs"]) .content .main{flex:1 1 auto;min-height:0}
+:where(body[data-screen="logs"]) .pager{display:flex;align-items:center;justify-content:flex-end;gap:16px;padding:12px 24px;font-size:13px;color:#5E627C;flex-wrap:wrap}
+:where(body[data-screen="logs"]) .pager select{height:34px;width:76px;border:1px solid #DFE1EA;border-radius:8px;background:#FBFBFD;padding:0 8px;font-size:13px;color:#1B1A4A}
+:where(body[data-screen="logs"]) .pager .ib[disabled]{opacity:.35;cursor:not-allowed}
+/* Cabeçalho com abas (Configurações · Logs do sistema), mesmo padrão de Veículos */
+:where(body[data-screen="logs"]) .ghead{flex-shrink:0;padding:22px 32px 0;background:#F4F5F9}
+:where(body[data-screen="logs"]) .gtop{display:flex;align-items:center;gap:16px}
+:where(body[data-screen="logs"]) .gtop .icon-tile{width:48px;height:48px;background:#FDEBDD;color:#D35A12}
+:where(body[data-screen="logs"]) .gcrumb{font-size:12px;font-weight:700;color:#6E7390}
+:where(body[data-screen="logs"]) .gtop h1{margin:2px 0 0;font-size:24px;font-weight:800;letter-spacing:-.02em}
+:where(body[data-screen="logs"]) .gtop p{margin:2px 0 0;font-size:14px;color:#5E627C}
+:where(body[data-screen="logs"]) .gtabs{display:flex;gap:4px;border-bottom:1px solid #E1E3EC;margin-top:16px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+:where(body[data-screen="logs"]) .gtab{display:inline-flex;align-items:center;gap:8px;border:0;background:none;padding:12px 16px;font:inherit;font-size:15px;font-weight:600;color:#5E627C;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px;white-space:nowrap}
+:where(body[data-screen="logs"]) .gtab:hover{color:#1B1A4A}
+:where(body[data-screen="logs"]) .gtab.on{color:#1B1A4A;border-bottom-color:#F26A1B}
+:where(body[data-screen="logs"]) .gtab.on svg{color:#F26A1B}
+:where(body[data-screen="logs"]) .gtab:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(242,106,27,.35);border-radius:8px}
+:where(body[data-screen="logs"]) .lgf{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;padding:16px 24px}
+:where(body[data-screen="logs"]) .lgf .fld{display:flex;flex-direction:column;gap:6px}
+:where(body[data-screen="logs"]) .lgf .inp[type=date]{width:170px}
+:where(body[data-screen="logs"]) .lgf .spacer{flex:1}
+:where(body[data-screen="logs"]) .lcols{display:grid;grid-template-columns:150px minmax(0,1.2fr) 190px minmax(0,2.4fr);gap:16px;align-items:center}
+:where(body[data-screen="logs"]) .lrow{padding:12px 24px;border-bottom:1px solid #EEEFF4;font-size:14px;color:#3F4260}
+:where(body[data-screen="logs"]) .lrow:hover{background:#FAFAFD}
+:where(body[data-screen="logs"]) .luser{display:flex;flex-direction:column;min-width:0}
+:where(body[data-screen="logs"]) .luser b{font-weight:600;color:#1B1A4A}
+:where(body[data-screen="logs"]) .luser small{font-size:12px;color:#6E7390}
+:where(body[data-screen="logs"]) .lacao{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;width:max-content}
+:where(body[data-screen="logs"]) .ldesc{overflow-wrap:anywhere}
+:where(body[data-screen="logs"]) .lnote{margin:0 24px 16px;padding:10px 12px;border-radius:10px;background:#F8F8FB;border:1px solid #EEEFF4;font-size:12px;color:#5E627C}
+@media (max-width:1000px){:where(body[data-screen="logs"]) .lcols{grid-template-columns:130px minmax(0,1fr) 170px} :where(body[data-screen="logs"]) .lcols>:nth-child(4){grid-column:1/-1}}
+:where(body[data-screen="logs"]) .content .main{padding-top:20px}

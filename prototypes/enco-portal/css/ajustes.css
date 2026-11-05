@@ -1,0 +1,138 @@
+/* ==========================================================================
+   ENCO Portal Web · ajustes de leitura (carregado por último)
+   1) Etiquetas, chips e botões nunca quebram em duas linhas.
+   2) Textos informativos não são cortados com "…": quebram linha normalmente.
+   ========================================================================== */
+
+/* 1) Elementos de uma linha só */
+.pill, .badge, .chip, .chipbtn, .spill, .warnpill, .mcode, .seg, .gtab, .btn, .tcount, .decb, .syncpill, .tag2 {
+  white-space: nowrap;
+}
+.tag2 { max-width: none; overflow: visible; text-overflow: clip; }
+.thead > span, .colh > span { white-space: nowrap; }
+
+/* 2) Textos que eram cortados passam a quebrar linha */
+.ci small,                       /* contatos: 8ID · celular · e-mail */
+.ndesc,                          /* não conformidades: descrição */
+.apn b,                          /* áreas e rotas: nomes de pessoas/pontos */
+.pdtx small,                     /* pontos: endereço abaixo da identificação */
+.cl, .hbl,                       /* dashboards e listas: nomes de ponto */
+.mn span,                        /* início: rótulos da mini linha do tempo */
+.prdesc,                         /* prioridades e tipos de movimento: descrição */
+.uname b                         /* usuários: nome */
+{
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+.mn span { line-height: 1.25; }
+
+/* Gestão de Perfis: o check do card selecionado não disputa espaço com a descrição */
+:where(body[data-screen="perfis"]) .ptile { position: relative; }
+:where(body[data-screen="perfis"]) .ptile .chk { position: absolute; top: 14px; right: 14px; }
+:where(body[data-screen="perfis"]) .ptile .top { padding-right: 26px; }
+
+/* Gestão de Planos: coluna "Enviado SAP" com espaço para o título em uma linha */
+:where(body[data-screen="planos"]) .cols { grid-template-columns: minmax(128px,1.2fr) minmax(68px,.7fr) minmax(100px,1.5fr) minmax(92px,1fr) minmax(184px,1.3fr) minmax(96px,.7fr) 204px; }
+
+/* Filtros das listagens (js/core/filtros.js): título sempre visível e destaque quando filtrando */
+.ffld{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ffld.ffld-search{flex:1;min-width:220px;max-width:360px}
+.ffld.ffld-search > .search{max-width:none;min-width:0;width:100%;flex:none}
+.ffl{display:block}
+.tools:has(.ffld){align-items:flex-end}
+.tools:has(.ffld) > .pill, .tools:has(.ffld) > .spacer + .btn{margin-bottom:9px}
+.ffld .inp.hl{border-color:#F26A1B;background:#FFF7F1;font-weight:600}
+.ffld .search .inp.hl + svg, .ffld .search svg{z-index:1}
+.ffld.ffld-segs{flex:none}
+.segs.hl{box-shadow:0 0 0 1px #F26A1B;background:#FFF7F1}
+
+/* Campos de texto longo e listas usam a mesma fonte do portal (o navegador usa monoespaçada por padrão) */
+textarea.inp, select.inp, button.inp{font-family:inherit;font-size:14px}
+textarea.inp{line-height:1.45;padding-top:10px;padding-bottom:10px;resize:vertical;min-height:84px}
+
+/* Gestão de Planos em telas menores: cada plano vira um cartão (sem rolagem lateral).
+   Ordem dos campos na linha: Plano, Placa, Motorista, Carregamento, Status, Enviado SAP, Ações. */
+@media (max-width:1180px){
+  :where(body[data-screen="planos"]) .cols.thead{display:none}
+  :where(body[data-screen="planos"]) .cols.tr{grid-template-columns:repeat(4,minmax(0,1fr)) auto;grid-template-areas:"plano plano status status acoes" "placa motorista carga sap acoes";row-gap:10px;align-items:start}
+  :where(body[data-screen="planos"]) .cols.tr>:nth-child(1){grid-area:plano}
+  :where(body[data-screen="planos"]) .cols.tr>:nth-child(2){grid-area:placa}
+  :where(body[data-screen="planos"]) .cols.tr>:nth-child(3){grid-area:motorista}
+  :where(body[data-screen="planos"]) .cols.tr>:nth-child(4){grid-area:carga}
+  :where(body[data-screen="planos"]) .cols.tr>:nth-child(5){grid-area:status;justify-self:end}
+  :where(body[data-screen="planos"]) .cols.tr>:nth-child(6){grid-area:sap}
+  :where(body[data-screen="planos"]) .cols.tr>:nth-child(7){grid-area:acoes;align-self:center}
+  :where(body[data-screen="planos"]) .cols.tr>:nth-child(n+2):nth-child(-n+4)::before,
+  :where(body[data-screen="planos"]) .cols.tr>:nth-child(6)::before{display:block;font-size:11px;font-weight:600;color:#6E7390;margin-bottom:2px}
+  :where(body[data-screen="planos"]) .cols.tr>:nth-child(2)::before{content:"Placa"}
+  :where(body[data-screen="planos"]) .cols.tr>:nth-child(3)::before{content:"Motorista"}
+  :where(body[data-screen="planos"]) .cols.tr>:nth-child(4)::before{content:"Carregamento"}
+  :where(body[data-screen="planos"]) .cols.tr>:nth-child(6)::before{content:"Enviado SAP"}
+}
+@media (max-width:640px){
+  :where(body[data-screen="planos"]) .cols.tr{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"plano status" "placa sap" "motorista carga" "acoes acoes"}
+  :where(body[data-screen="planos"]) .cols.tr>:nth-child(7){justify-self:start;flex-wrap:wrap}
+}
+@media (max-width:900px) and (min-width:641px){
+  :where(body[data-screen="planos"]) .cols.tr{grid-template-columns:repeat(4,minmax(0,1fr));grid-template-areas:"plano plano status status" "placa motorista carga sap" "acoes acoes acoes acoes"}
+  :where(body[data-screen="planos"]) .cols.tr>:nth-child(7){justify-self:start}
+}
+
+/* ---------- Celular (até 640 px) ---------- */
+@media (max-width:640px){
+  /* Cabeçalhos de página e barras de salvar quebram linha em vez de vazar */
+  .page-head{flex-wrap:wrap;padding:16px}
+  .page-head > .btn{width:100%;justify-content:center}
+  .savebar{flex-wrap:wrap;padding:12px}
+  .savebar .spacer{display:none}
+  .savebar .btn{flex:1 1 auto;justify-content:center}
+  .tools{padding:12px 14px}
+  .ffld.ffld-search{max-width:none;min-width:0;flex:1 1 100%}
+  .ghead{padding:16px 14px 0}
+  .ghead h1{font-size:20px}
+  /* Gestão de Planos: cabeçalho dos filtros */
+  :where(body[data-screen="planos"]) .f-head{flex-wrap:wrap;row-gap:10px}
+  /* Tabelas em grade viram blocos com quebra de linha (cabeçalho escondido) */
+  :where(body[data-screen="areas"]) .acols.thead,
+  :where(body[data-screen="rotas"]) .rcols.thead,
+  :where(body[data-screen="dashboards"]) .dcols.thead{display:none}
+  :where(body[data-screen="areas"]) .acols.arow,
+  :where(body[data-screen="rotas"]) .rcols.rrow,
+  :where(body[data-screen="dashboards"]) .dcols.drow{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+  :where(body[data-screen="areas"]) .acols.arow > :first-child,
+  :where(body[data-screen="rotas"]) .rcols.rrow > :first-child,
+  :where(body[data-screen="dashboards"]) .dcols.drow > :first-child{flex:1 1 100%}
+  :where(body[data-screen="areas"]) .acols.arow > .actions,
+  :where(body[data-screen="rotas"]) .rcols.rrow > .actions{margin-left:auto}
+  :where(body[data-screen="areas"]) .apeople{margin:0 12px 14px;padding:14px}
+}
+@media (max-width:640px){
+  /* Demais listagens em grade: cada linha vira um bloco que quebra linha; cabeçalho da grade escondido */
+  .ccols.thead,.pecols.thead,.scols.thead,.lcols.thead,.mcols.thead,.mvcols.thead,.ncols.thead,.pcols.thead,.prcols.thead,.tcols.thead,.ucols.thead,.vcols.thead{display:none}
+  .ccols.crow,.pecols.crow,.scols.srow,.lcols.lrow,.mcols.mrow,.mvcols.mvrow,.ncols.nrow,.pcols.pdrow,.prcols.prrow,.tcols.trow,.ucols.urow,.vcols.vrow{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+  .ccols.crow>:first-child,.pecols.crow>:first-child,.scols.srow>:first-child,.lcols.lrow>:first-child,.mcols.mrow>:first-child,.mvcols.mvrow>:first-child,.ncols.nrow>:first-child,.pcols.pdrow>:first-child,.prcols.prrow>:first-child,.tcols.trow>:first-child,.vcols.vrow>:first-child{flex:1 1 100%}
+  .crow>.actions,.srow>.actions,.mrow>.actions,.mvrow>.actions,.nrow>.actions,.pdrow>.actions,.prrow>.actions,.trow>.actions,.urow>.actions,.vrow>.actions{margin-left:auto}
+  /* Usuários: o nome vem primeiro, depois 8ID, telefone, e-mail e perfis */
+  .ucols.urow>.uname{order:-1;flex:1 1 100%}
+  .ucols.urow>*{min-width:0}
+  .ucols.urow>:nth-child(4){display:block}
+}
+@media (max-width:640px){
+  .mcols.mrow2{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+  .mcols.mrow2>:first-child{flex:1 1 100%}
+  .mcols.mrow2>.actions{margin-left:auto}
+  /* Indicadores em 2 colunas */
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media (max-width:640px){ .brand{display:none} }
+@media (max-width:640px){
+  /* Gestão de Planos: detalhe do plano e do item em 2 colunas; modais ocupam a largura da tela */
+  :where(body[data-screen="planos"]) .resumo .details{grid-template-columns:repeat(2,minmax(0,1fr))!important;padding:12px 14px 14px}
+  :where(body[data-screen="planos"]) .it-grid{grid-template-columns:minmax(0,1fr)!important}
+  :where(body[data-screen="planos"]) .cn-imp{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .modal{max-width:calc(100vw - 24px)}
+  .detail, .pdet, .pdet-v{padding-left:12px;padding-right:12px}
+}
+@media (max-width:640px){ .ucols.urow>.pbadges{display:flex!important;flex-wrap:wrap;gap:6px;flex:1 1 100%} }

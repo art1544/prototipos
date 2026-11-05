@@ -1,0 +1,34 @@
+/* Estrutura do shell da SPA: cada tela é um <section class="screen"> que não
+   gera caixa própria, para que o <main> da tela continue como item flex de .body. */
+#view { display: contents; }
+.screen { display: contents; }
+.profile-pill { font-size: 13px; font-weight: 700; color: #1B1A4A; background: #F1F1F6; padding: 6px 12px; border-radius: 999px; }
+
+/* Logo do topo leva ao Início */
+.topbar .logo-link{display:flex;align-items:center;border-radius:8px}
+.topbar .logo-link:focus-visible{outline:2px solid #F26A1B;outline-offset:2px}
+
+/* ---------- Responsivo ----------
+   Até 1024 px: menu começa só com ícones; o botão de menu abre o menu completo por cima do conteúdo.
+   Até 640 px: menu fica escondido e abre como gaveta; o topo mostra só o essencial. */
+@media (max-width:1024px){
+  .sidebar{width:76px}
+  .sidebar .txt,.sidebar .sec,.sidebar .chev,.sidebar .subnav{display:none}
+  .app.side-open .sidebar{position:absolute;top:64px;bottom:0;left:0;z-index:40;width:256px;box-shadow:12px 0 40px rgba(27,26,74,.18)}
+  .app.side-open .sidebar .txt,.app.side-open .sidebar .sec,.app.side-open .sidebar .chev{display:revert}
+  .app.side-open .sidebar .subnav.open{display:flex}
+  .app.side-open::after{content:"";position:fixed;inset:64px 0 0 0;background:rgba(27,26,74,.25);z-index:30}
+  .app{position:relative}
+  .main{padding:22px 20px 32px}
+  .version,.brand .divider{display:none}
+}
+@media (max-width:640px){
+  .topbar{gap:8px;padding:0 10px}
+  .brand-name{font-size:14px}
+  .profile{font-size:0;gap:0}
+  .profile .inp{width:auto!important;max-width:130px}
+  .user-name,.topbar > .divider{display:none}
+  .sidebar{position:absolute;top:64px;bottom:0;left:0;z-index:40;width:256px;transform:translateX(-100%);transition:transform .18s ease;box-shadow:none}
+  .app.side-open .sidebar{transform:none}
+  .main{padding:16px 12px 28px;gap:14px}
+}

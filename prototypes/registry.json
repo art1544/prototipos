@@ -41,6 +41,20 @@
       "icon": "prototypes/monitor-mobilidade/assets/img/mobilidade.png",
       "accent": "#f37021",
       "tags": ["Monitoramento", "Despacho", "SAP", "Relatório"]
+    },
+    {
+      "id": "enco-portal",
+      "name": "ENCO · Portal Web",
+      "client": "Ternium",
+      "project": "ENCO · Entregas e coletas",
+      "description": "Portal web do ENCO com login: gestão de planos de descarga com relatório em Excel e PDF, dashboards, rotas, cadastros (veículos, pontos de descarga, parâmetros, não conformidades, prioridades), perfis, áreas responsáveis, usuários, configurações e logs.",
+      "platform": "web",
+      "version": "3.0.0",
+      "updatedAt": "2026-11-05",
+      "path": "prototypes/enco-portal/",
+      "icon": "prototypes/enco-portal/assets/img/logo-enco.png",
+      "accent": "#f26a1b",
+      "tags": ["Planos de descarga", "Rotas", "Dashboards", "Cadastros"]
     }
   ]
 }

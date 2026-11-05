@@ -9,6 +9,7 @@ dados de exemplo independentes.
 | [Mobilidade](prototypes/mobilidade/README.md)          | Ternium · App de manutenção em campo  | Mobile     |
 | [Tool Management](prototypes/tool-management/README.md) | Ternium · Gestão de ferramentas      | Web        |
 | [Monitor Mobilidade](prototypes/monitor-mobilidade/README.md) | Ternium · Saúde diária do Mobilidade | Web |
+| [ENCO · Portal Web](prototypes/enco-portal/README.md) | Ternium · Entregas e coletas | Web |
 
 Tudo é site estático, sem build: HTML, CSS e JavaScript (módulos ES) puros. Não há dependências
 para instalar — só o Node.js 18+ para o servidor local e as verificações.
@@ -40,6 +41,7 @@ prototypes/
   mobilidade/               um protótipo = uma pasta autossuficiente
   tool-management/
   monitor-mobilidade/
+  enco-portal/
 templates/prototype/        modelo usado pelo `npm run new`
 scripts/
   serve.mjs                 servidor local (npm run dev)
