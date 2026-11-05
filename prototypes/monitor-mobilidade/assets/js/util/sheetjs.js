@@ -12,6 +12,10 @@ export function carregarSheetJS() {
   carregando ??= new Promise((resolver, rejeitar) => {
     const script = document.createElement('script');
     script.src = URLS.sheetjs;
+    if (URLS.sheetjsIntegridade) {
+      script.integrity = URLS.sheetjsIntegridade;
+      script.crossOrigin = 'anonymous';
+    }
     script.onload = () => resolver(window.XLSX);
     script.onerror = () => {
       carregando = null;

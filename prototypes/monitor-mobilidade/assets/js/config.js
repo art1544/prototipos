@@ -26,6 +26,8 @@ export const APP = {
 export const URLS = {
   /** SheetJS (xlsx 0.18.5) local: a CSP do catálogo só aceita scripts da própria origem. */
   sheetjs: 'assets/js/vendor/xlsx.full.min.js',
+  /** Hash do arquivo acima (SRI), o mesmo da cópia do cdnjs usada na tela real. */
+  sheetjsIntegridade: 'sha512-r22gChDnGvBylk90+2e/ycr3RVrDi8DIOkIGNhJlKfuyQM4tIRAI062MaV8sfjQKYVGjOBaZBOA87z+IhZE9DA==',
   pdfCss: 'assets/css/pdf.css',
   logo: 'assets/img/mobilidade.png',
 };
