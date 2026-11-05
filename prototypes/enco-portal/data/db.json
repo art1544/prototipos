@@ -1,0 +1,1174 @@
+{
+  "_meta": {
+    "schemaVersion": 1,
+    "notes": "Base de exemplo do ENCO Portal Web (dados fictícios). dominio: valores do sistema real (status, funcionalidades, limites de colunas). usuarios: base única (nome e 8ID do AD; telefone e e-mail editados só na tela Usuários). recebedores: contatos de ponto que não são usuários do ENCO. Os demais cadastros de exemplo ficam nas próprias telas (assets/js/telas/). Alterações ficam em memória: recarregar volta a esta base."
+  },
+  "sessao": {
+    "nome": "Paola Santiago",
+    "permissoes": {
+      "reenviarEmail": true,
+      "cancelarPlano": true
+    }
+  },
+  "dominio": {
+    "statusPlano": [
+      {
+        "cod": 1,
+        "nome": "Em aberto"
+      },
+      {
+        "cod": 2,
+        "nome": "Em andamento"
+      },
+      {
+        "cod": 3,
+        "nome": "Finalizado"
+      },
+      {
+        "cod": 4,
+        "nome": "Cancelamento Solicitado"
+      },
+      {
+        "cod": 5,
+        "nome": "Cancelamento Enviado"
+      },
+      {
+        "cod": 6,
+        "nome": "Concluido"
+      }
+    ],
+    "statusItem": [
+      {
+        "cod": 1,
+        "nome": "Em aberto"
+      },
+      {
+        "cod": 2,
+        "nome": "Em andamento"
+      },
+      {
+        "cod": 3,
+        "nome": "Confirmado"
+      },
+      {
+        "cod": 4,
+        "nome": "Receptor ausente"
+      },
+      {
+        "cod": 5,
+        "nome": "Adicionado ao final da rota"
+      },
+      {
+        "cod": 6,
+        "nome": "Erro na execução do plano"
+      },
+      {
+        "cod": 7,
+        "nome": "Cancelado"
+      }
+    ],
+    "tentativasReceptorAusente": 3,
+    "statusColeta": [
+      {
+        "cod": 1,
+        "nome": "Em aberto"
+      },
+      {
+        "cod": 2,
+        "nome": "Em andamento"
+      },
+      {
+        "cod": 3,
+        "nome": "Confirmado"
+      },
+      {
+        "cod": 4,
+        "nome": "Receptor ausente"
+      },
+      {
+        "cod": 5,
+        "nome": "Adicionado ao final da rota"
+      },
+      {
+        "cod": 6,
+        "nome": "Cancelado"
+      },
+      {
+        "cod": 7,
+        "nome": "Rejeitado"
+      },
+      {
+        "cod": 8,
+        "nome": "Aceito pelo controlador"
+      },
+      {
+        "cod": 9,
+        "nome": "Aceito pelo entregador"
+      }
+    ],
+    "categoriasMovimento": [
+      "Entrega",
+      "Coleta"
+    ],
+    "tiposNaoConformidade": [
+      {
+        "cod": 1,
+        "nome": "Não entrega"
+      },
+      {
+        "cod": 3,
+        "nome": "Não coleta"
+      }
+    ],
+    "ncSistema": [
+      "PLANO CANCELADO WEB",
+      "ITEM CANCELADO WEB",
+      "RETORNO JUSTIFICADO",
+      "RECEPTOR AUSENTE"
+    ],
+    "perfis": {
+      "entregador": 3,
+      "controlador": 4
+    },
+    "funcionalidades": [
+      {
+        "cod": 1,
+        "nome": "Gestão de Planos",
+        "rota": "planos"
+      },
+      {
+        "cod": 2,
+        "nome": "Veículos",
+        "rota": "veiculos"
+      },
+      {
+        "cod": 3,
+        "nome": "Macro Pontos",
+        "rota": "macro"
+      },
+      {
+        "cod": 4,
+        "nome": "Áreas Responsáveis",
+        "rota": "areas"
+      },
+      {
+        "cod": 5,
+        "nome": "Não Conformidades",
+        "rota": "nc"
+      },
+      {
+        "cod": 6,
+        "nome": "Gestão de Rotas",
+        "rota": "rotas"
+      },
+      {
+        "cod": 7,
+        "nome": "Pontos de Descarga",
+        "rota": "pontos"
+      },
+      {
+        "cod": 8,
+        "nome": "Prioridades",
+        "rota": "prioridades"
+      },
+      {
+        "cod": 9,
+        "nome": "Tipos de Movimento",
+        "rota": "movimentos"
+      },
+      {
+        "cod": 10,
+        "nome": "Coletas Solicitadas",
+        "rota": "coletas"
+      },
+      {
+        "cod": 11,
+        "nome": "Coletas Pendentes",
+        "rota": "coletas"
+      },
+      {
+        "cod": 12,
+        "nome": "Gestão de Perfis",
+        "rota": "perfis"
+      },
+      {
+        "cod": 13,
+        "nome": "Relatórios e Dashboards",
+        "rota": "relatorios"
+      },
+      {
+        "cod": 14,
+        "nome": "Configurações",
+        "rota": "configuracoes"
+      },
+      {
+        "cod": 15,
+        "nome": "Tipo Veículo",
+        "rota": "tipos"
+      },
+      {
+        "cod": 16,
+        "nome": "Usuários",
+        "rota": "usuarios"
+      },
+      {
+        "cod": 17,
+        "nome": "Administrador de Perfis"
+      },
+      {
+        "cod": null,
+        "nome": "Reenviar Email de entrega do Plano de Descarga",
+        "rota": "planos"
+      }
+    ],
+    "limites": {
+      "areaNome": 20,
+      "areaDescricao": 100,
+      "macroPontoNome": 20,
+      "pontoIdentificacao": 50,
+      "pontoDescricao": 100,
+      "pontoEndereco": 50,
+      "placa": 7,
+      "tipoVeiculoNome": 50,
+      "prioridadeDescricao": 100,
+      "tipoMovimentoDescricao": 100,
+      "ncDescricao": 100,
+      "ncIdentificacao": 50,
+      "perfilNome": 40,
+      "perfilGrupoAD": 40,
+      "contatoNome": 100,
+      "contatoEmail": 100,
+      "contatoCelular": 15,
+      "c8id": 20,
+      "rotaDescricao": 50,
+      "configuracaoValor": 20,
+      "configuracaoDescricao": 100
+    },
+    "dashboardMaxDias": 90
+  },
+  "usuarios": [
+    {
+      "id": "10400000",
+      "nome": "Ana Almeida Silva",
+      "email": "ana.almeida.silva@exemplo.com.br",
+      "cel": "(21) 96281-2477",
+      "p": [
+        "Administrador",
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10400137",
+      "nome": "Bruno Duarte Ribeiro",
+      "email": "bruno.duarte.ribeiro@exemplo.com.br",
+      "cel": "(21) 99714-9374",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10400274",
+      "nome": "Carla Gomes Silva",
+      "email": "carla.gomes.silva@exemplo.com.br",
+      "cel": "(21) 98471-5293",
+      "p": [
+        "Consultas",
+        "Entregadores"
+      ]
+    },
+    {
+      "id": "DRIBEIRO",
+      "nome": "Diego Moreira Ribeiro",
+      "email": "diego.moreira.ribeiro@exemplo.com.br",
+      "cel": "(21) 96282-8205",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "10400548",
+      "nome": "Elisa Campos Silva",
+      "email": "elisa.campos.silva@exemplo.com.br",
+      "cel": "",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10400685",
+      "nome": "Fábio Ferraz Ribeiro",
+      "email": "fabio.ferraz.ribeiro@exemplo.com.br",
+      "cel": "(21) 96718-5239",
+      "p": [
+        "Consultas",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "10400822",
+      "nome": "Gabriela Lacerda Silva",
+      "email": "gabriela.lacerda.silva@exemplo.com.br",
+      "cel": "(21) 92775-2369",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "HARAJO",
+      "nome": "Henrique Barbosa Araújo",
+      "email": "",
+      "cel": "(21) 90097-5086",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10401096",
+      "nome": "Isabela Esteves Rocha",
+      "email": "isabela.esteves.rocha@exemplo.com.br",
+      "cel": "(21) 91281-3441",
+      "p": [
+        "Consultas",
+        "Entregadores"
+      ]
+    },
+    {
+      "id": "10401233",
+      "nome": "João Horta Araújo",
+      "email": "joao.horta.araujo@exemplo.com.br",
+      "cel": "(21) 97338-0560",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "10401370",
+      "nome": "Karina Almeida Rocha",
+      "email": "karina.almeida.rocha@exemplo.com.br",
+      "cel": "(21) 96094-6479",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "LARAJO",
+      "nome": "Lucas Duarte Araújo",
+      "email": "lucas.duarte.araujo@exemplo.com.br",
+      "cel": "(21) 95048-8426",
+      "p": [
+        "Administrador",
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10401644",
+      "nome": "Marina Gomes Rocha",
+      "email": "marina.gomes.rocha@exemplo.com.br",
+      "cel": "(21) 95585-0506",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "10401781",
+      "nome": "Nelson Moreira Araújo",
+      "email": "nelson.moreira.araujo@exemplo.com.br",
+      "cel": "",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10401918",
+      "nome": "Olívia Campos Mendes",
+      "email": "olivia.campos.mendes@exemplo.com.br",
+      "cel": "(21) 95075-4533",
+      "p": [
+        "Consultas",
+        "Entregadores"
+      ]
+    },
+    {
+      "id": "PCOSTA",
+      "nome": "Paulo Ferraz Costa",
+      "email": "paulo.ferraz.costa@exemplo.com.br",
+      "cel": "(21) 97453-0568",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "10402192",
+      "nome": "Renata Lacerda Mendes",
+      "email": "renata.lacerda.mendes@exemplo.com.br",
+      "cel": "(21) 98904-4616",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10402329",
+      "nome": "Samuel Barbosa Costa",
+      "email": "samuel.barbosa.costa@exemplo.com.br",
+      "cel": "(21) 99638-2724",
+      "p": [
+        "Consultas",
+        "Entregadores"
+      ]
+    },
+    {
+      "id": "10402466",
+      "nome": "Tânia Esteves Mendes",
+      "email": "tania.esteves.mendes@exemplo.com.br",
+      "cel": "(21) 98394-8643",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "VCOSTA",
+      "nome": "Vinícius Horta Costa",
+      "email": "vinicius.horta.costa@exemplo.com.br",
+      "cel": "(21) 94880-0589",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10402740",
+      "nome": "Ana Almeida Mendes",
+      "email": "",
+      "cel": "(21) 93208-1692",
+      "p": [
+        "Consultas",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "10402877",
+      "nome": "Bruno Duarte Cardoso",
+      "email": "bruno.duarte.cardoso@exemplo.com.br",
+      "cel": "(21) 96641-8589",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "10403014",
+      "nome": "Carla Gomes Oliveira",
+      "email": "carla.gomes.oliveira@exemplo.com.br",
+      "cel": "",
+      "p": [
+        "Administrador",
+        "Consultas"
+      ]
+    },
+    {
+      "id": "DCARDOSO",
+      "nome": "Diego Moreira Cardoso",
+      "email": "diego.moreira.cardoso@exemplo.com.br",
+      "cel": "(21) 97440-6979",
+      "p": [
+        "Consultas",
+        "Entregadores"
+      ]
+    },
+    {
+      "id": "10403288",
+      "nome": "Elisa Campos Oliveira",
+      "email": "elisa.campos.oliveira@exemplo.com.br",
+      "cel": "(21) 91204-6791",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "10403425",
+      "nome": "Fábio Ferraz Cardoso",
+      "email": "fabio.ferraz.cardoso@exemplo.com.br",
+      "cel": "(21) 97261-3910",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10403562",
+      "nome": "Gabriela Lacerda Oliveira",
+      "email": "gabriela.lacerda.oliveira@exemplo.com.br",
+      "cel": "(21) 96017-9829",
+      "p": [
+        "Consultas",
+        "Entregadores"
+      ]
+    },
+    {
+      "id": "HCARDOSO",
+      "nome": "Henrique Barbosa Cardoso",
+      "email": "henrique.barbosa.cardoso@exemplo.com.br",
+      "cel": "(21) 97292-8186",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "10403836",
+      "nome": "Isabela Esteves Teixeira",
+      "email": "isabela.esteves.teixeira@exemplo.com.br",
+      "cel": "(21) 95508-3856",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10403973",
+      "nome": "João Horta Pereira",
+      "email": "joao.horta.pereira@exemplo.com.br",
+      "cel": "(21) 94264-9775",
+      "p": [
+        "Consultas",
+        "Entregadores"
+      ]
+    },
+    {
+      "id": "10404110",
+      "nome": "Karina Almeida Teixeira",
+      "email": "karina.almeida.teixeira@exemplo.com.br",
+      "cel": "(21) 96637-5150",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "LPEREIRA",
+      "nome": "Lucas Duarte Pereira",
+      "email": "lucas.duarte.pereira@exemplo.com.br",
+      "cel": "",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10404384",
+      "nome": "Marina Gomes Teixeira",
+      "email": "marina.gomes.teixeira@exemplo.com.br",
+      "cel": "(21) 98827-7966",
+      "p": [
+        "Consultas",
+        "Entregadores"
+      ]
+    },
+    {
+      "id": "10404521",
+      "nome": "Nelson Moreira Pereira",
+      "email": "",
+      "cel": "(21) 94884-5096",
+      "p": [
+        "Administrador",
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10404658",
+      "nome": "Olívia Campos Teixeira",
+      "email": "olivia.campos.teixeira@exemplo.com.br",
+      "cel": "(21) 98318-1993",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "PNUNES",
+      "nome": "Paulo Ferraz Nunes",
+      "email": "paulo.ferraz.nunes@exemplo.com.br",
+      "cel": "(21) 97648-1620",
+      "p": [
+        "Consultas",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "10404932",
+      "nome": "Renata Lacerda Souza",
+      "email": "renata.lacerda.souza@exemplo.com.br",
+      "cel": "(21) 93131-5042",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "10405069",
+      "nome": "Samuel Barbosa Nunes",
+      "email": "samuel.barbosa.nunes@exemplo.com.br",
+      "cel": "(21) 92881-0195",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10405206",
+      "nome": "Tânia Esteves Souza",
+      "email": "tania.esteves.souza@exemplo.com.br",
+      "cel": "(21) 98937-7314",
+      "p": [
+        "Consultas",
+        "Entregadores"
+      ]
+    },
+    {
+      "id": "VNUNES",
+      "nome": "Vinícius Horta Nunes",
+      "email": "vinicius.horta.nunes@exemplo.com.br",
+      "cel": "(21) 95075-1641",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "10405480",
+      "nome": "Ana Almeida Souza",
+      "email": "ana.almeida.souza@exemplo.com.br",
+      "cel": "",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10405617",
+      "nome": "Bruno Duarte Nunes",
+      "email": "bruno.duarte.nunes@exemplo.com.br",
+      "cel": "(21) 97184-7260",
+      "p": [
+        "Consultas",
+        "Entregadores"
+      ]
+    },
+    {
+      "id": "10405754",
+      "nome": "Carla Gomes Ribeiro",
+      "email": "carla.gomes.ribeiro@exemplo.com.br",
+      "cel": "(21) 95941-3179",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "DSILVA",
+      "nome": "Diego Moreira Silva",
+      "email": "diego.moreira.silva@exemplo.com.br",
+      "cel": "(21) 96071-5288",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10406028",
+      "nome": "Elisa Campos Ribeiro",
+      "email": "elisa.campos.ribeiro@exemplo.com.br",
+      "cel": "(21) 91747-5462",
+      "p": [
+        "Administrador",
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10406165",
+      "nome": "Fábio Ferraz Silva",
+      "email": "fabio.ferraz.silva@exemplo.com.br",
+      "cel": "(21) 90504-1381",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "10406302",
+      "nome": "Gabriela Lacerda Ribeiro",
+      "email": "",
+      "cel": "(21) 96560-8500",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "HSILVA",
+      "nome": "Henrique Barbosa Silva",
+      "email": "henrique.barbosa.silva@exemplo.com.br",
+      "cel": "(21) 91022-8639",
+      "p": [
+        "Consultas",
+        "Entregadores"
+      ]
+    },
+    {
+      "id": "10406576",
+      "nome": "Isabela Esteves Ribeiro",
+      "email": "isabela.esteves.ribeiro@exemplo.com.br",
+      "cel": "(21) 98751-1316",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "10406713",
+      "nome": "João Horta Rocha",
+      "email": "joao.horta.rocha@exemplo.com.br",
+      "cel": "",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10406850",
+      "nome": "Karina Almeida Araújo",
+      "email": "karina.almeida.araujo@exemplo.com.br",
+      "cel": "(21) 93564-4365",
+      "p": [
+        "Consultas",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "LROCHA",
+      "nome": "Lucas Duarte Rocha",
+      "email": "lucas.duarte.rocha@exemplo.com.br",
+      "cel": "(21) 94811-5395",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "10407124",
+      "nome": "Marina Gomes Araújo",
+      "email": "marina.gomes.araujo@exemplo.com.br",
+      "cel": "(21) 99370-6637",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10407261",
+      "nome": "Nelson Moreira Rocha",
+      "email": "nelson.moreira.rocha@exemplo.com.br",
+      "cel": "(21) 98127-2556",
+      "p": [
+        "Consultas",
+        "Entregadores"
+      ]
+    },
+    {
+      "id": "10407398",
+      "nome": "Olívia Campos Araújo",
+      "email": "olivia.campos.araujo@exemplo.com.br",
+      "cel": "(21) 91560-9464",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "PROCHA",
+      "nome": "Paulo Ferraz Rocha",
+      "email": "paulo.ferraz.rocha@exemplo.com.br",
+      "cel": "(21) 99762-8735",
+      "p": [
+        "Administrador",
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10407672",
+      "nome": "Renata Lacerda Costa",
+      "email": "renata.lacerda.costa@exemplo.com.br",
+      "cel": "(21) 96374-2502",
+      "p": [
+        "Consultas",
+        "Entregadores"
+      ]
+    },
+    {
+      "id": "10407809",
+      "nome": "Samuel Barbosa Mendes",
+      "email": "samuel.barbosa.mendes@exemplo.com.br",
+      "cel": "(21) 97108-0610",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "10407946",
+      "nome": "Tânia Esteves Costa",
+      "email": "tania.esteves.costa@exemplo.com.br",
+      "cel": "",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "VMENDES",
+      "nome": "Vinícius Horta Mendes",
+      "email": "",
+      "cel": "(21) 92528-2789",
+      "p": [
+        "Consultas",
+        "Entregadores"
+      ]
+    },
+    {
+      "id": "10408220",
+      "nome": "Ana Almeida Costa",
+      "email": "ana.almeida.costa@exemplo.com.br",
+      "cel": "(21) 96993-7823",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "10408357",
+      "nome": "Bruno Duarte Mendes",
+      "email": "bruno.duarte.mendes@exemplo.com.br",
+      "cel": "(21) 90427-4731",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10408494",
+      "nome": "Carla Gomes Costa",
+      "email": "carla.gomes.costa@exemplo.com.br",
+      "cel": "(21) 99184-0639",
+      "p": [
+        "Consultas",
+        "Entregadores"
+      ]
+    },
+    {
+      "id": "DOLIVEIR",
+      "nome": "Diego Moreira Oliveira",
+      "email": "diego.moreira.oliveira@exemplo.com.br",
+      "cel": "(21) 94366-3819",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "10408768",
+      "nome": "Elisa Campos Cardoso",
+      "email": "elisa.campos.cardoso@exemplo.com.br",
+      "cel": "(21) 98674-4666",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10408905",
+      "nome": "Fábio Ferraz Oliveira",
+      "email": "fabio.ferraz.oliveira@exemplo.com.br",
+      "cel": "(21) 94731-1796",
+      "p": [
+        "Consultas",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "10409042",
+      "nome": "Gabriela Lacerda Cardoso",
+      "email": "gabriela.lacerda.cardoso@exemplo.com.br",
+      "cel": "(21) 99803-5960",
+      "p": [
+        "Administrador",
+        "Consultas"
+      ]
+    },
+    {
+      "id": "HOLIVEIR",
+      "nome": "Henrique Barbosa Oliveira",
+      "email": "henrique.barbosa.oliveira@exemplo.com.br",
+      "cel": "",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10409316",
+      "nome": "Isabela Esteves Cardoso",
+      "email": "isabela.esteves.cardoso@exemplo.com.br",
+      "cel": "(21) 99293-9987",
+      "p": [
+        "Consultas",
+        "Entregadores"
+      ]
+    },
+    {
+      "id": "10409453",
+      "nome": "João Horta Oliveira",
+      "email": "joao.horta.oliveira@exemplo.com.br",
+      "cel": "(21) 98050-5906",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "10409590",
+      "nome": "Karina Almeida Pereira",
+      "email": "karina.almeida.pereira@exemplo.com.br",
+      "cel": "(21) 96807-1825",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "LTEIXEIR",
+      "nome": "Lucas Duarte Teixeira",
+      "email": "lucas.duarte.teixeira@exemplo.com.br",
+      "cel": "(21) 91019-4331",
+      "p": [
+        "Consultas",
+        "Entregadores"
+      ]
+    },
+    {
+      "id": "10409864",
+      "nome": "Marina Gomes Pereira",
+      "email": "",
+      "cel": "(21) 96297-5852",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "10410001",
+      "nome": "Nelson Moreira Teixeira",
+      "email": "nelson.moreira.teixeira@exemplo.com.br",
+      "cel": "(21) 96043-2235",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10410138",
+      "nome": "Olívia Campos Pereira",
+      "email": "olivia.campos.pereira@exemplo.com.br",
+      "cel": "(21) 99476-9132",
+      "p": [
+        "Consultas",
+        "Entregadores"
+      ]
+    },
+    {
+      "id": "PTEIXEIR",
+      "nome": "Paulo Ferraz Teixeira",
+      "email": "paulo.ferraz.teixeira@exemplo.com.br",
+      "cel": "(21) 90871-5538",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "10410412",
+      "nome": "Renata Lacerda Pereira",
+      "email": "renata.lacerda.pereira@exemplo.com.br",
+      "cel": "",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10410549",
+      "nome": "Samuel Barbosa Souza",
+      "email": "samuel.barbosa.souza@exemplo.com.br",
+      "cel": "(21) 97723-9078",
+      "p": [
+        "Administrador",
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10410686",
+      "nome": "Tânia Esteves Nunes",
+      "email": "tania.esteves.nunes@exemplo.com.br",
+      "cel": "(21) 96480-4997",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "VSOUZA",
+      "nome": "Vinícius Horta Souza",
+      "email": "vinicius.horta.souza@exemplo.com.br",
+      "cel": "(21) 91164-7787",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10410960",
+      "nome": "Ana Almeida Nunes",
+      "email": "ana.almeida.nunes@exemplo.com.br",
+      "cel": "(21) 91293-8046",
+      "p": [
+        "Consultas",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "10411097",
+      "nome": "Bruno Duarte Souza",
+      "email": "bruno.duarte.souza@exemplo.com.br",
+      "cel": "(21) 91043-3199",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "10411234",
+      "nome": "Carla Gomes Nunes",
+      "email": "carla.gomes.nunes@exemplo.com.br",
+      "cel": "(21) 97100-0318",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "DSOUZA",
+      "nome": "Diego Moreira Souza",
+      "email": "diego.moreira.souza@exemplo.com.br",
+      "cel": "(21) 98883-7724",
+      "p": [
+        "Consultas",
+        "Entregadores"
+      ]
+    },
+    {
+      "id": "10411508",
+      "nome": "Elisa Campos Silva",
+      "email": "elisa.campos.silva@exemplo.com.br",
+      "cel": "(21) 96590-4345",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "10411645",
+      "nome": "Fábio Ferraz Ribeiro",
+      "email": "",
+      "cel": "",
+      "p": [
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10411782",
+      "nome": "Gabriela Lacerda Silva",
+      "email": "gabriela.lacerda.silva@exemplo.com.br",
+      "cel": "(21) 94103-6183",
+      "p": [
+        "Consultas",
+        "Entregadores"
+      ]
+    },
+    {
+      "id": "HRIBEIRO",
+      "nome": "Henrique Barbosa Ribeiro",
+      "email": "henrique.barbosa.ribeiro@exemplo.com.br",
+      "cel": "(21) 96134-9412",
+      "p": [
+        "Consultas",
+        "Entregadores",
+        "Controladores"
+      ]
+    },
+    {
+      "id": "10412056",
+      "nome": "Isabela Esteves Silva",
+      "email": "isabela.esteves.silva@exemplo.com.br",
+      "cel": "(21) 99909-8455",
+      "p": [
+        "Administrador",
+        "Consultas"
+      ]
+    },
+    {
+      "id": "10412193",
+      "nome": "João Horta Ribeiro",
+      "email": "joao.horta.ribeiro@exemplo.com.br",
+      "cel": "(21) 98666-4374",
+      "p": [
+        "Consultas",
+        "Entregadores"
+      ]
+    }
+  ],
+  "recebedores": [
+    {
+      "id": "R1",
+      "id8": "10988456",
+      "nome": "Marta Vieira Prado",
+      "email": "marta.prado@fornecedor.exemplo.com.br",
+      "cel": "(21) 98811-2040"
+    },
+    {
+      "id": "R2",
+      "id8": "10988123",
+      "nome": "Otávio Reis Cunha",
+      "email": "otavio.cunha@ternium.com.br",
+      "cel": "(21) 99732-5518"
+    },
+    {
+      "id": "R3",
+      "id8": "STAVARES",
+      "nome": "Sandra Lima Tavares",
+      "email": "sandra.tavares@exemplo.com.br",
+      "cel": "(21) 99640-7713"
+    }
+  ]
+}

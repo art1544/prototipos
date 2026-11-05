@@ -1,0 +1,39 @@
+/* ==========================================================================
+   ENCO Portal Web · estilos (entrada única, carregada pelo index.html)
+   A ordem importa: cada arquivo pode sobrescrever os anteriores.
+     base.css          tokens e estilos comuns a todas as telas
+     shell.css         estrutura da SPA (topbar, menu lateral, área da tela)
+     telas/<tela>.css  estilos da tela, válidos só com body[data-screen="<tela>"]
+     ajustes.css       ajustes de leitura (sem quebras/cortes)
+     login.css         tela de login (seletores sob #login), por último
+   ========================================================================== */
+@import url("base.css");
+@import url("shell.css");
+@import url("telas/home.css");
+@import url("telas/planos.css");
+@import url("telas/dashboards.css");
+@import url("telas/rotas.css");
+@import url("telas/coletas.css");
+@import url("telas/veiculos.css");
+@import url("telas/tipos.css");
+@import url("telas/macro.css");
+@import url("telas/pontos.css");
+@import url("telas/nc.css");
+@import url("telas/prioridades.css");
+@import url("telas/movimentos.css");
+@import url("telas/perfis.css");
+@import url("telas/areas.css");
+@import url("telas/usuarios.css");
+@import url("telas/configuracoes.css");
+@import url("telas/logs.css");
+@import url("ajustes.css");
+@import url("login.css");
+
+/* Carregamento inicial (main.js) e aviso de file:// */
+.boot{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center;color:#5B5F7A;font-size:14px}
+.boot strong{font-size:18px;color:#1B1A4A}
+.boot code{background:#F1F1F6;padding:2px 6px;border-radius:6px}
+.boot-spin{width:32px;height:32px;border-radius:50%;border:3px solid #FDEBDD;border-top-color:#F26A1B;animation:boot-giro .8s linear infinite}
+@keyframes boot-giro{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.boot-spin{animation-duration:2.4s}}
+.app[hidden]{display:none}

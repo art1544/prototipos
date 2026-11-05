@@ -1,30 +1,13 @@
 <!doctype html>
 <!--
 ================================================================================
- ENCO – Portal Web · Protótipo modular (v3.0.0 - DEV)
- Abra este arquivo direto no navegador (duplo clique). Não precisa de Node,
- servidor ou build: só HTML, CSS e JavaScript clássico (scripts sem "module",
- que funcionam em file://).
-
- ESTRUTURA
- index.html              shell: topbar, menu lateral e carregamento dos módulos
- css/base.css            estilos comuns a todas as telas
- css/shell.css           estrutura da SPA
- css/screens/<tela>.css  estilos próprios de cada tela (escopo body[data-screen])
- js/core/enco.js         registro de telas, roteador (#hash) e barramento
- js/core/features.js     feature flags (ex.: Coletas desligada)
- js/core/layout.js       comportamento do menu, topbar e seletor de perfil
- js/core/login.js        tela de login (o portal só inicia depois de entrar)
- js/core/exporta.js      geração de relatórios em Excel (.xlsx) e PDF, sem bibliotecas
- js/data/dominio.js      domínio real do ENCO (status, funcionalidades, limites)
- js/screens/<tela>.js    template + comportamento de cada tela
- assets/img/             logo e imagens
-
- Para abrir direto uma tela use o hash: index.html#planos
+ ENCO – Portal Web · Protótipo (v3.0.0 - DEV)
+ Só a casca fica aqui: topbar e menu lateral. Estilos em assets/css/styles.css
+ e comportamento em assets/js/main.js (módulos ES). Estrutura, telas e regras: README.md.
 
  TELAS
  home (Início) · planos (Gestão de Planos, com geração de relatório) · dashboards · rotas
- coletas (desligada por feature flag, ver js/core/features.js)
+ coletas (desligada por feature flag, ver assets/js/config.js)
  veiculos · tipos · macro · pontos (Pontos de descarga) · nc (Não conformidades)
  prioridades · movimentos (Parâmetros) · perfis · areas · usuarios · configuracoes · logs (aba de Configurações)
 
@@ -44,32 +27,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ENCO – Portal Web</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="icon" href="assets/img/logo-enco.png">
-<link rel="stylesheet" href="css/base.css">
-<link rel="stylesheet" href="css/shell.css">
-<link rel="stylesheet" href="css/screens/home.css">
-<link rel="stylesheet" href="css/screens/planos.css">
-<link rel="stylesheet" href="css/screens/dashboards.css">
-<link rel="stylesheet" href="css/screens/rotas.css">
-<link rel="stylesheet" href="css/screens/coletas.css">
-<link rel="stylesheet" href="css/screens/veiculos.css">
-<link rel="stylesheet" href="css/screens/tipos.css">
-<link rel="stylesheet" href="css/screens/macro.css">
-<link rel="stylesheet" href="css/screens/pontos.css">
-<link rel="stylesheet" href="css/screens/nc.css">
-<link rel="stylesheet" href="css/screens/prioridades.css">
-<link rel="stylesheet" href="css/screens/movimentos.css">
-<link rel="stylesheet" href="css/screens/perfis.css">
-<link rel="stylesheet" href="css/screens/areas.css">
-<link rel="stylesheet" href="css/screens/usuarios.css">
-<link rel="stylesheet" href="css/screens/configuracoes.css">
-<link rel="stylesheet" href="css/screens/logs.css">
-<link rel="stylesheet" href="css/ajustes.css">
-<link rel="stylesheet" href="css/login.css">
+<meta name="description" content="Protótipo navegável do Portal Web do ENCO (entregas e coletas).">
+<link rel="icon" href="assets/img/logo-enco.png" type="image/png">
+<link rel="stylesheet" href="assets/css/styles.css">
+<script type="module" src="assets/js/main.js"></script>
 </head>
 <body>
-<div class="app" id="app">
+<div class="boot" id="boot" role="status"><span class="boot-spin" aria-hidden="true"></span><span>Carregando…</span></div>
+<noscript><div class="boot"><strong>JavaScript desativado</strong><span>Ative o JavaScript para usar o protótipo.</span></div></noscript>
+
+<div class="app" id="app" hidden>
 
   <header class="topbar">
     <button class="ib" style="color:#F26A1B" aria-label="Recolher menu" id="toggleSide">
@@ -161,33 +130,6 @@
   </div>
 </div>
 
-<script src="js/core/enco.js"></script>
-<script src="js/core/features.js"></script>
-<script src="js/core/layout.js"></script>
-<script src="js/core/login.js"></script>
-<script src="js/core/filtros.js"></script>
-<script src="js/core/exporta.js"></script>
-<script src="js/data/dominio.js"></script>
-<script src="js/data/imagens.js"></script>
-<script src="js/data/usuarios.js"></script>
-<script src="js/data/recebedores.js"></script>
-<script src="js/screens/home.js"></script>
-<script src="js/screens/planos.js"></script>
-<script src="js/screens/dashboards.js"></script>
-<script src="js/screens/rotas.js"></script>
-<script src="js/screens/coletas.js"></script>
-<script src="js/screens/veiculos.js"></script>
-<script src="js/screens/tipos.js"></script>
-<script src="js/screens/macro.js"></script>
-<script src="js/screens/pontos.js"></script>
-<script src="js/screens/nc.js"></script>
-<script src="js/screens/prioridades.js"></script>
-<script src="js/screens/movimentos.js"></script>
-<script src="js/screens/perfis.js"></script>
-<script src="js/screens/areas.js"></script>
-<script src="js/screens/usuarios.js"></script>
-<script src="js/screens/configuracoes.js"></script>
-<script src="js/screens/logs.js"></script>
-<script src="js/main.js"></script>
+<script src="assets/js/file-protocol-warning.js"></script>
 </body>
 </html>
