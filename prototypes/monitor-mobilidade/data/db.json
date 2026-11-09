@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "schemaVersion": 1,
+    "schemaVersion": 2,
     "notes": "Base de exemplo do Monitor Mobilidade: respostas das rotas /v2/monitor/* com dados fictícios (relatório de 2026-11-03). Depois da primeira carga as alterações ficam no navegador (localStorage, chave monitor-mobilidade:db)."
   },
   "config": {
@@ -61,7 +61,7 @@
         "equipe": "Mobilidade",
         "pergunta": "Quais ordens foram encaminhadas ao usuário e não foram recebidas?",
         "status": "ATENCAO",
-        "resposta": "2.498 de 4.214 envios do despacho chegaram (59,3%). 1.692 estão pendentes por motivo do usuário (977 sem apontamentos recentes, 353 sem aparelho cadastrado, 318 não abriram o app desde o despacho, 44 fora da janela de 1 mês) e 24 estão com o sistema (23 em reenvio, 1 esgotaram as 8 tentativas).",
+        "resposta": "2.498 de 2.550 envios a usuários válidos chegaram (98,0%). 28 estão pendentes por motivo do usuário (23 fora da janela de 1 mês, 5 sem apontamentos recentes) e 24 estão com o sistema (23 em reenvio, 1 esgotaram as 8 tentativas). No total do despacho foram 4.214 envios; 1.664 foram para 268 usuários que não apontaram nem receberam ordem depois do despacho.",
         "checks": [
           "C06"
         ]
@@ -300,58 +300,64 @@
         "status": "ATENCAO",
         "valor": 1716,
         "referencia7d": 1700,
-        "resposta": "2.498 de 4.214 envios do despacho chegaram (59,3%). 1.692 estão pendentes por motivo do usuário (977 sem apontamentos recentes, 353 sem aparelho cadastrado, 318 não abriram o app desde o despacho, 44 fora da janela de 1 mês) e 24 estão com o sistema (23 em reenvio, 1 esgotaram as 8 tentativas).",
+        "resposta": "2.498 de 2.550 envios a usuários válidos chegaram (98,0%). 28 estão pendentes por motivo do usuário (23 fora da janela de 1 mês, 5 sem apontamentos recentes) e 24 estão com o sistema (23 em reenvio, 1 esgotaram as 8 tentativas). No total do despacho foram 4.214 envios; 1.664 foram para 268 usuários que não apontaram nem receberam ordem depois do despacho.",
         "numeros": [
           {
-            "rotulo": "Envios do despacho",
-            "valor": 4214,
-            "explicacao": "Envios de ordem a usuários no despacho: cada ordem vai para todos os usuários do grupo ou posto no SAP, então uma ordem vira vários envios. Coleta: tabela OBJETOUSUARIO das ordens da lista, TIPO_OBJETO = 'ORDEN', ordem liberada (ORDENESTRABAJO.LIBERADO = 1) e FECHA_MODIFICACION a partir do início do despacho. Cálculo: contagem de pares ordem × usuário."
+            "rotulo": "Usuários válidos",
+            "valor": 288,
+            "explicacao": "Usuários do despacho que de fato estavam com o app depois dele: fizeram apontamento depois do início do despacho (EVENTOS.FECHA_CREACION) ou receberam ao menos uma ordem dele (OBJETOUSUARIO.FECHA_SYNC). É uma aproximação, porque o banco não guarda a data de login: quem logou sem apontar e não recebeu nada fica de fora. Cálculo: contagem de usuários."
+          },
+          {
+            "rotulo": "Envios a usuários válidos",
+            "valor": 2550,
+            "explicacao": "Envios de ordem do despacho para usuários válidos; é a base do % de recebidos. Coleta: tabela OBJETOUSUARIO das ordens da lista, TIPO_OBJETO = 'ORDEN', ordem liberada e FECHA_MODIFICACION a partir do início do despacho. Cálculo: contagem de pares ordem × usuário válido."
           },
           {
             "rotulo": "Recebidos",
             "valor": 2498,
-            "base": 4214,
-            "explicacao": "Envios do despacho que chegaram ao app do usuário. Coleta: OBJETOUSUARIO.FECHA_SYNC preenchida (o app confirmou a sincronização). Cálculo: contagem; o % é sobre os envios do despacho."
+            "base": 2550,
+            "explicacao": "Envios a usuários válidos que chegaram ao app. Coleta: OBJETOUSUARIO.FECHA_SYNC preenchida (o app confirmou a sincronização). Cálculo: contagem; o % é sobre os envios a usuários válidos."
           },
           {
             "rotulo": "Pendentes por motivo do usuário",
-            "valor": 1692,
-            "base": 4214,
-            "explicacao": "Envios do despacho não recebidos por motivo que o negócio trata: usuário sem aparelho, sem apontamentos recentes, que não abriu o app desde o despacho, ou ordem fora da janela de 1 mês (regra de negócio). O uso do app é medido pelo último apontamento em EVENTOS (15 dias de histórico). Cálculo: contagem; o % é sobre os envios do despacho."
+            "valor": 28,
+            "base": 2550,
+            "explicacao": "Envios a usuários válidos não recebidos por motivo que o negócio trata: usuário que não abriu o app desde o despacho, sem apontamentos recentes, ou ordem fora da janela de 1 mês (regra de negócio). O uso do app é medido pelo último apontamento em EVENTOS (15 dias de histórico). Cálculo: contagem; o % é sobre os envios a usuários válidos."
           },
           {
             "rotulo": "Pendentes com o sistema",
             "valor": 24,
+            "base": 2550,
+            "explicacao": "Envios a usuários válidos não recebidos por motivo técnico: ainda em reenvio automático (menos de 8 tentativas) ou com as 8 tentativas esgotadas (OBJETOUSUARIO.TASK_SYNC_ATTEMPT_COUNT). São da TI. Cálculo: contagem; o % é sobre os envios a usuários válidos."
+          },
+          {
+            "rotulo": "Envios do despacho (todos os usuários)",
+            "valor": 4214,
+            "explicacao": "Total de envios de ordem do despacho, com ou sem uso do app: cada ordem vai para todos os usuários do grupo ou posto no SAP, então uma ordem vira vários envios. Cálculo: contagem de pares ordem × usuário."
+          },
+          {
+            "rotulo": "Envios a usuários sem uso do app",
+            "valor": 1664,
             "base": 4214,
-            "explicacao": "Envios do despacho não recebidos por motivo técnico: ainda em reenvio automático (menos de 8 tentativas) ou com as 8 tentativas esgotadas (OBJETOUSUARIO.TASK_SYNC_ATTEMPT_COUNT). São da TI. Cálculo: contagem; o % é sobre os envios."
+            "explicacao": "Envios do despacho para usuários que não apontaram nem receberam ordem depois dele. Cálculo: total de envios menos os envios a usuários válidos; o % é sobre o total de envios."
           }
         ],
         "resumo": {
           "despacho": {
-            "enviadas": 4214,
+            "enviadas": 2550,
             "recebidas": 2498,
-            "pendentesNegocio": 1692,
+            "pendentesNegocio": 28,
             "pendentesTi": 24,
             "porMotivo": [
               {
-                "motivo": "Usuário tem aparelho, mas não envia apontamentos recentes no app",
-                "ordens": 977,
-                "acao": "Confirmar se o usuário ainda atua na área e usa o app (férias, afastamento, mudança de função)"
-              },
-              {
-                "motivo": "Usuário sem aparelho cadastrado (nunca instalou o app)",
-                "ordens": 353,
-                "acao": "Confirmar se o usuário deve receber ordens deste grupo; se sim, instalar o app"
-              },
-              {
-                "motivo": "Usuário não abriu o app desde o despacho",
-                "ordens": 318,
-                "acao": "Nenhuma: recebe ao abrir o app"
-              },
-              {
                 "motivo": "Fora da janela de 1 mês: a ordem foi vinculada a este usuário há mais de 1 mês e, pela regra, não é enviada ao app",
-                "ordens": 44,
+                "ordens": 23,
                 "acao": "Avaliar com o planejamento se a ordem ainda deve ser executada por este usuário"
+              },
+              {
+                "motivo": "Usuário tem aparelho, mas não envia apontamentos recentes no app",
+                "ordens": 5,
+                "acao": "Confirmar se o usuário ainda atua na área e usa o app (férias, afastamento, mudança de função)"
               }
             ],
             "tiPorMotivo": [
@@ -363,7 +369,8 @@
                 "motivo": "Falha: a notificação não chega ao aparelho (8 tentativas)",
                 "ordens": 1
               }
-            ]
+            ],
+            "enviadasTotal": 4214
           }
         },
         "regra": "Atenção: envio que esgotou as 8 tentativas (no despacho ou nas últimas 24 h). Crítico: pendências gerais 50% acima da referência de 7 dias (e ao menos 10 a mais).",
@@ -371,7 +378,7 @@
         "consulta": "C06_RESUMO, C06_AMOSTRA e o script do despacho",
         "elo": "Backend → Notification Hub → aparelho",
         "achados": [
-          "2.498 de 4.214 envios do despacho chegaram (59,3%). 1.692 estão pendentes por motivo do usuário (977 sem apontamentos recentes, 353 sem aparelho cadastrado, 318 não abriram o app desde o despacho, 44 fora da janela de 1 mês) e 24 estão com o sistema (23 em reenvio, 1 esgotaram as 8 tentativas)."
+          "2.498 de 2.550 envios a usuários válidos chegaram (98,0%). 28 estão pendentes por motivo do usuário (23 fora da janela de 1 mês, 5 sem apontamentos recentes) e 24 estão com o sistema (23 em reenvio, 1 esgotaram as 8 tentativas). No total do despacho foram 4.214 envios; 1.664 foram para 268 usuários que não apontaram nem receberam ordem depois do despacho."
         ],
         "amostra": [],
         "duracaoMs": 2300
@@ -885,12 +892,37 @@
         "recebidos": 64746,
         "pendentes_erro_sap": 113,
         "pendentes": 780
+      },
+      "validos": {
+        "usuarios": 288,
+        "semPendencia": 261,
+        "comPendencia": 27,
+        "ordensEnviadas": 2550,
+        "ordensRecebidas": 2498,
+        "ordensPendentes": 28,
+        "ordensTi": 24,
+        "ordensForaJanela": 23,
+        "ordensPorMotivo": [
+          {
+            "motivo": "Fora da janela de 1 mês: a ordem foi vinculada a este usuário há mais de 1 mês e, pela regra, não é enviada ao app",
+            "ordens": 23,
+            "acao": "Avaliar com o planejamento se a ordem ainda deve ser executada por este usuário"
+          },
+          {
+            "motivo": "Usuário tem aparelho, mas não envia apontamentos recentes no app",
+            "ordens": 5,
+            "acao": "Confirmar se o usuário ainda atua na área e usa o app (férias, afastamento, mudança de função)"
+          }
+        ],
+        "usuariosForaDaBase": 268,
+        "enviosForaDaBase": 1664
       }
     },
     "usuarios": [
       {
         "usuario": "DEMO000",
         "situacao": "Pendente",
+        "valido": "Não",
         "usoApp": "Sem aparelho cadastrado",
         "ultimoUso": null,
         "diasSemUsar": null,
@@ -906,6 +938,7 @@
       {
         "usuario": "10900001",
         "situacao": "Pendente",
+        "valido": "Não",
         "usoApp": "Tem aparelho, sem apontamentos recentes",
         "ultimoUso": null,
         "diasSemUsar": null,
@@ -921,6 +954,7 @@
       {
         "usuario": "10900002",
         "situacao": "Pendente",
+        "valido": "Não",
         "usoApp": "Não abriu o app desde o despacho",
         "ultimoUso": "2026-10-25T08:10",
         "diasSemUsar": 9,
@@ -936,6 +970,7 @@
       {
         "usuario": "10900003",
         "situacao": "Pendente",
+        "valido": "Sim",
         "usoApp": "Usou o app depois do despacho",
         "ultimoUso": "2026-11-02T09:15",
         "diasSemUsar": 1,
@@ -951,6 +986,7 @@
       {
         "usuario": "DEMO004",
         "situacao": "Pendente",
+        "valido": "Não",
         "usoApp": "Sem aparelho cadastrado",
         "ultimoUso": null,
         "diasSemUsar": null,
@@ -966,6 +1002,7 @@
       {
         "usuario": "10900005",
         "situacao": "Pendente",
+        "valido": "Sim",
         "usoApp": "Tem aparelho, sem apontamentos recentes",
         "ultimoUso": null,
         "diasSemUsar": null,
@@ -981,6 +1018,7 @@
       {
         "usuario": "10900006",
         "situacao": "Pendente",
+        "valido": "Não",
         "usoApp": "Não abriu o app desde o despacho",
         "ultimoUso": "2026-10-22T08:10",
         "diasSemUsar": 12,
@@ -996,6 +1034,7 @@
       {
         "usuario": "10900007",
         "situacao": "Pendente",
+        "valido": "Sim",
         "usoApp": "Usou o app depois do despacho",
         "ultimoUso": "2026-11-01T09:15",
         "diasSemUsar": 2,
@@ -1011,6 +1050,7 @@
       {
         "usuario": "DEMO008",
         "situacao": "Pendente",
+        "valido": "Não",
         "usoApp": "Sem aparelho cadastrado",
         "ultimoUso": null,
         "diasSemUsar": null,
@@ -1026,6 +1066,7 @@
       {
         "usuario": "10900009",
         "situacao": "Pendente",
+        "valido": "Sim",
         "usoApp": "Tem aparelho, sem apontamentos recentes",
         "ultimoUso": null,
         "diasSemUsar": null,
@@ -1041,6 +1082,7 @@
       {
         "usuario": "10900010",
         "situacao": "Pendente",
+        "valido": "Não",
         "usoApp": "Não abriu o app desde o despacho",
         "ultimoUso": "2026-10-23T08:10",
         "diasSemUsar": 11,
@@ -1056,6 +1098,7 @@
       {
         "usuario": "10900011",
         "situacao": "Pendente",
+        "valido": "Sim",
         "usoApp": "Usou o app depois do despacho",
         "ultimoUso": "2026-11-02T08:15",
         "diasSemUsar": 1,
@@ -1071,6 +1114,7 @@
       {
         "usuario": "DEMO012",
         "situacao": "Pendente",
+        "valido": "Não",
         "usoApp": "Sem aparelho cadastrado",
         "ultimoUso": null,
         "diasSemUsar": null,
@@ -1086,6 +1130,7 @@
       {
         "usuario": "10900013",
         "situacao": "Pendente",
+        "valido": "Sim",
         "usoApp": "Tem aparelho, sem apontamentos recentes",
         "ultimoUso": null,
         "diasSemUsar": null,
@@ -1101,6 +1146,7 @@
       {
         "usuario": "10900014",
         "situacao": "Pendente",
+        "valido": "Não",
         "usoApp": "Não abriu o app desde o despacho",
         "ultimoUso": "2026-10-28T08:10",
         "diasSemUsar": 6,
@@ -1116,6 +1162,7 @@
       {
         "usuario": "10900015",
         "situacao": "Pendente",
+        "valido": "Sim",
         "usoApp": "Usou o app depois do despacho",
         "ultimoUso": "2026-11-03T07:15",
         "diasSemUsar": 0,
@@ -1131,6 +1178,7 @@
       {
         "usuario": "DEMO016",
         "situacao": "Pendente",
+        "valido": "Não",
         "usoApp": "Sem aparelho cadastrado",
         "ultimoUso": null,
         "diasSemUsar": null,
@@ -1146,6 +1194,7 @@
       {
         "usuario": "10900017",
         "situacao": "Pendente",
+        "valido": "Não",
         "usoApp": "Tem aparelho, sem apontamentos recentes",
         "ultimoUso": null,
         "diasSemUsar": null,
@@ -1162,6 +1211,7 @@
     "ordens": [
       {
         "usuario": "DEMO000",
+        "usuarioValido": "Não",
         "ordem": "2005257931",
         "descricao": "IM-6M-SUBESTAÇÃO",
         "centro": "RJ04",
@@ -1176,6 +1226,7 @@
       },
       {
         "usuario": "DEMO000",
+        "usuarioValido": "Não",
         "ordem": "2005214914",
         "descricao": "IM-1M-PRÉDIO SEGEM",
         "centro": "RJ04",
@@ -1190,6 +1241,7 @@
       },
       {
         "usuario": "DEMO000",
+        "usuarioValido": "Não",
         "ordem": "2005241544",
         "descricao": "IM-1M-PRÉDIO SEGEM",
         "centro": "RJ04",
@@ -1204,6 +1256,7 @@
       },
       {
         "usuario": "10900001",
+        "usuarioValido": "Não",
         "ordem": "2005292657",
         "descricao": "IP-ELE-PAINEL CCM",
         "centro": "RJ04",
@@ -1218,6 +1271,7 @@
       },
       {
         "usuario": "10900001",
+        "usuarioValido": "Não",
         "ordem": "2005286748",
         "descricao": "IP-MEC-REDUTOR 4",
         "centro": "RJ04",
@@ -1232,6 +1286,7 @@
       },
       {
         "usuario": "10900001",
+        "usuarioValido": "Não",
         "ordem": "2005282963",
         "descricao": "IM-3M-LAMINADOR",
         "centro": "RJ04",
@@ -1246,6 +1301,7 @@
       },
       {
         "usuario": "10900002",
+        "usuarioValido": "Não",
         "ordem": "2005283434",
         "descricao": "IP-ELE-PAINEL CCM",
         "centro": "RJ04",
@@ -1260,6 +1316,7 @@
       },
       {
         "usuario": "10900002",
+        "usuarioValido": "Não",
         "ordem": "2005284868",
         "descricao": "IP-ELE-PAINEL CCM",
         "centro": "RJ04",
@@ -1274,6 +1331,7 @@
       },
       {
         "usuario": "10900002",
+        "usuarioValido": "Não",
         "ordem": "2005281793",
         "descricao": "IP-ELE-PAINEL CCM",
         "centro": "RJ04",
@@ -1288,6 +1346,7 @@
       },
       {
         "usuario": "DEMO004",
+        "usuarioValido": "Não",
         "ordem": "2005266045",
         "descricao": "LUB-SEM-PONTE ROLANTE",
         "centro": "RJ04",
@@ -1302,6 +1361,7 @@
       },
       {
         "usuario": "DEMO004",
+        "usuarioValido": "Não",
         "ordem": "2005257393",
         "descricao": "LUB-SEM-PONTE ROLANTE",
         "centro": "RJ04",
@@ -1316,6 +1376,7 @@
       },
       {
         "usuario": "DEMO004",
+        "usuarioValido": "Não",
         "ordem": "2005220728",
         "descricao": "IM-6M-SUBESTAÇÃO",
         "centro": "RJ04",
@@ -1330,6 +1391,7 @@
       },
       {
         "usuario": "10900005",
+        "usuarioValido": "Sim",
         "ordem": "2005247740",
         "descricao": "IM-6M-SUBESTAÇÃO",
         "centro": "RJ04",
@@ -1344,6 +1406,7 @@
       },
       {
         "usuario": "10900005",
+        "usuarioValido": "Sim",
         "ordem": "2005264804",
         "descricao": "IM-3M-LAMINADOR",
         "centro": "RJ04",
@@ -1358,6 +1421,7 @@
       },
       {
         "usuario": "10900005",
+        "usuarioValido": "Sim",
         "ordem": "2005274089",
         "descricao": "IP-MEC-REDUTOR 4",
         "centro": "RJ04",
@@ -1372,6 +1436,7 @@
       },
       {
         "usuario": "10900006",
+        "usuarioValido": "Não",
         "ordem": "2005222267",
         "descricao": "LUB-SEM-PONTE ROLANTE",
         "centro": "RJ04",
@@ -1386,6 +1451,7 @@
       },
       {
         "usuario": "10900006",
+        "usuarioValido": "Não",
         "ordem": "2005217952",
         "descricao": "IP-ELE-PAINEL CCM",
         "centro": "RJ04",
@@ -1400,6 +1466,7 @@
       },
       {
         "usuario": "10900006",
+        "usuarioValido": "Não",
         "ordem": "2005285752",
         "descricao": "IP-ELE-PAINEL CCM",
         "centro": "RJ04",
@@ -1414,6 +1481,7 @@
       },
       {
         "usuario": "DEMO008",
+        "usuarioValido": "Não",
         "ordem": "2005274709",
         "descricao": "IM-1M-PRÉDIO SEGEM",
         "centro": "RJ04",
@@ -1428,6 +1496,7 @@
       },
       {
         "usuario": "DEMO008",
+        "usuarioValido": "Não",
         "ordem": "2005242455",
         "descricao": "IP-MEC-REDUTOR 4",
         "centro": "RJ04",
@@ -1442,6 +1511,7 @@
       },
       {
         "usuario": "DEMO008",
+        "usuarioValido": "Não",
         "ordem": "2005231805",
         "descricao": "IP-MEC-REDUTOR 4",
         "centro": "RJ04",
@@ -1456,6 +1526,7 @@
       },
       {
         "usuario": "10900009",
+        "usuarioValido": "Sim",
         "ordem": "2005264433",
         "descricao": "LUB-SEM-PONTE ROLANTE",
         "centro": "RJ04",
@@ -1470,6 +1541,7 @@
       },
       {
         "usuario": "10900009",
+        "usuarioValido": "Sim",
         "ordem": "2005229781",
         "descricao": "IM-1M-PRÉDIO SEGEM",
         "centro": "RJ04",
@@ -1484,6 +1556,7 @@
       },
       {
         "usuario": "10900009",
+        "usuarioValido": "Sim",
         "ordem": "2005296313",
         "descricao": "IM-3M-LAMINADOR",
         "centro": "RJ04",
@@ -1498,6 +1571,7 @@
       },
       {
         "usuario": "10900010",
+        "usuarioValido": "Não",
         "ordem": "2005264912",
         "descricao": "IM-6M-SUBESTAÇÃO",
         "centro": "RJ04",
@@ -1512,6 +1586,7 @@
       },
       {
         "usuario": "10900010",
+        "usuarioValido": "Não",
         "ordem": "2005251761",
         "descricao": "IM-3M-LAMINADOR",
         "centro": "RJ04",
@@ -1526,6 +1601,7 @@
       },
       {
         "usuario": "10900010",
+        "usuarioValido": "Não",
         "ordem": "2005295847",
         "descricao": "IP-ELE-PAINEL CCM",
         "centro": "RJ04",
@@ -1540,6 +1616,7 @@
       },
       {
         "usuario": "DEMO012",
+        "usuarioValido": "Não",
         "ordem": "2005218158",
         "descricao": "IM-3M-LAMINADOR",
         "centro": "RJ04",
@@ -1554,6 +1631,7 @@
       },
       {
         "usuario": "DEMO012",
+        "usuarioValido": "Não",
         "ordem": "2005231273",
         "descricao": "IM-1M-PRÉDIO SEGEM",
         "centro": "RJ04",
@@ -1568,6 +1646,7 @@
       },
       {
         "usuario": "DEMO012",
+        "usuarioValido": "Não",
         "ordem": "2005223419",
         "descricao": "IM-1M-PRÉDIO SEGEM",
         "centro": "RJ04",
@@ -1582,6 +1661,7 @@
       },
       {
         "usuario": "10900013",
+        "usuarioValido": "Sim",
         "ordem": "2005219216",
         "descricao": "IM-3M-LAMINADOR",
         "centro": "RJ04",
@@ -1596,6 +1676,7 @@
       },
       {
         "usuario": "10900013",
+        "usuarioValido": "Sim",
         "ordem": "2005293153",
         "descricao": "LUB-SEM-PONTE ROLANTE",
         "centro": "RJ04",
@@ -1610,6 +1691,7 @@
       },
       {
         "usuario": "10900013",
+        "usuarioValido": "Sim",
         "ordem": "2005257731",
         "descricao": "IP-MEC-REDUTOR 4",
         "centro": "RJ04",
@@ -1624,6 +1706,7 @@
       },
       {
         "usuario": "10900014",
+        "usuarioValido": "Não",
         "ordem": "2005250875",
         "descricao": "IM-1M-PRÉDIO SEGEM",
         "centro": "RJ04",
@@ -1638,6 +1721,7 @@
       },
       {
         "usuario": "10900014",
+        "usuarioValido": "Não",
         "ordem": "2005244702",
         "descricao": "IP-MEC-REDUTOR 4",
         "centro": "RJ04",
@@ -1652,6 +1736,7 @@
       },
       {
         "usuario": "10900014",
+        "usuarioValido": "Não",
         "ordem": "2005277676",
         "descricao": "IM-1M-PRÉDIO SEGEM",
         "centro": "RJ04",
@@ -1666,6 +1751,7 @@
       },
       {
         "usuario": "DEMO016",
+        "usuarioValido": "Não",
         "ordem": "2005231894",
         "descricao": "LUB-SEM-PONTE ROLANTE",
         "centro": "RJ04",
@@ -1680,6 +1766,7 @@
       },
       {
         "usuario": "DEMO016",
+        "usuarioValido": "Não",
         "ordem": "2005280984",
         "descricao": "IM-6M-SUBESTAÇÃO",
         "centro": "RJ04",
@@ -1694,6 +1781,7 @@
       },
       {
         "usuario": "DEMO016",
+        "usuarioValido": "Não",
         "ordem": "2005290377",
         "descricao": "IM-3M-LAMINADOR",
         "centro": "RJ04",
@@ -1708,6 +1796,7 @@
       },
       {
         "usuario": "10900017",
+        "usuarioValido": "Não",
         "ordem": "2005256604",
         "descricao": "IP-ELE-PAINEL CCM",
         "centro": "RJ04",
@@ -1722,6 +1811,7 @@
       },
       {
         "usuario": "10900017",
+        "usuarioValido": "Não",
         "ordem": "2005271897",
         "descricao": "LUB-SEM-PONTE ROLANTE",
         "centro": "RJ04",
@@ -1736,6 +1826,7 @@
       },
       {
         "usuario": "10900017",
+        "usuarioValido": "Não",
         "ordem": "2005255125",
         "descricao": "IP-MEC-REDUTOR 4",
         "centro": "RJ04",
@@ -2112,6 +2203,6 @@
       }
     ]
   },
-  "relatorioMarkdown": "# Monitor Mobilidade · 2026-11-03\n\nVeredito: **ATENÇÃO**\nGerado em 2026-11-03T05:31:12 (horário de Brasília), execução DIARIA.\n\nDespacho ativo: início 2026-10-29T19:00, 2482 ordens, enviado por demo em 2026-11-03T09:40.\n\n## Respostas às perguntas da rotina diária\n1. Há filas paradas? (Mobilidade) · **OK** · Não. As 15 filas do Service Bus estão sem acúmulo e sem mensagens na fila de mortas, e o SAP está devolvendo retornos.\n2. Há deadlocks na aplicação? (Mobilidade) · **OK** · Não: 0 deadlock(s) nas últimas 24 h (0 em 7 dias); nenhuma sessão bloqueada agora.\n3. Há eventos que atingiram o máximo de tentativas? (Mobilidade) · **ATENÇÃO** · Sim: 18 apontamento(s) de 10 aparelho(s) esgotaram o reenvio ao SAP (CRNT 8, CRDM 4, ACOP 3, CRAV 3); 0 nas últimas 24 h. Precisam de reenvio manual. Nenhuma notificação de catálogo esgotada.\n4. Há ordens do despacho que não chegaram ao Mobilidade? (Mobilidade) · **OK** · Não: as 2.482 ordens do despacho estão no Mobilidade.\n5. Quais ordens foram encaminhadas ao usuário e não foram recebidas? (Mobilidade) · **ATENÇÃO** · 2.498 de 4.214 envios do despacho chegaram (59,3%). 1.692 estão pendentes por motivo do usuário (977 sem apontamentos recentes, 353 sem aparelho cadastrado, 318 não abriram o app desde o despacho, 44 fora da janela de 1 mês) e 24 estão com o sistema (23 em reenvio, 1 esgotaram as 8 tentativas).\n6. Quais eventos foram encaminhados ao usuário e não foram recebidos? (Mobilidade) · **OK** · 64.746 de 65.526 retornos do SAP desde o início do despacho chegaram aos aparelhos (98,8%). Pendentes: 247 por motivo do usuário e 367 com o sistema (316 não confirmados pelo app, 51 em aparelho sem token de notificação).\n7. Login e geração de token funcionam? (Mobilidade) · **OK** · Sim: O serviço de login está no ar e recusou a credencial vazia (HTTP 400), como esperado. Tempo de resposta: 412 ms. A geração de token só é testada de ponta a ponta com a conta de serviço configurada.\n\n## Detalhe por verificação\n\n### C01 · Filas do Service Bus e fluxo com o SAP · OK\nResposta: Não. As 15 filas do Service Bus estão sem acúmulo e sem mensagens na fila de mortas, e o SAP está devolvendo retornos.\nNúmeros:\n- Filas lidas: 15 · Quantidade de filas do Service Bus do Mobilidade lidas na análise. Coleta: API de administração do Service Bus (só leitura de metadados), com a connection string que o backend já usa para enviar mensagens. Cálculo: contagem das filas listadas.\n- Mensagens ativas: 0 · Mensagens esperando para serem consumidas, somadas em todas as filas. Coleta: contador activeMessageCount de cada fila no momento da análise. Cálculo: soma das filas. Em operação normal fica perto de 0; uma fila com 500 ou mais deixa a pergunta crítica.\n- Na fila de mortas: 0 · Mensagens que o Service Bus desistiu de entregar e moveu para a fila de mortas (dead-letter). Coleta: contador deadLetterMessageCount de cada fila no momento da análise. Cálculo: soma das filas. Qualquer valor acima de 0 deixa a pergunta em atenção.\n- Apontamentos aguardando o SAP há mais de 1 h: 0 · Apontamentos que o backend recebeu do app e ainda esperam o retorno do SAP. Coleta: tabela EVENTOS, STATUS_EVENTO = 'LE', menos de 3 envios ao Service Bus, criados entre 24 h e 1 h atrás (horário de Brasília). Cálculo: contagem. 20 ou mais indicam integração lenta ou parada.\nValor: 0 · referência de 7 dias: indisponível (menos de 3 execuções)\nRegra: Crítico: fila com 500 mensagens ativas ou mais, ou o app envia apontamentos e o SAP não devolve retorno há mais de 3 h. Atenção: mensagem na fila de mortas, ou 20 apontamentos ou mais aguardando o SAP há mais de 1 h.\nDefinição: Contadores das filas do Service Bus (mensagens ativas e na fila de mortas), lidos com a connection string do backend, e sinais no banco: última gravação de cada elo e apontamentos em LE aguardando o SAP há mais de 1 h.\nElo provável: Backend ⇄ Service Bus ⇄ Function ⇄ SAP\nConsulta: Service Bus (administração, só leitura), C01_FLUXO\nAchados:\n- Último apontamento do app há 1 min; último retorno do SAP há 1 min; última ordem distribuída há 1 min.\n\n### C02 · Deadlocks e bloqueios no banco · OK\nResposta: Não: 0 deadlock(s) nas últimas 24 h (0 em 7 dias); nenhuma sessão bloqueada agora.\nNúmeros:\n- Deadlocks em 24 h: 0 · Deadlocks registrados pelo próprio Azure SQL nas últimas 24 h. Coleta: telemetria interna do banco (sys.fn_xe_telemetry_blob_target_read_file, sessão 'dl'). Cálculo: contagem de eventos com data a partir de 24 h atrás (UTC). Qualquer valor acima de 0 deixa a pergunta em atenção.\n- Deadlocks em 7 dias: 0 · Mesma fonte dos deadlocks em 24 h, contando os últimos 7 dias. Serve para ver se o problema é recorrente.\n- Sessões bloqueadas agora: 0 · Consultas paradas esperando outra sessão liberar um bloqueio no momento da análise. Coleta: sys.dm_exec_requests com blocking_session_id diferente de 0. Cálculo: contagem. Fica em atenção se alguma espera há 30 s ou mais.\nValor: 0 · referência de 7 dias: indisponível (menos de 3 execuções)\nRegra: Atenção: algum deadlock nas últimas 24 h, ou sessão bloqueada há 30 s ou mais no momento da análise.\nDefinição: Deadlocks registrados pela telemetria do próprio Azure SQL, últimas 24 h e 7 dias, e sessões bloqueadas neste momento.\nElo provável: Backend ⇄ banco\nConsulta: C02_DEADLOCKS, C02_BLOQUEIOS\n\n### C03 · Apontamentos que esgotaram o reenvio ao SAP · ATENÇÃO\nResposta: Sim: 18 apontamento(s) de 10 aparelho(s) esgotaram o reenvio ao SAP (CRNT 8, CRDM 4, ACOP 3, CRAV 3); 0 nas últimas 24 h. Precisam de reenvio manual.\nNúmeros:\n- Apontamentos esgotados: 18 · Apontamentos do app que o backend recebeu, mas que não tiveram retorno do SAP e esgotaram o reenvio automático. Coleta: tabela EVENTOS, STATUS_EVENTO = 'LE' e SENDING_ATTEMPTS >= 3 (o reenvio desiste no 3º envio). A tabela guarda só 15 dias. Cálculo: contagem. Cada um precisa de reenvio manual.\n- Novos em 24 h: 0 · Dos apontamentos esgotados, os que fizeram a última tentativa nas últimas 24 h (LAST_SENDING_ATTEMPTS, horário de Brasília). Acima de 0 deixa a pergunta crítica, porque o problema é atual.\n- Aparelhos afetados: 10 · Quantidade de aparelhos diferentes (ID_DISPOSITIVO) com apontamentos esgotados.\n- A 1 tentativa do limite: 0 · Apontamentos em LE com exatamente 2 envios: se o próximo falhar, esgotam. Coleta: EVENTOS, STATUS_EVENTO = 'LE' e SENDING_ATTEMPTS = 2. Cálculo: contagem.\nValor: 18 · referência de 7 dias: 18\nRegra: Atenção: há eventos esgotados antigos, nenhum novo nas últimas 24 h.\nDefinição: EVENTOS com STATUS_EVENTO = 'LE' (recebido pelo backend, sem retorno do SAP) e SENDING_ATTEMPTS >= 3. A tabela EVENTOS guarda só 15 dias.\nElo provável: Backend → Service Bus → Function → SAP\nConsulta: C03_RESUMO, C03_POR_TIPO, C03_AMOSTRA\nAchados:\n- 18 apontamentos criados entre 19/10 e 30/10; nenhum novo nas últimas 24 h.\nAmostra (máx. 20):\n- {id_dispositivo=demo-ap-01, id_evento=2664, tipo_evento=CRDM, usuario=10900011, fecha_creacion=2026-10-30T08:42:42, sending_attempts=3}\n- {id_dispositivo=demo-ap-02, id_evento=306, tipo_evento=CRNT, usuario=DEMOUSR1, fecha_creacion=2026-10-29T14:10:05, sending_attempts=3}\n- {id_dispositivo=demo-ap-03, id_evento=1180, tipo_evento=ACOP, usuario=10900012, fecha_creacion=2026-10-24T10:03:11, sending_attempts=3}\n- {id_dispositivo=demo-ap-04, id_evento=977, tipo_evento=CRAV, usuario=10900013, fecha_creacion=2026-10-19T10:36:43, sending_attempts=3}\n\n### C03b · Notificações de catálogo esgotadas · OK\nResposta: Nenhuma notificação de catálogo esgotada.\nNúmeros:\n- Notificações de catálogo esgotadas: 0 · Atualizações de catálogo que o sistema tentou mandar ao aparelho e desistiu. Coleta: tabela NOTIFICATION_CONTROL, SYNC_STATUS = 0 e ATTEMPT_COUNT >= 9 (o reenvio agendado vai até 8). Cálculo: contagem, somando os tipos de notificação.\n- Novas em 24 h: 0 · Das notificações de catálogo esgotadas, as que fizeram a última tentativa nas últimas 24 h (LAST_ATTEMPT_DATE, em UTC).\nValor: 0 · referência de 7 dias: indisponível (menos de 3 execuções)\nRegra: Ok: nenhuma notificação de catálogo esgotada.\nDefinição: NOTIFICATION_CONTROL com SYNC_STATUS = 0 e ATTEMPT_COUNT >= 9.\nElo provável: Backend → Notification Hub → aparelho\nConsulta: C03B_RESUMO, C03B_AMOSTRA\n\n### C05 · Ordens do despacho que faltam no Mobilidade · OK\nResposta: Não: as 2.482 ordens do despacho estão no Mobilidade.\nNúmeros:\n- Ordens na lista: 2482 · Ordens distintas da lista do despacho enviada na tela. Coleta: upload da planilha do SAP (coluna Ordem, só linhas \"Ordem enviada com sucesso\") ou números colados. Cálculo: números normalizados para 12 dígitos com zeros à esquerda, sem repetidos.\n- No Mobilidade: 2482 de 2482 · Ordens da lista que existem na tabela ORDENESTRABAJO. Cálculo: cruzamento da lista com ORDENESTRABAJO.ID_ORDEN; o % é sobre as ordens da lista.\n- Faltando: 0 de 2482 · Ordens da lista que não existem em ORDENESTRABAJO, ou seja, não chegaram ao Mobilidade. Cálculo: ordens da lista sem correspondência no banco; o % é sobre as ordens da lista. Qualquer valor acima de 0 deixa a pergunta crítica.\nValor: 0 · referência de 7 dias: indisponível (menos de 3 execuções)\nRegra: Ok: todas as ordens da lista estão no banco.\nDefinição: Ordens da lista do despacho que não existem em ORDENESTRABAJO.\nElo provável: SAP PI → Function → Backend\nConsulta: C05_RESUMO, C05_FALTANTES\n\n### C06 · Ordens encaminhadas e não recebidas · ATENÇÃO\nResposta: 2.498 de 4.214 envios do despacho chegaram (59,3%). 1.692 estão pendentes por motivo do usuário (977 sem apontamentos recentes, 353 sem aparelho cadastrado, 318 não abriram o app desde o despacho, 44 fora da janela de 1 mês) e 24 estão com o sistema (23 em reenvio, 1 esgotaram as 8 tentativas).\nNúmeros:\n- Envios do despacho: 4214 · Envios de ordem a usuários no despacho: cada ordem vai para todos os usuários do grupo ou posto no SAP, então uma ordem vira vários envios. Coleta: tabela OBJETOUSUARIO das ordens da lista, TIPO_OBJETO = 'ORDEN', ordem liberada (ORDENESTRABAJO.LIBERADO = 1) e FECHA_MODIFICACION a partir do início do despacho. Cálculo: contagem de pares ordem × usuário.\n- Recebidos: 2498 de 4214 · Envios do despacho que chegaram ao app do usuário. Coleta: OBJETOUSUARIO.FECHA_SYNC preenchida (o app confirmou a sincronização). Cálculo: contagem; o % é sobre os envios do despacho.\n- Pendentes por motivo do usuário: 1692 de 4214 · Envios do despacho não recebidos por motivo que o negócio trata: usuário sem aparelho, sem apontamentos recentes, que não abriu o app desde o despacho, ou ordem fora da janela de 1 mês (regra de negócio). O uso do app é medido pelo último apontamento em EVENTOS (15 dias de histórico). Cálculo: contagem; o % é sobre os envios do despacho.\n- Pendentes com o sistema: 24 de 4214 · Envios do despacho não recebidos por motivo técnico: ainda em reenvio automático (menos de 8 tentativas) ou com as 8 tentativas esgotadas (OBJETOUSUARIO.TASK_SYNC_ATTEMPT_COUNT). São da TI. Cálculo: contagem; o % é sobre os envios.\nValor: 1716 · referência de 7 dias: 1700\nRegra: Atenção: envio que esgotou as 8 tentativas (no despacho ou nas últimas 24 h). Crítico: pendências gerais 50% acima da referência de 7 dias (e ao menos 10 a mais).\nDefinição: Envio = OBJETOUSUARIO (ordem × usuário) de ordem liberada; recebido = FECHA_SYNC preenchida. O sistema reenvia até 8 tentativas e só vínculos de até 1 mês (regra de negócio). Cada usuário é classificado pelo último apontamento (EVENTOS guarda 15 dias).\nElo provável: Backend → Notification Hub → aparelho\nConsulta: C06_RESUMO, C06_AMOSTRA e o script do despacho\nAchados:\n- 2.498 de 4.214 envios do despacho chegaram (59,3%). 1.692 estão pendentes por motivo do usuário (977 sem apontamentos recentes, 353 sem aparelho cadastrado, 318 não abriram o app desde o despacho, 44 fora da janela de 1 mês) e 24 estão com o sistema (23 em reenvio, 1 esgotaram as 8 tentativas).\nResumo: {despacho={enviadas=4214, recebidas=2498, pendentesNegocio=1692, pendentesTi=24, porMotivo=[{motivo=Usuário tem aparelho, mas não envia apontamentos recentes no app, ordens=977, acao=Confirmar se o usuário ainda atua na área e usa o app (férias, afastamento, mudança de função)}, {motivo=Usuário sem aparelho cadastrado (nunca instalou o app), ordens=353, acao=Confirmar se o usuário deve receber ordens deste grupo; se sim, instalar o app}, {motivo=Usuário não abriu o app desde o despacho, ordens=318, acao=Nenhuma: recebe ao abrir o app}, {motivo=Fora da janela de 1 mês: a ordem foi vinculada a este usuário há mais de 1 mês e, pela regra, não é enviada ao app, ordens=44, acao=Avaliar com o planejamento se a ordem ainda deve ser executada por este usuário}], tiPorMotivo=[{motivo=Em reenvio pelo sistema, ordens=23}, {motivo=Falha: a notificação não chega ao aparelho (8 tentativas), ordens=1}]}}\n\n### C07 · Retornos de evento não recebidos · OK\nResposta: 64.746 de 65.526 retornos do SAP desde o início do despacho chegaram aos aparelhos (98,8%). Pendentes: 247 por motivo do usuário e 367 com o sistema (316 não confirmados pelo app, 51 em aparelho sem token de notificação).\nNúmeros:\n- Retornos do SAP no despacho: 65526 · Retornos que o SAP devolveu para os apontamentos desde o início do despacho e que o sistema precisa entregar ao aparelho. Coleta: tabela EVENT_NOTIFICATION_CONTROL, STATUS diferente de 'LE' e CREATED_AT a partir do início do despacho (horário de Brasília). Cálculo: contagem.\n- Entregues aos aparelhos: 64746 de 65526 · Retornos do despacho que o app confirmou ter recebido (EVENT_NOTIFICATION_CONTROL.SYNC_DATE preenchida). Cálculo: contagem; o % é sobre os retornos do despacho. Abaixo de 95% a pergunta fica crítica.\n- Pendentes por motivo do usuário: 247 de 65526 · Retornos não entregues porque o aparelho não foi usado desde o retorno ou o usuário trocou de aparelho. Retornos com erro no SAP (status ER) não entram: são responsabilidade do SAP e ficam só na planilha do negócio. Cálculo: contagem; o % é sobre os retornos do despacho.\n- Pendentes com o sistema: 367 de 65526 · Retornos não entregues por motivo técnico: o app recebeu e não confirmou, ou o aparelho não tem token de notificação. São da TI. Cálculo: contagem; o % é sobre os retornos do despacho.\nValor: 731 · referência de 7 dias: 700\nRegra: Atenção: retorno que esgotou o reenvio nas últimas 24 h. Retornos com erro no SAP (ER) são do SAP e ficam só na planilha do negócio. Crítico: menos de 95% dos retornos do despacho entregues, ou pendências 50% acima da referência de 7 dias.\nDefinição: EVENT_NOTIFICATION_CONTROL com SYNC_DATE nula e STATUS diferente de 'LE'. O reenvio vai até 3 tentativas. ER é erro no SAP, que volta a ficar pendente até corrigirem o cadastro.\nElo provável: SAP → Function → Backend → aparelho\nConsulta: C07_RESUMO, C07_POR_STATUS, C07_AMOSTRA, C07_DESPACHO e o script do despacho\nAchados:\n- 64.746 de 65.526 retornos do SAP desde o início do despacho chegaram aos aparelhos (98,8%). Pendentes: 247 por motivo do usuário e 367 com o sistema (316 não confirmados pelo app, 51 em aparelho sem token de notificação).\n- Retornos concentrados em poucos usuários: 10900001 (110) 10900002 (107) 10900003 (36).\nResumo: {despacho={retornos=65526, recebidos=64746, pendentesNegocio=247, errosSapForaDoMonitor=113, pendentesTi=367, porMotivo=[{motivo=Aparelho não foi usado desde o retorno, retornos=217, acao=Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho}, {motivo=Usuário trocou de aparelho: o aparelho antigo não vai receber, retornos=30, acao=Nenhuma: o retorno ficou no aparelho antigo, que não está mais em uso}], tiPorMotivo=[{motivo=Retorno enviado ao aparelho, mas o app não confirmou o recebimento, retornos=316}, {motivo=Aparelho sem token de notificação: o sistema não consegue enviar o retorno, retornos=51}]}}\n\n### C09 · Login e geração de token · OK\nResposta: Sim: O serviço de login está no ar e recusou a credencial vazia (HTTP 400), como esperado. Tempo de resposta: 412 ms. A geração de token só é testada de ponta a ponta com a conta de serviço configurada.\nNúmeros:\n- Tempo de resposta do login (ms): 412 · Tempo, em milissegundos, que o serviço de login do app (FrontendSecurityService: SignIn e TokenCreate) levou para responder à chamada de teste da análise. Sem conta de serviço, só o SignIn é chamado, com credencial vazia, e a resposta esperada é uma recusa rápida. Acima de 5.000 ms fica em atenção; sem resposta ou erro 5xx fica crítica.\nValor: 412 · referência de 7 dias: indisponível (menos de 3 execuções)\nRegra: Crítico: o serviço não responde, responde com erro 5xx ou a conta de serviço não gera token válido. Atenção: resposta acima de 5 s.\nDefinição: Chamada ao mesmo serviço de login do app (FrontendSecurityService/TokenCreate).\nElo provável: App → Front Door → FrontendSecurityService\nConsulta: POST TokenCreate\n\n## Glossário\n- Cadeia de integração: App ⇄ Backend ⇄ Service Bus ⇄ Function ⇄ SAP PI ⇄ SAP. O app e o backend não falam com o SAP; só as Functions.\n- EVENTOS: apontamentos do app. STATUS_EVENTO LE = recebido pelo backend, sem retorno do SAP. O reenvio ao Service Bus desiste com 3 envios.\n- EVENT_NOTIFICATION_CONTROL: retorno do SAP (PR processado, ER erro) a entregar ao aparelho. Reenvia até 3 tentativas. ER volta a ficar pendente até corrigir o cadastro no SAP.\n- OBJETOUSUARIO: vínculo ordem × usuário. Reenvia até 8 tentativas e só enquanto o vínculo tiver até 1 mês (regra de negócio).\n- NOTIFICATION_CONTROL: notificações de catálogo. Reenvia até 8 tentativas.\n- Histórico de uso do app: EVENTOS guarda só 15 dias (limpeza em produção), então \"sem apontamentos recentes\" quer dizer nenhum nos últimos 15 dias.\n- Fusos: o backend grava em horário de Brasília; algumas colunas (NOTIFICATION_CONTROL, OBJETOUSUARIO.LAST_SYNC_TASK_ATTEMPT) estão em UTC.\n",
+  "relatorioMarkdown": "# Monitor Mobilidade · 2026-11-03\n\nVeredito: **ATENÇÃO**\nGerado em 2026-11-03T05:31:12 (horário de Brasília), execução DIARIA.\n\nDespacho ativo: início 2026-10-29T19:00, 2482 ordens, enviado por demo em 2026-11-03T09:40.\n\n## Respostas às perguntas da rotina diária\n1. Há filas paradas? (Mobilidade) · **OK** · Não. As 15 filas do Service Bus estão sem acúmulo e sem mensagens na fila de mortas, e o SAP está devolvendo retornos.\n2. Há deadlocks na aplicação? (Mobilidade) · **OK** · Não: 0 deadlock(s) nas últimas 24 h (0 em 7 dias); nenhuma sessão bloqueada agora.\n3. Há eventos que atingiram o máximo de tentativas? (Mobilidade) · **ATENÇÃO** · Sim: 18 apontamento(s) de 10 aparelho(s) esgotaram o reenvio ao SAP (CRNT 8, CRDM 4, ACOP 3, CRAV 3); 0 nas últimas 24 h. Precisam de reenvio manual. Nenhuma notificação de catálogo esgotada.\n4. Há ordens do despacho que não chegaram ao Mobilidade? (Mobilidade) · **OK** · Não: as 2.482 ordens do despacho estão no Mobilidade.\n5. Quais ordens foram encaminhadas ao usuário e não foram recebidas? (Mobilidade) · **ATENÇÃO** · 2.498 de 2.550 envios a usuários válidos chegaram (98,0%). 28 estão pendentes por motivo do usuário (23 fora da janela de 1 mês, 5 sem apontamentos recentes) e 24 estão com o sistema (23 em reenvio, 1 esgotaram as 8 tentativas). No total do despacho foram 4.214 envios; 1.664 foram para 268 usuários que não apontaram nem receberam ordem depois do despacho.\n6. Quais eventos foram encaminhados ao usuário e não foram recebidos? (Mobilidade) · **OK** · 64.746 de 65.526 retornos do SAP desde o início do despacho chegaram aos aparelhos (98,8%). Pendentes: 247 por motivo do usuário e 367 com o sistema (316 não confirmados pelo app, 51 em aparelho sem token de notificação).\n7. Login e geração de token funcionam? (Mobilidade) · **OK** · Sim: O serviço de login está no ar e recusou a credencial vazia (HTTP 400), como esperado. Tempo de resposta: 412 ms. A geração de token só é testada de ponta a ponta com a conta de serviço configurada.\n\n## Detalhe por verificação\n\n### C01 · Filas do Service Bus e fluxo com o SAP · OK\nResposta: Não. As 15 filas do Service Bus estão sem acúmulo e sem mensagens na fila de mortas, e o SAP está devolvendo retornos.\nNúmeros:\n- Filas lidas: 15 · Quantidade de filas do Service Bus do Mobilidade lidas na análise. Coleta: API de administração do Service Bus (só leitura de metadados), com a connection string que o backend já usa para enviar mensagens. Cálculo: contagem das filas listadas.\n- Mensagens ativas: 0 · Mensagens esperando para serem consumidas, somadas em todas as filas. Coleta: contador activeMessageCount de cada fila no momento da análise. Cálculo: soma das filas. Em operação normal fica perto de 0; uma fila com 500 ou mais deixa a pergunta crítica.\n- Na fila de mortas: 0 · Mensagens que o Service Bus desistiu de entregar e moveu para a fila de mortas (dead-letter). Coleta: contador deadLetterMessageCount de cada fila no momento da análise. Cálculo: soma das filas. Qualquer valor acima de 0 deixa a pergunta em atenção.\n- Apontamentos aguardando o SAP há mais de 1 h: 0 · Apontamentos que o backend recebeu do app e ainda esperam o retorno do SAP. Coleta: tabela EVENTOS, STATUS_EVENTO = 'LE', menos de 3 envios ao Service Bus, criados entre 24 h e 1 h atrás (horário de Brasília). Cálculo: contagem. 20 ou mais indicam integração lenta ou parada.\nValor: 0 · referência de 7 dias: indisponível (menos de 3 execuções)\nRegra: Crítico: fila com 500 mensagens ativas ou mais, ou o app envia apontamentos e o SAP não devolve retorno há mais de 3 h. Atenção: mensagem na fila de mortas, ou 20 apontamentos ou mais aguardando o SAP há mais de 1 h.\nDefinição: Contadores das filas do Service Bus (mensagens ativas e na fila de mortas), lidos com a connection string do backend, e sinais no banco: última gravação de cada elo e apontamentos em LE aguardando o SAP há mais de 1 h.\nElo provável: Backend ⇄ Service Bus ⇄ Function ⇄ SAP\nConsulta: Service Bus (administração, só leitura), C01_FLUXO\nAchados:\n- Último apontamento do app há 1 min; último retorno do SAP há 1 min; última ordem distribuída há 1 min.\n\n### C02 · Deadlocks e bloqueios no banco · OK\nResposta: Não: 0 deadlock(s) nas últimas 24 h (0 em 7 dias); nenhuma sessão bloqueada agora.\nNúmeros:\n- Deadlocks em 24 h: 0 · Deadlocks registrados pelo próprio Azure SQL nas últimas 24 h. Coleta: telemetria interna do banco (sys.fn_xe_telemetry_blob_target_read_file, sessão 'dl'). Cálculo: contagem de eventos com data a partir de 24 h atrás (UTC). Qualquer valor acima de 0 deixa a pergunta em atenção.\n- Deadlocks em 7 dias: 0 · Mesma fonte dos deadlocks em 24 h, contando os últimos 7 dias. Serve para ver se o problema é recorrente.\n- Sessões bloqueadas agora: 0 · Consultas paradas esperando outra sessão liberar um bloqueio no momento da análise. Coleta: sys.dm_exec_requests com blocking_session_id diferente de 0. Cálculo: contagem. Fica em atenção se alguma espera há 30 s ou mais.\nValor: 0 · referência de 7 dias: indisponível (menos de 3 execuções)\nRegra: Atenção: algum deadlock nas últimas 24 h, ou sessão bloqueada há 30 s ou mais no momento da análise.\nDefinição: Deadlocks registrados pela telemetria do próprio Azure SQL, últimas 24 h e 7 dias, e sessões bloqueadas neste momento.\nElo provável: Backend ⇄ banco\nConsulta: C02_DEADLOCKS, C02_BLOQUEIOS\n\n### C03 · Apontamentos que esgotaram o reenvio ao SAP · ATENÇÃO\nResposta: Sim: 18 apontamento(s) de 10 aparelho(s) esgotaram o reenvio ao SAP (CRNT 8, CRDM 4, ACOP 3, CRAV 3); 0 nas últimas 24 h. Precisam de reenvio manual.\nNúmeros:\n- Apontamentos esgotados: 18 · Apontamentos do app que o backend recebeu, mas que não tiveram retorno do SAP e esgotaram o reenvio automático. Coleta: tabela EVENTOS, STATUS_EVENTO = 'LE' e SENDING_ATTEMPTS >= 3 (o reenvio desiste no 3º envio). A tabela guarda só 15 dias. Cálculo: contagem. Cada um precisa de reenvio manual.\n- Novos em 24 h: 0 · Dos apontamentos esgotados, os que fizeram a última tentativa nas últimas 24 h (LAST_SENDING_ATTEMPTS, horário de Brasília). Acima de 0 deixa a pergunta crítica, porque o problema é atual.\n- Aparelhos afetados: 10 · Quantidade de aparelhos diferentes (ID_DISPOSITIVO) com apontamentos esgotados.\n- A 1 tentativa do limite: 0 · Apontamentos em LE com exatamente 2 envios: se o próximo falhar, esgotam. Coleta: EVENTOS, STATUS_EVENTO = 'LE' e SENDING_ATTEMPTS = 2. Cálculo: contagem.\nValor: 18 · referência de 7 dias: 18\nRegra: Atenção: há eventos esgotados antigos, nenhum novo nas últimas 24 h.\nDefinição: EVENTOS com STATUS_EVENTO = 'LE' (recebido pelo backend, sem retorno do SAP) e SENDING_ATTEMPTS >= 3. A tabela EVENTOS guarda só 15 dias.\nElo provável: Backend → Service Bus → Function → SAP\nConsulta: C03_RESUMO, C03_POR_TIPO, C03_AMOSTRA\nAchados:\n- 18 apontamentos criados entre 19/10 e 30/10; nenhum novo nas últimas 24 h.\nAmostra (máx. 20):\n- {id_dispositivo=demo-ap-01, id_evento=2664, tipo_evento=CRDM, usuario=10900011, fecha_creacion=2026-10-30T08:42:42, sending_attempts=3}\n- {id_dispositivo=demo-ap-02, id_evento=306, tipo_evento=CRNT, usuario=DEMOUSR1, fecha_creacion=2026-10-29T14:10:05, sending_attempts=3}\n- {id_dispositivo=demo-ap-03, id_evento=1180, tipo_evento=ACOP, usuario=10900012, fecha_creacion=2026-10-24T10:03:11, sending_attempts=3}\n- {id_dispositivo=demo-ap-04, id_evento=977, tipo_evento=CRAV, usuario=10900013, fecha_creacion=2026-10-19T10:36:43, sending_attempts=3}\n\n### C03b · Notificações de catálogo esgotadas · OK\nResposta: Nenhuma notificação de catálogo esgotada.\nNúmeros:\n- Notificações de catálogo esgotadas: 0 · Atualizações de catálogo que o sistema tentou mandar ao aparelho e desistiu. Coleta: tabela NOTIFICATION_CONTROL, SYNC_STATUS = 0 e ATTEMPT_COUNT >= 9 (o reenvio agendado vai até 8). Cálculo: contagem, somando os tipos de notificação.\n- Novas em 24 h: 0 · Das notificações de catálogo esgotadas, as que fizeram a última tentativa nas últimas 24 h (LAST_ATTEMPT_DATE, em UTC).\nValor: 0 · referência de 7 dias: indisponível (menos de 3 execuções)\nRegra: Ok: nenhuma notificação de catálogo esgotada.\nDefinição: NOTIFICATION_CONTROL com SYNC_STATUS = 0 e ATTEMPT_COUNT >= 9.\nElo provável: Backend → Notification Hub → aparelho\nConsulta: C03B_RESUMO, C03B_AMOSTRA\n\n### C05 · Ordens do despacho que faltam no Mobilidade · OK\nResposta: Não: as 2.482 ordens do despacho estão no Mobilidade.\nNúmeros:\n- Ordens na lista: 2482 · Ordens distintas da lista do despacho enviada na tela. Coleta: upload da planilha do SAP (coluna Ordem, só linhas \"Ordem enviada com sucesso\") ou números colados. Cálculo: números normalizados para 12 dígitos com zeros à esquerda, sem repetidos.\n- No Mobilidade: 2482 de 2482 · Ordens da lista que existem na tabela ORDENESTRABAJO. Cálculo: cruzamento da lista com ORDENESTRABAJO.ID_ORDEN; o % é sobre as ordens da lista.\n- Faltando: 0 de 2482 · Ordens da lista que não existem em ORDENESTRABAJO, ou seja, não chegaram ao Mobilidade. Cálculo: ordens da lista sem correspondência no banco; o % é sobre as ordens da lista. Qualquer valor acima de 0 deixa a pergunta crítica.\nValor: 0 · referência de 7 dias: indisponível (menos de 3 execuções)\nRegra: Ok: todas as ordens da lista estão no banco.\nDefinição: Ordens da lista do despacho que não existem em ORDENESTRABAJO.\nElo provável: SAP PI → Function → Backend\nConsulta: C05_RESUMO, C05_FALTANTES\n\n### C06 · Ordens encaminhadas e não recebidas · ATENÇÃO\nResposta: 2.498 de 2.550 envios a usuários válidos chegaram (98,0%). 28 estão pendentes por motivo do usuário (23 fora da janela de 1 mês, 5 sem apontamentos recentes) e 24 estão com o sistema (23 em reenvio, 1 esgotaram as 8 tentativas). No total do despacho foram 4.214 envios; 1.664 foram para 268 usuários que não apontaram nem receberam ordem depois do despacho.\nNúmeros:\n- Envios do despacho: 4214 · Envios de ordem a usuários no despacho: cada ordem vai para todos os usuários do grupo ou posto no SAP, então uma ordem vira vários envios. Coleta: tabela OBJETOUSUARIO das ordens da lista, TIPO_OBJETO = 'ORDEN', ordem liberada (ORDENESTRABAJO.LIBERADO = 1) e FECHA_MODIFICACION a partir do início do despacho. Cálculo: contagem de pares ordem × usuário.\n- Recebidos: 2498 de 4214 · Envios do despacho que chegaram ao app do usuário. Coleta: OBJETOUSUARIO.FECHA_SYNC preenchida (o app confirmou a sincronização). Cálculo: contagem; o % é sobre os envios do despacho.\n- Pendentes por motivo do usuário: 1692 de 4214 · Envios do despacho não recebidos por motivo que o negócio trata: usuário sem aparelho, sem apontamentos recentes, que não abriu o app desde o despacho, ou ordem fora da janela de 1 mês (regra de negócio). O uso do app é medido pelo último apontamento em EVENTOS (15 dias de histórico). Cálculo: contagem; o % é sobre os envios do despacho.\n- Pendentes com o sistema: 24 de 4214 · Envios do despacho não recebidos por motivo técnico: ainda em reenvio automático (menos de 8 tentativas) ou com as 8 tentativas esgotadas (OBJETOUSUARIO.TASK_SYNC_ATTEMPT_COUNT). São da TI. Cálculo: contagem; o % é sobre os envios.\nValor: 1716 · referência de 7 dias: 1700\nRegra: Atenção: envio que esgotou as 8 tentativas (no despacho ou nas últimas 24 h). Crítico: pendências gerais 50% acima da referência de 7 dias (e ao menos 10 a mais).\nDefinição: Envio = OBJETOUSUARIO (ordem × usuário) de ordem liberada; recebido = FECHA_SYNC preenchida. O sistema reenvia até 8 tentativas e só vínculos de até 1 mês (regra de negócio). Cada usuário é classificado pelo último apontamento (EVENTOS guarda 15 dias).\nElo provável: Backend → Notification Hub → aparelho\nConsulta: C06_RESUMO, C06_AMOSTRA e o script do despacho\nAchados:\n- 2.498 de 2.550 envios a usuários válidos chegaram (98,0%). 28 estão pendentes por motivo do usuário (23 fora da janela de 1 mês, 5 sem apontamentos recentes) e 24 estão com o sistema (23 em reenvio, 1 esgotaram as 8 tentativas). No total do despacho foram 4.214 envios; 1.664 foram para 268 usuários que não apontaram nem receberam ordem depois do despacho.\nResumo: {despacho={enviadas=4214, recebidas=2498, pendentesNegocio=1692, pendentesTi=24, porMotivo=[{motivo=Usuário tem aparelho, mas não envia apontamentos recentes no app, ordens=977, acao=Confirmar se o usuário ainda atua na área e usa o app (férias, afastamento, mudança de função)}, {motivo=Usuário sem aparelho cadastrado (nunca instalou o app), ordens=353, acao=Confirmar se o usuário deve receber ordens deste grupo; se sim, instalar o app}, {motivo=Usuário não abriu o app desde o despacho, ordens=318, acao=Nenhuma: recebe ao abrir o app}, {motivo=Fora da janela de 1 mês: a ordem foi vinculada a este usuário há mais de 1 mês e, pela regra, não é enviada ao app, ordens=44, acao=Avaliar com o planejamento se a ordem ainda deve ser executada por este usuário}], tiPorMotivo=[{motivo=Em reenvio pelo sistema, ordens=23}, {motivo=Falha: a notificação não chega ao aparelho (8 tentativas), ordens=1}]}}\n\n### C07 · Retornos de evento não recebidos · OK\nResposta: 64.746 de 65.526 retornos do SAP desde o início do despacho chegaram aos aparelhos (98,8%). Pendentes: 247 por motivo do usuário e 367 com o sistema (316 não confirmados pelo app, 51 em aparelho sem token de notificação).\nNúmeros:\n- Retornos do SAP no despacho: 65526 · Retornos que o SAP devolveu para os apontamentos desde o início do despacho e que o sistema precisa entregar ao aparelho. Coleta: tabela EVENT_NOTIFICATION_CONTROL, STATUS diferente de 'LE' e CREATED_AT a partir do início do despacho (horário de Brasília). Cálculo: contagem.\n- Entregues aos aparelhos: 64746 de 65526 · Retornos do despacho que o app confirmou ter recebido (EVENT_NOTIFICATION_CONTROL.SYNC_DATE preenchida). Cálculo: contagem; o % é sobre os retornos do despacho. Abaixo de 95% a pergunta fica crítica.\n- Pendentes por motivo do usuário: 247 de 65526 · Retornos não entregues porque o aparelho não foi usado desde o retorno ou o usuário trocou de aparelho. Retornos com erro no SAP (status ER) não entram: são responsabilidade do SAP e ficam só na planilha do negócio. Cálculo: contagem; o % é sobre os retornos do despacho.\n- Pendentes com o sistema: 367 de 65526 · Retornos não entregues por motivo técnico: o app recebeu e não confirmou, ou o aparelho não tem token de notificação. São da TI. Cálculo: contagem; o % é sobre os retornos do despacho.\nValor: 731 · referência de 7 dias: 700\nRegra: Atenção: retorno que esgotou o reenvio nas últimas 24 h. Retornos com erro no SAP (ER) são do SAP e ficam só na planilha do negócio. Crítico: menos de 95% dos retornos do despacho entregues, ou pendências 50% acima da referência de 7 dias.\nDefinição: EVENT_NOTIFICATION_CONTROL com SYNC_DATE nula e STATUS diferente de 'LE'. O reenvio vai até 3 tentativas. ER é erro no SAP, que volta a ficar pendente até corrigirem o cadastro.\nElo provável: SAP → Function → Backend → aparelho\nConsulta: C07_RESUMO, C07_POR_STATUS, C07_AMOSTRA, C07_DESPACHO e o script do despacho\nAchados:\n- 64.746 de 65.526 retornos do SAP desde o início do despacho chegaram aos aparelhos (98,8%). Pendentes: 247 por motivo do usuário e 367 com o sistema (316 não confirmados pelo app, 51 em aparelho sem token de notificação).\n- Retornos concentrados em poucos usuários: 10900001 (110) 10900002 (107) 10900003 (36).\nResumo: {despacho={retornos=65526, recebidos=64746, pendentesNegocio=247, errosSapForaDoMonitor=113, pendentesTi=367, porMotivo=[{motivo=Aparelho não foi usado desde o retorno, retornos=217, acao=Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho}, {motivo=Usuário trocou de aparelho: o aparelho antigo não vai receber, retornos=30, acao=Nenhuma: o retorno ficou no aparelho antigo, que não está mais em uso}], tiPorMotivo=[{motivo=Retorno enviado ao aparelho, mas o app não confirmou o recebimento, retornos=316}, {motivo=Aparelho sem token de notificação: o sistema não consegue enviar o retorno, retornos=51}]}}\n\n### C09 · Login e geração de token · OK\nResposta: Sim: O serviço de login está no ar e recusou a credencial vazia (HTTP 400), como esperado. Tempo de resposta: 412 ms. A geração de token só é testada de ponta a ponta com a conta de serviço configurada.\nNúmeros:\n- Tempo de resposta do login (ms): 412 · Tempo, em milissegundos, que o serviço de login do app (FrontendSecurityService: SignIn e TokenCreate) levou para responder à chamada de teste da análise. Sem conta de serviço, só o SignIn é chamado, com credencial vazia, e a resposta esperada é uma recusa rápida. Acima de 5.000 ms fica em atenção; sem resposta ou erro 5xx fica crítica.\nValor: 412 · referência de 7 dias: indisponível (menos de 3 execuções)\nRegra: Crítico: o serviço não responde, responde com erro 5xx ou a conta de serviço não gera token válido. Atenção: resposta acima de 5 s.\nDefinição: Chamada ao mesmo serviço de login do app (FrontendSecurityService/TokenCreate).\nElo provável: App → Front Door → FrontendSecurityService\nConsulta: POST TokenCreate\n\n## Glossário\n- Cadeia de integração: App ⇄ Backend ⇄ Service Bus ⇄ Function ⇄ SAP PI ⇄ SAP. O app e o backend não falam com o SAP; só as Functions.\n- EVENTOS: apontamentos do app. STATUS_EVENTO LE = recebido pelo backend, sem retorno do SAP. O reenvio ao Service Bus desiste com 3 envios.\n- EVENT_NOTIFICATION_CONTROL: retorno do SAP (PR processado, ER erro) a entregar ao aparelho. Reenvia até 3 tentativas. ER volta a ficar pendente até corrigir o cadastro no SAP.\n- OBJETOUSUARIO: vínculo ordem × usuário. Reenvia até 8 tentativas e só enquanto o vínculo tiver até 1 mês (regra de negócio).\n- NOTIFICATION_CONTROL: notificações de catálogo. Reenvia até 8 tentativas.\n- Histórico de uso do app: EVENTOS guarda só 15 dias (limpeza em produção), então \"sem apontamentos recentes\" quer dizer nenhum nos últimos 15 dias.\n- Fusos: o backend grava em horário de Brasília; algumas colunas (NOTIFICATION_CONTROL, OBJETOUSUARIO.LAST_SYNC_TASK_ATTEMPT) estão em UTC.\n",
   "envios": []
 }

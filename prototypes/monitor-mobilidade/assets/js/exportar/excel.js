@@ -8,7 +8,20 @@ import { avisarErro } from '../ui/toast.js';
 
 const NOME_ARQUIVO = 'consolidado-despacho.xlsx';
 
-/** Linhas da aba Resumo. */
+/** Indicadores de ordens e usuários sobre uma base: a dos usuários válidos ou a do despacho inteiro. */
+function indicadoresDaBase(b, usuarios, rotuloUsuarios, rotuloEnvios) {
+  return [
+    [rotuloUsuarios, usuarios, 'base'],
+    ['Usuários sem pendência', b.semPendencia, pct(b.semPendencia, usuarios)],
+    ['Usuários com pendência', b.comPendencia, pct(b.comPendencia, usuarios)],
+    [rotuloEnvios, b.ordensEnviadas, 'base'],
+    ['Ordens recebidas', b.ordensRecebidas, pct(b.ordensRecebidas, b.ordensEnviadas)],
+    ['Ordens pendentes', b.ordensPendentes, pct(b.ordensPendentes, b.ordensEnviadas)],
+    ['Fora da janela de 1 mês', b.ordensForaJanela, pct(b.ordensForaJanela, b.ordensEnviadas)],
+  ];
+}
+
+/** Linhas da aba Resumo: primeiro o número real (usuários válidos), depois o total do despacho. */
 function linhasDoResumo(resultado) {
   const r = resultado.resumo;
   const retornos = r.retornosDespacho?.retornos;
@@ -17,14 +30,15 @@ function linhasDoResumo(resultado) {
     [`Consolidado do despacho${inicio}`],
     [`Extração de ${dataBr(resultado.extracao)}`],
     [],
-    ['Indicador', 'Quantidade', '%'],
-    ['Usuários envolvidos', r.usuariosEnvolvidos, 'base'],
-    ['Usuários sem pendência', r.semPendencia, pct(r.semPendencia, r.usuariosEnvolvidos)],
-    ['Usuários com pendência', r.comPendencia, pct(r.comPendencia, r.usuariosEnvolvidos)],
-    ['Envios de ordem (ordem × usuário)', r.ordensEnviadas, 'base'],
-    ['Ordens recebidas', r.ordensRecebidas, pct(r.ordensRecebidas, r.ordensEnviadas)],
-    ['Ordens pendentes', r.ordensPendentes, pct(r.ordensPendentes, r.ordensEnviadas)],
-    ['Fora da janela de 1 mês', r.ordensForaJanela, pct(r.ordensForaJanela, r.ordensEnviadas)],
+    ...(r.validos
+      ? [
+          ['Número real: usuários válidos (apontaram ou receberam ordem depois do despacho)', 'Quantidade', '%'],
+          ...indicadoresDaBase(r.validos, r.validos.usuarios, 'Usuários válidos', 'Envios a usuários válidos'),
+          [],
+        ]
+      : []),
+    ['Total do despacho (todos os usuários)', 'Quantidade', '%'],
+    ...indicadoresDaBase(r, r.usuariosEnvolvidos, 'Usuários envolvidos', 'Envios de ordem (ordem × usuário)'),
     ['Retornos de evento pendentes', r.retornosPendentes, retornos ? pct(r.retornosPendentes, retornos) : 'sem base'],
     [],
     ['Uso do app', 'Usuários', 'Ordens pendentes'],

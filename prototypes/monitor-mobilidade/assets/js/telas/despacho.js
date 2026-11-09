@@ -21,6 +21,7 @@ export const COLUNAS = {
   usuarios: {
     usuario: 'ID do usuário',
     situacao: 'Situação',
+    valido: 'Usuário válido',
     usoApp: 'Uso do app',
     ultimoUso: 'Último apontamento',
     diasSemUsar: 'Dias sem apontar',
@@ -35,6 +36,7 @@ export const COLUNAS = {
   },
   ordens: {
     usuario: 'ID do usuário',
+    usuarioValido: 'Usuário válido',
     ordem: 'Ordem',
     descricao: 'Descrição',
     centro: 'Centro',
@@ -66,8 +68,8 @@ export const COLUNAS = {
 
 /** Filtros de lista de cada tabela. */
 const FILTROS = {
-  usuarios: { situacao: 'Situação', usoApp: 'Uso do app' },
-  ordens: { motivo: 'Motivo', usoApp: 'Uso do app', centro: 'Centro' },
+  usuarios: { situacao: 'Situação', valido: 'Usuário válido', usoApp: 'Uso do app' },
+  ordens: { motivo: 'Motivo', usuarioValido: 'Usuário válido', usoApp: 'Uso do app', centro: 'Centro' },
   eventos: { motivo: 'Motivo', statusSap: 'Status no SAP', tipo: 'Tipo' },
 };
 
@@ -257,32 +259,47 @@ function tile(rotulo, valor, { extra = null, destacado = false, explicacao } = {
   </div>`;
 }
 
+/**
+ * O número real considera só usuários válidos (resumo.validos); o total do despacho aparece ao lado.
+ * Resultados calculados antes dessa regra não têm "validos" e mostram só o total.
+ */
 function indicadores(resumo) {
-  const { usuariosEnvolvidos: usuarios, ordensEnviadas: envios, retornosDespacho } = resumo;
+  const { validos, retornosDespacho } = resumo;
+  const base = validos ?? resumo;
+  const usuarios = validos ? validos.usuarios : resumo.usuariosEnvolvidos;
+  const envios = base.ordensEnviadas;
   const retornos = retornosDespacho?.retornos;
   const retornosExtra = retornos ? `${pct(resumo.retornosPendentes, retornos)} de ${fmt(retornos)}` : null;
   const e = EXPLICACOES;
   return [
-    tile('Usuários envolvidos', usuarios, { destacado: true, explicacao: e.usuariosEnvolvidos }),
-    tile('Usuários sem pendência', resumo.semPendencia, {
-      extra: pct(resumo.semPendencia, usuarios),
+    tile(validos ? 'Usuários válidos' : 'Usuários envolvidos', usuarios, {
+      destacado: true,
+      extra: validos ? `de ${fmt(resumo.usuariosEnvolvidos)} no total` : null,
+      explicacao: validos ? e.usuariosValidos : e.usuariosEnvolvidos,
+    }),
+    tile('Usuários sem pendência', base.semPendencia, {
+      extra: pct(base.semPendencia, usuarios),
       explicacao: e.semPendencia,
     }),
-    tile('Usuários com pendência', resumo.comPendencia, {
-      extra: pct(resumo.comPendencia, usuarios),
+    tile('Usuários com pendência', base.comPendencia, {
+      extra: pct(base.comPendencia, usuarios),
       explicacao: e.comPendencia,
     }),
-    tile('Envios de ordem (ordem × usuário)', envios, { destacado: true, explicacao: e.ordensEnviadas }),
-    tile('Ordens recebidas', resumo.ordensRecebidas, {
-      extra: pct(resumo.ordensRecebidas, envios),
+    tile(validos ? 'Envios a usuários válidos' : 'Envios de ordem (ordem × usuário)', envios, {
+      destacado: true,
+      extra: validos ? `de ${fmt(resumo.ordensEnviadas)} no total` : null,
+      explicacao: e.ordensEnviadas,
+    }),
+    tile('Ordens recebidas', base.ordensRecebidas, {
+      extra: pct(base.ordensRecebidas, envios),
       explicacao: e.ordensRecebidas,
     }),
-    tile('Ordens pendentes (negócio)', resumo.ordensPendentes, {
-      extra: pct(resumo.ordensPendentes, envios),
+    tile('Ordens pendentes (negócio)', base.ordensPendentes, {
+      extra: pct(base.ordensPendentes, envios),
       explicacao: e.ordensPendentes,
     }),
-    tile('Fora da janela de 1 mês', resumo.ordensForaJanela, {
-      extra: pct(resumo.ordensForaJanela, envios),
+    tile('Fora da janela de 1 mês', base.ordensForaJanela, {
+      extra: pct(base.ordensForaJanela, envios),
       explicacao: e.ordensForaJanela,
     }),
     tile('Retornos pendentes (negócio)', resumo.retornosPendentes, {
@@ -369,6 +386,7 @@ function desenharResultado(resultado) {
       ${usoDoApp(resumo.usuariosPorUso)}
       <div class="card pad">
         <h2 class="titulo-card antes-lista">Ordens pendentes por motivo${info(EXPLICACOES.ordensPorMotivo)}</h2>
+        <div class="tiny">Todos os usuários do despacho, válidos ou não.</div>
         ${motivosOuNenhum(resumo.ordensPorMotivo, 'ordens', {}, 'Nenhuma.')}
       </div>
     </div>
