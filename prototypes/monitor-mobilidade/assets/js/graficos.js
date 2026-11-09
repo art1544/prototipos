@@ -35,10 +35,10 @@ export function anel(valor, base, status, pequeno = false) {
  * Número real grande, com o % no anel quando há base.
  * @param {{valor: number, base?: number, rotulo: string, explicacao?: string}} n
  * @param {string} status cor final do anel
- * @param {{pequeno?: boolean, rotulo?: boolean, info?: boolean, sufixo?: string}} [opcoes]
- *   rotulo/info false escondem o texto e o "i"; sufixo ex.: " ms"
+ * @param {{pequeno?: boolean, rotulo?: boolean, info?: boolean, sufixo?: string, canto?: unknown}} [opcoes]
+ *   rotulo/info false escondem o texto e o "i"; sufixo ex.: " ms"; canto: HTML à direita do número
  */
-export function destaque(n, status, { pequeno = false, rotulo = true, info: comInfo = true, sufixo } = {}) {
+export function destaque(n, status, { pequeno = false, rotulo = true, info: comInfo = true, sufixo, canto = '' } = {}) {
   const textoRotulo = rotulo ? n.rotulo : '';
   const de = n.base ? `de ${fmt(n.base)}${rotulo ? ` · ${n.rotulo}` : ''}` : textoRotulo;
   return html`<div class="dest2">
@@ -47,6 +47,7 @@ export function destaque(n, status, { pequeno = false, rotulo = true, info: comI
       <b><span data-n="${n.valor}">${fmt(n.valor)}</span>${sufixo ? html`<small>${sufixo}</small>` : ''}</b>
       ${de ? html`<span class="de">${de}${comInfo ? info(n.explicacao, n.rotulo) : ''}</span>` : ''}
     </div>
+    ${canto}
   </div>`;
 }
 

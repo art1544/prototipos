@@ -58,6 +58,38 @@ summary:focus-visible,
   flex: none;
 }
 
+/* Carregamento: indicador giratório em botões, áreas e avisos */
+.btn.ocupado::before,
+.carregando::before,
+.toast.espera::before {
+  content: "";
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  background: none;
+  animation: gira .7s linear infinite;
+}
+
+.btn.ocupado::before,
+.toast.espera::before {
+  width: 13px;
+  height: 13px;
+}
+
+.btn.ocupado:disabled {
+  opacity: .8;
+}
+
+.btn.ocupado svg {
+  display: none;
+}
+
+[role=menuitem]:disabled {
+  opacity: .5;
+  cursor: default;
+}
+
 @media (max-width:720px) {
   .btn .rot {
     display: none;
@@ -359,6 +391,14 @@ summary:focus-visible,
   color: var(--texto-3);
 }
 
+.carregando::before {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 8px;
+  vertical-align: -2px;
+}
+
 /* Resumo do dia */
 .resumo {
   display: grid;
@@ -618,6 +658,38 @@ summary:focus-visible,
   border-radius: 9px;
   background: var(--fundo-2);
   border: 1px solid var(--linha);
+}
+
+.dest2 .dest-canto {
+  margin-left: auto;
+  padding-left: 12px;
+  flex: none;
+  text-align: right;
+}
+
+.dest-canto b {
+  display: block;
+  font-family: var(--titulo);
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--texto-2);
+}
+
+.dest-canto span {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--texto-3);
+}
+
+.diag .selo {
+  flex: none;
+}
+
+.diag .valor b {
+  font-size: 22px;
+  white-space: normal;
 }
 
 .valor {

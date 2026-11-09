@@ -5,12 +5,13 @@
 import { LIMITES } from '../config.js';
 import { html } from '../util/html.js';
 import { $, fmt, dataBr, horaDe, doisDigitos } from '../util/formato.js';
-import { ICONE, chip, tituloVeredito } from '../util/status.js';
+import { COR, ICONE, chip, tituloVeredito } from '../util/status.js';
 import { estado } from '../estado.js';
 import { buscarHoje, definirAtivo, executarAgora, sessaoExpirada } from '../api.js';
 import { EXPLICACOES } from '../textos.js';
 import { info } from '../ui/popover.js';
-import { avisar, avisarErro } from '../ui/toast.js';
+import { avisar, avisarErro, fecharAviso } from '../ui/toast.js';
+import { ocupar } from '../ui/ocupado.js';
 import { irPara } from '../ui/abas.js';
 import { destaque, animar } from '../graficos.js';
 import { linhas, motivosOuNenhum, mostrarFalha } from '../componentes.js';
@@ -21,10 +22,12 @@ import {
   checksPorId,
   contarStatus,
   destaquesDoDia,
+  diagnosticoDe,
   numerosDa,
   perguntasDe,
   principal,
   statusDe,
+  totalDoDespacho,
 } from '../relatorio.js';
 import { abrirDetalhe } from './detalhe.js';
 
@@ -94,13 +97,26 @@ function tile(rotulo, n, { status = null, vazio, sufixo } = {}) {
   return html`<div class="tile"><span>${rotulo}${n ? info(n.explicacao, n.rotulo) : ''}</span>${conteudo}</div>`;
 }
 
+/** Tile do login: o diagnóstico em destaque e o tempo de resposta embaixo. */
+function tileDiagnostico(rotulo, diagnostico, tempo) {
+  return html`<div class="tile">
+    <span>${rotulo}${tempo ? info(tempo.explicacao, tempo.rotulo) : ''}</span>
+    <div class="dest2"><div class="valor">
+      <b style="color:${COR[diagnostico.status] ?? COR.SEM_DADOS}">${diagnostico.curto}</b>
+      ${tempo ? html`<span class="de">${fmt(tempo.valor)} ms</span>` : ''}
+    </div></div>
+  </div>`;
+}
+
 function tilesDoDia(porId) {
-  const { recebidas, entregues, esgotados, login } = destaquesDoDia(porId);
+  const { recebidas, entregues, esgotados, login, diagnosticoLogin } = destaquesDoDia(porId);
   return [
     tile('Ordens recebidas', recebidas, { status: statusDe(porId, 'C06'), vazio: 'sem lista' }),
     tile('Retornos entregues', entregues, { status: statusDe(porId, 'C07'), vazio: 'sem lista' }),
     tile('Apontamentos esgotados', esgotados, { vazio: 'sem dados' }),
-    tile('Login do app', login, { vazio: 'sem dados', sufixo: ' ms' }),
+    diagnosticoLogin
+      ? tileDiagnostico('Login do app', diagnosticoLogin, login)
+      : tile('Login do app', login, { vazio: 'sem dados', sufixo: ' ms' }),
   ];
 }
 
@@ -122,19 +138,38 @@ function ladoDespacho(checks, numeros) {
   return html`<div class="lado"><div><h4>Números</h4>${linhas(numeros)}</div>${motivos}</div>`;
 }
 
-/** Cartão de uma pergunta: número principal em destaque, demais números e, no despacho, motivos negócio × TI. */
+/** Total do despacho (com todos os usuários), no canto do número principal. */
+function cantoDoTotal(total) {
+  if (!total) return '';
+  return html`<div class="dest-canto">
+    <b>${fmt(total.numero.valor)}</b>
+    <span>${total.texto}${info(total.numero.explicacao, total.numero.rotulo)}</span>
+  </div>`;
+}
+
+function blocoDiagnostico(diagnostico) {
+  return html`<div class="dest2 diag">
+    <div class="selo ${diagnostico.status}">${ICONE[diagnostico.status] || ICONE.SEM_DADOS}</div>
+    <div class="valor"><b>${diagnostico.titulo}</b><span class="de">${diagnostico.detalhe}</span></div>
+  </div>`;
+}
+
+/** Cartão de uma pergunta: número principal ou diagnóstico em destaque, demais números e, no despacho, motivos negócio × TI. */
 function cartaoPergunta(pergunta, porId) {
   const checks = checksDa(pergunta, porId);
   const numPrincipal = principal(pergunta, porId);
-  const outros = numerosDa(pergunta, porId).filter((n) => n !== numPrincipal);
+  const diagnostico = diagnosticoDe(pergunta, porId);
+  const total = totalDoDespacho(pergunta, porId);
+  const outros = numerosDa(pergunta, porId).filter((n) => n !== numPrincipal && n !== total?.numero);
   const largo = checks.some((check) => CHECKS_DO_DESPACHO.has(check.id));
   const fora = pergunta.status === 'FORA';
 
   let corpo = html``;
   if (fora) corpo = html`<div class="dest fora"><b>Fora do monitor</b></div>`;
-  else if (numPrincipal) corpo = destaque(numPrincipal, pergunta.status);
-  // o texto da resposta fica no "Detalhes"; no cartão só quando não há número para mostrar
-  if (!numPrincipal || fora) corpo = html`${corpo}<p class="resp-c">${pergunta.resposta}</p>`;
+  else if (diagnostico) corpo = blocoDiagnostico(diagnostico);
+  else if (numPrincipal) corpo = destaque(numPrincipal, pergunta.status, { canto: cantoDoTotal(total) });
+  // o texto da resposta fica no "Detalhes"; no cartão só quando não há número nem diagnóstico para mostrar
+  if ((!numPrincipal && !diagnostico) || fora) corpo = html`${corpo}<p class="resp-c">${pergunta.resposta}</p>`;
   if (largo) corpo = html`${corpo}${ladoDespacho(checks, outros)}`;
   else if (outros.length) corpo = html`${corpo}${linhas(outros)}`;
 
@@ -197,11 +232,14 @@ function subtitulo(relatorio) {
 }
 
 async function religar() {
+  const liberar = ocupar($('bLigar'), 'Religando…');
   try {
     await definirAtivo(true);
-    carregarHoje();
+    await carregarHoje();
   } catch (erro) {
     if (!sessaoExpirada(erro)) avisarErro('Não foi possível religar o monitor: ', erro);
+  } finally {
+    liberar();
   }
 }
 
@@ -220,12 +258,18 @@ export async function carregarHoje() {
 
 /** Liga o "Rodar agora" do menu (o backend limita a uma análise manual a cada 10 min). */
 export function iniciarHoje() {
-  $('bRodar').addEventListener('click', async () => {
+  const botao = $('bRodar');
+  botao.addEventListener('click', async () => {
+    botao.disabled = true;
+    avisar('Solicitando a análise…', { espera: true });
     try {
       const { mensagem } = await executarAgora();
       avisar(mensagem);
     } catch (erro) {
-      if (!sessaoExpirada(erro)) avisarErro('', erro);
+      if (sessaoExpirada(erro)) fecharAviso();
+      else avisarErro('', erro);
+    } finally {
+      botao.disabled = false;
     }
   });
 }

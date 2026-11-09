@@ -10,7 +10,7 @@
  *   graficos.js     número em destaque, anel e animações
  *   componentes.js  blocos de HTML reutilizados
  *   textos.js       explicações do botão "i"
- *   ui/             tema, abas, menu "•••", realce, balão "i", aviso flutuante
+ *   ui/             tema, abas, menu "•••", realce, balão "i", aviso flutuante, botão ocupado
  *   telas/          Saúde do dia, Detalhes, Despacho, Histórico, tabela com filtros
  *   exportar/       PDF, Excel e cópias para e-mail/Teams
  *   util/           HTML seguro, formatação, status, carregamento do SheetJS
@@ -19,6 +19,7 @@ import { APP } from './config.js';
 import { $ } from './util/formato.js';
 import { estado } from './estado.js';
 import { quandoExpirar } from './api.js';
+import { mostrarCarregando } from './componentes.js';
 import { carregarAmbiente, iniciarSessao, sair } from './sessao.js';
 import { iniciarPopover } from './ui/popover.js';
 import { iniciarRealce } from './ui/realce.js';
@@ -48,7 +49,10 @@ iniciarRealce();
 iniciarMenu();
 iniciarTema();
 iniciarCatalogo();
-iniciarSessao(carregarHoje);
+iniciarSessao(() => {
+  mostrarCarregando($('aba-hoje')); // em um novo login, não deixa à vista o relatório da sessão anterior
+  carregarHoje();
+});
 
 registrarAba('despacho', () => {
   if (!estado.despacho) carregarDespacho();

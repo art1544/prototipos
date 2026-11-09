@@ -11,7 +11,7 @@ import { rotuloDe, tituloVeredito } from '../util/status.js';
 import { estado, ambienteDeTeste } from '../estado.js';
 import { buscarRelatorioMarkdown, sessaoExpirada } from '../api.js';
 import { perguntasDe } from '../relatorio.js';
-import { avisar, avisarErro } from '../ui/toast.js';
+import { avisar, avisarErro, fecharAviso } from '../ui/toast.js';
 
 /**
  * Estilos do e-mail. Ficam inline porque o Outlook ignora folhas de estilo; as cores repetem os tokens do tema claro.
@@ -134,11 +134,17 @@ async function copiarResumo() {
 
 async function copiarRelatorioCompleto() {
   const dia = estado.relatorio?.dataRef ?? new Date().toISOString().slice(0, 10);
+  const botao = $('bMd');
+  botao.disabled = true;
+  avisar('Copiando o relatório completo…', { espera: true });
   try {
     await navigator.clipboard.writeText(await buscarRelatorioMarkdown(dia));
     avisar('Relatório completo copiado, com todos os números e regras.');
   } catch (erro) {
-    if (!sessaoExpirada(erro)) avisarErro('Não foi possível copiar: ', erro);
+    if (sessaoExpirada(erro)) fecharAviso();
+    else avisarErro('Não foi possível copiar: ', erro);
+  } finally {
+    botao.disabled = false;
   }
 }
 

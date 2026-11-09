@@ -6,6 +6,7 @@ import { APP } from './config.js';
 import { $ } from './util/formato.js';
 import { estado } from './estado.js';
 import { login, buscarAmbiente } from './api.js';
+import { ocupar } from './ui/ocupado.js';
 
 /**
  * 8ID de quem entrou: claim nameid do token (DOMINIO\8ID) ou, sem ele, o usuário digitado.
@@ -75,7 +76,7 @@ async function entrar(aoEntrar) {
   const credenciais = lerFormulario();
   if (!credenciais) return;
   $('erroLogin').textContent = '';
-  $('bEntrar').disabled = true;
+  const liberar = ocupar($('bEntrar'), 'Entrando…');
   try {
     const { token } = await login(credenciais.usuario, credenciais.senha);
     estado.token = token;
@@ -87,7 +88,7 @@ async function entrar(aoEntrar) {
   } catch (erro) {
     $('erroLogin').textContent = erro.message;
   } finally {
-    $('bEntrar').disabled = false;
+    liberar();
   }
 }
 

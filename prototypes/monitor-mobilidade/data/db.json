@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "schemaVersion": 2,
+    "schemaVersion": 3,
     "notes": "Base de exemplo do Monitor Mobilidade: respostas das rotas /v2/monitor/* com dados fictícios (relatório de 2026-11-03). Depois da primeira carga as alterações ficam no navegador (localStorage, chave monitor-mobilidade:db)."
   },
   "config": {
@@ -478,7 +478,14 @@
         "elo": "App → Front Door → FrontendSecurityService",
         "achados": [],
         "amostra": [],
-        "duracaoMs": 412
+        "duracaoMs": 412,
+        "resumo": {
+          "modo": "credencial vazia",
+          "ok": true,
+          "ms": 412,
+          "httpStatus": 401,
+          "detalhe": "O serviço de login está no ar e recusou a credencial vazia (HTTP 401), como esperado."
+        }
       }
     ],
     "despacho": {

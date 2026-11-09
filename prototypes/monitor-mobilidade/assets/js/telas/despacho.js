@@ -12,6 +12,7 @@ import { EXPLICACOES } from '../textos.js';
 import { info } from '../ui/popover.js';
 import { animar } from '../graficos.js';
 import { motivosOuNenhum, mostrarCarregando, mostrarFalha } from '../componentes.js';
+import { ocupar } from '../ui/ocupado.js';
 import { exportarXlsx } from '../exportar/excel.js';
 import { tabelaFiltro } from './tabela-filtro.js';
 import { carregarHoje } from './hoje.js';
@@ -177,18 +178,17 @@ async function enviar() {
     mensagem(ordens.length ? 'Informe o início do despacho.' : 'Informe as ordens.');
     return;
   }
-  const botao = $('bEnviar');
-  botao.disabled = true;
+  const liberar = ocupar($('bEnviar'), 'Processando…');
   mensagem('Enviando…');
   try {
     const resposta = await enviarDespacho(inicio, ordens);
     mensagem(
       `${fmt(resposta.ordens)} ordens recebidas. Calculando o despacho e refazendo a análise do dia (leva alguns minutos)…`,
     );
-    acompanharCalculo(resposta.id);
+    acompanharCalculo(resposta.id, liberar);
   } catch (erro) {
     if (!sessaoExpirada(erro)) mensagem(erro.message);
-    botao.disabled = false;
+    liberar();
   }
 }
 
@@ -204,17 +204,20 @@ export function iniciarDespacho() {
  * Acompanha o cálculo em segundo plano: primeiro o resultado do despacho, depois o relatório do dia refeito com
  * esse despacho. Para quando os dois ficam prontos, quando o usuário sai ou no prazo.
  */
-function acompanharCalculo(id) {
+function acompanharCalculo(id, liberarBotao) {
   const prazo = Date.now() + LIMITES.acompanhamentoPrazoMs;
   let despachoPronto = false;
 
   const concluir = (texto) => {
     mensagem(texto);
-    $('bEnviar').disabled = false;
+    liberarBotao();
   };
 
   async function verificar() {
-    if (!estado.token) return; // saiu no meio
+    if (!estado.token) {
+      liberarBotao(); // saiu no meio
+      return;
+    }
     if (Date.now() > prazo) {
       concluir(
         despachoPronto
@@ -401,7 +404,14 @@ function desenharResultado(resultado) {
   };
   for (const botao of botoes) botao.addEventListener('click', () => mostrar(botao.dataset.t));
   mostrar('usuarios');
-  $('bXlsx').addEventListener('click', () => exportarXlsx(estado.despacho, COLUNAS));
+  $('bXlsx').addEventListener('click', async () => {
+    const liberar = ocupar($('bXlsx'), 'Gerando…');
+    try {
+      await exportarXlsx(estado.despacho, COLUNAS);
+    } finally {
+      liberar();
+    }
+  });
 }
 
 /** Busca e desenha o resultado do despacho atual (na primeira visita à aba). */

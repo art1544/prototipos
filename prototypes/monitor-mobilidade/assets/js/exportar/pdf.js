@@ -10,6 +10,7 @@ import { rotuloDe, tituloVeredito } from '../util/status.js';
 import { estado, ambienteDeTeste } from '../estado.js';
 import { gerarPdf } from '../api.js';
 import { avisar, avisarErro } from '../ui/toast.js';
+import { ocupar } from '../ui/ocupado.js';
 import {
   achadosNovos,
   chaveDosMotivos,
@@ -17,6 +18,7 @@ import {
   checksPorId,
   contarStatus,
   destaquesDoDia,
+  diagnosticoDe,
   perguntasDe,
   principal,
 } from '../relatorio.js';
@@ -130,12 +132,15 @@ function veredito(relatorio, perguntas) {
 }
 
 function indicadores(porId) {
-  const { recebidas, entregues, esgotados, login } = destaquesDoDia(porId);
+  const { recebidas, entregues, esgotados, login, diagnosticoLogin } = destaquesDoDia(porId);
   return html`<div class="kpis">${[
     indicador('Ordens recebidas', recebidas, { vazio: 'sem lista do despacho' }),
     indicador('Retornos entregues', entregues, { vazio: 'sem lista do despacho' }),
     indicador('Apontamentos esgotados', esgotados, { vazio: 'sem dados' }),
-    indicador('Login do app', login, { sufixo: ' ms', vazio: 'sem dados' }),
+    diagnosticoLogin
+      ? html`<div class="kpi"><span>Login do app</span><b>${diagnosticoLogin.curto}</b>
+          ${login ? html`<small>${fmt(login.valor)} ms</small>` : ''}</div>`
+      : indicador('Login do app', login, { sufixo: ' ms', vazio: 'sem dados' }),
   ]}</div>`;
 }
 
@@ -145,7 +150,7 @@ function indice(perguntas, porId) {
     return html`<tr>
       <td class="num">${doisDigitos(p.numero)}</td>
       <td>${p.pergunta}</td>
-      <td class="n">${numPrincipal ? valorComPercentual(numPrincipal) : '—'}</td>
+      <td class="n">${numPrincipal ? valorComPercentual(numPrincipal) : diagnosticoDe(p, porId)?.curto ?? '—'}</td>
       <td>${status(p.status)}</td>
     </tr>`;
   });
@@ -277,12 +282,8 @@ async function exportar() {
     avisar('Ainda não há relatório para exportar.', { erro: true });
     return;
   }
-  const botao = $('bPdf');
-  const rotulo = botao.querySelector('.rot');
-  const textoOriginal = rotulo.textContent;
   const nome = `${nomeDoArquivo(relatorio)}.pdf`;
-  botao.disabled = true;
-  rotulo.textContent = 'Gerando…';
+  const liberar = ocupar($('bPdf'), 'Gerando…');
   try {
     const { css, logo } = await carregarRecursos();
     const documento = htmlDoRelatorio(relatorio, css, logo);
@@ -292,8 +293,7 @@ async function exportar() {
   } catch (erro) {
     avisarErro('Não foi possível gerar o PDF: ', erro);
   } finally {
-    botao.disabled = false;
-    rotulo.textContent = textoOriginal;
+    liberar();
   }
 }
 

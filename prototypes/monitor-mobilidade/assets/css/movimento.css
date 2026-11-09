@@ -40,6 +40,12 @@
 
 /* Keyframes */
 
+@keyframes gira {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @keyframes pulso {
   40% {
     transform: scale(1.14);
