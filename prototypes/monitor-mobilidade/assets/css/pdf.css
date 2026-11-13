@@ -433,6 +433,31 @@ td.n small {
   color: #71717A;
 }
 
+/* "N não enviados" (ordens e retornos do despacho) */
+em.nao-env {
+  display: inline-block;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 9px;
+  color: #C9353A;
+  background: rgba(229,72,77,.10);
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+em.nao-env.zero {
+  color: #1A9D5C;
+  background: rgba(26,157,92,.10);
+}
+
+.kpi em.nao-env {
+  margin-top: 6px;
+}
+
+.perg .dest em.nao-env {
+  margin-left: auto;
+}
+
 .duas {
   display: grid;
   grid-template-columns: 1fr 1fr;

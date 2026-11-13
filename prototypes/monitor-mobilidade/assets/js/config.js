@@ -28,8 +28,13 @@ export const URLS = {
   sheetjs: 'assets/js/vendor/xlsx.full.min.js',
   /** Hash do arquivo acima (SRI), o mesmo da cópia do cdnjs usada na tela real. */
   sheetjsIntegridade: 'sha512-r22gChDnGvBylk90+2e/ycr3RVrDi8DIOkIGNhJlKfuyQM4tIRAI062MaV8sfjQKYVGjOBaZBOA87z+IhZE9DA==',
+  /** ExcelJS (4.4.0) local, pelo mesmo motivo do SheetJS; o hash é o da cópia do cdnjs usada na tela real. */
+  exceljs: 'assets/js/vendor/exceljs.min.js',
+  exceljsIntegridade: 'sha512-dlPw+ytv/6JyepmelABrgeYgHI0O+frEwgfnPdXDTOIZz+eDgfW07QXG02/O8COfivBdGNINy+Vex+lYmJ5rxw==',
   pdfCss: 'assets/css/pdf.css',
   logo: 'assets/img/mobilidade.png',
+  /** Logo da Ternium (cabeçalho do Excel). */
+  logoTernium: 'assets/img/ternium.png',
 };
 
 export const AMBIENTE_PRODUCAO = 'PRODUÇÃO';
@@ -39,7 +44,13 @@ export const LIMITES = {
   linhasTabela: 500,
   acompanhamentoIntervaloMs: 15_000,
   acompanhamentoPrazoMs: 8 * 60_000,
-  horaRelatorioAtrasado: 8,
+  horaRelatorioAtrasado: 10,
+};
+
+/** Horários da análise diária (Brasília), como agendados no MonitorTask do backend. */
+export const HORARIOS = {
+  analise: '07:00',
+  novasTentativas: '08:00 e 09:30',
 };
 
 // ---------- só do simulador ----------
@@ -49,7 +60,7 @@ export const API_CONFIG = {
   /** Sempre prefixada pelo id: todos os protótipos dividem o mesmo localStorage. */
   storageKey: 'monitor-mobilidade:db',
   /** Incremente junto com _meta.schemaVersion do db.json ao mudar a estrutura. */
-  schemaVersion: 3,
+  schemaVersion: 4,
   requestTimeoutMs: 10_000,
   /** ?latencia=0 | ?latencia=2000 fixa a latência; sem o parâmetro ela varia dentro de latencyRangeMs. */
   latencyMs: numeroDaUrl('latencia', null),

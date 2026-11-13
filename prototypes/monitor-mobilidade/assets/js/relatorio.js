@@ -40,20 +40,36 @@ export const numeroDe = (porId, id, rotulo) => porId[id]?.numeros?.find((n) => n
 /** Status de um check, ou null quando o relatório não o tem. */
 export const statusDe = (porId, id) => porId[id]?.status ?? null;
 
-/** Total do despacho exibido no canto dos cartões. O segundo rótulo de C06 é o dos relatórios gerados antes dos usuários válidos. */
-const TOTAL_DO_DESPACHO = {
-  C06: { rotulos: ['Envios do despacho (todos os usuários)', 'Envios do despacho'], texto: 'envios no total' },
-  C07: { rotulos: ['Retornos do SAP no despacho'], texto: 'retornos no total' },
+/**
+ * Números exibidos no canto do cartão, ao lado do destaque:
+ * - C06/C07: total do despacho com todos os usuários (o segundo rótulo de C06 é o dos relatórios anteriores aos usuários válidos);
+ * - C01: mensagens na fila de mortas, só quando há alguma, com a cor do status;
+ * - C03: os esgotados separados em XML vazio e XML preenchido.
+ */
+const CANTO = {
+  C06: [{ rotulos: ['Envios do despacho (todos os usuários)', 'Envios do despacho'], texto: 'envios no total' }],
+  C07: [{ rotulos: ['Retornos do SAP no despacho'], texto: 'retornos no total' }],
+  C01: [{ rotulos: ['Na fila de mortas'], texto: 'na fila de mortas', soAcimaDeZero: true, alerta: true }],
+  C03: [
+    { rotulos: ['Com XML vazio'], texto: 'com XML vazio' },
+    { rotulos: ['Com XML preenchido'], texto: 'com XML preenchido' },
+  ],
 };
 
-/** Total do despacho de uma pergunta, ou null. @returns {{numero: object, texto: string} | null} */
-export function totalDoDespacho(pergunta, porId) {
+/**
+ * Números do canto do cartão de uma pergunta (pode ser vazio).
+ * @returns {{numero: object, texto: string, alerta: boolean}[]}
+ */
+export function cantoDa(pergunta, porId) {
+  const itens = [];
   for (const check of checksDa(pergunta, porId)) {
-    const total = TOTAL_DO_DESPACHO[check.id];
-    const numero = total?.rotulos.map((rotulo) => numeroDe(porId, check.id, rotulo)).find(Boolean);
-    if (numero) return { numero, texto: total.texto };
+    for (const def of CANTO[check.id] ?? []) {
+      const numero = def.rotulos.map((rotulo) => numeroDe(porId, check.id, rotulo)).find(Boolean);
+      if (!numero || (def.soAcimaDeZero && !(numero.valor > 0))) continue;
+      itens.push({ numero, texto: def.texto, alerta: Boolean(def.alerta) });
+    }
   }
-  return null;
+  return itens;
 }
 
 /**
@@ -90,6 +106,24 @@ export function contarStatus(perguntas) {
 /** Achados de um check que não repetem a resposta da pergunta. */
 export const achadosNovos = (check, resposta) =>
   (check.achados || []).filter((achado) => String(achado).trim() !== String(resposta || '').trim());
+
+/**
+ * Quantos da base ainda não chegaram ao aparelho (base − recebidos), ex.: 2.511 envios e 2.473 recebidos → 38.
+ * @returns {number | null} null quando o número não tem base (sem lista do despacho)
+ */
+export const naoEnviados = (numero) => (numero?.base ? Math.max(0, numero.base - numero.valor) : null);
+
+/** Números com base que viram "não enviados": recebidos das ordens (C06) e retornos entregues (C07). */
+const ROTULOS_COM_FALTANTES = new Set(['Recebidos', 'Entregues aos aparelhos']);
+
+/** "Não enviados" do número em destaque de um cartão, ou null quando o número não é de recebidos/entregues. */
+export const naoEnviadosDoDestaque = (numero) => (ROTULOS_COM_FALTANTES.has(numero?.rotulo) ? naoEnviados(numero) : null);
+
+/**
+ * Elo da cadeia de um check. Relatórios gravados antes de 13/11/2026 perderam as setas no banco ("SAP ? Function"):
+ * a seta volta na exibição.
+ */
+export const eloDe = (check) => (check?.elo ? String(check.elo).replace(/ \? /g, ' → ') : null);
 
 /** Os quatro destaques do topo do dia: ordens recebidas, retornos entregues, apontamentos esgotados e login. */
 export function destaquesDoDia(porId) {

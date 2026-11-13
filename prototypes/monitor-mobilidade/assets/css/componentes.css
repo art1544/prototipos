@@ -667,6 +667,39 @@ summary:focus-visible,
   text-align: right;
 }
 
+/* "N não enviados" abaixo do número em destaque (ordens e retornos do despacho) */
+.valor .nao-env {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 3px 10px 3px 8px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--cr);
+  background: var(--cr-bg);
+  white-space: nowrap;
+}
+
+.valor .nao-env b {
+  display: inline;
+  font-family: var(--titulo);
+  font-size: 15px;
+  letter-spacing: 0;
+  color: inherit;
+}
+
+.valor .nao-env.zero {
+  color: var(--ok);
+  background: var(--ok-bg);
+}
+
+.tile .valor .nao-env {
+  margin-top: 6px;
+  font-size: 11.5px;
+}
+
 .dest-canto b {
   display: block;
   font-family: var(--titulo);
@@ -681,6 +714,11 @@ summary:focus-visible,
   margin-top: 2px;
   font-size: 12px;
   color: var(--texto-3);
+}
+
+/* mais de um número no canto (ex.: esgotados com XML vazio e com XML preenchido) */
+.dest-canto .canto-item + .canto-item {
+  margin-top: 8px;
 }
 
 .diag .selo {
@@ -1351,6 +1389,23 @@ details.dobra > *:not(summary) {
 dialog#dlg {
   border-radius: 20px;
   border-color: var(--linha);
+}
+
+/* Tabelas do Detalhes (exemplos e tabelas de apoio): dado no centro da célula e linha divisória entre colunas */
+#dlg .tbl th,
+#dlg .tbl td,
+#dlg .tbl td.n {
+  text-align: center;
+}
+
+#dlg .tbl th:not(:last-child),
+#dlg .tbl td:not(:last-child) {
+  border-right: 1px solid var(--linha);
+}
+
+#dlg .tbl th:first-child,
+#dlg .tbl td:first-child {
+  box-shadow: none;
 }
 
 /* Popover de explicação */

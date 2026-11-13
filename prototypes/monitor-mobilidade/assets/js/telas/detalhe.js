@@ -7,7 +7,7 @@ import { $, fmt, doisDigitos } from '../util/formato.js';
 import { chip } from '../util/status.js';
 import { info } from '../ui/popover.js';
 import { motivosOuNenhum, tabelaSimples, valorComPercentual } from '../componentes.js';
-import { achadosNovos, chaveDosMotivos } from '../relatorio.js';
+import { achadosNovos, chaveDosMotivos, eloDe } from '../relatorio.js';
 
 /** Tabelas de apoio que um check pode trazer em "resumo", com o título exibido. */
 const TABELAS_DE_APOIO = [
@@ -44,7 +44,7 @@ function comoCalculado(check) {
   const itens = [
     ['Regra', check.regra],
     ['Como é medido', check.definicao],
-    ['Elo da cadeia', check.elo],
+    ['Elo da cadeia', eloDe(check)],
     ['Referência 7 dias', check.referencia7d != null ? `${fmt(check.referencia7d)} (mediana)` : null],
   ].filter(([, valor]) => valor);
   const definicoes = itens.map(([termo, valor]) => html`<dt>${termo}</dt><dd>${valor}</dd>`);

@@ -8,7 +8,7 @@ import { html, raw } from '../util/html.js';
 import { $, fmt, pct, dataBr, horaDe, doisDigitos } from '../util/formato.js';
 import { rotuloDe, tituloVeredito } from '../util/status.js';
 import { estado, ambienteDeTeste } from '../estado.js';
-import { gerarPdf } from '../api.js';
+import { gerarPdf, sessaoExpirada } from '../api.js';
 import { avisar, avisarErro } from '../ui/toast.js';
 import { ocupar } from '../ui/ocupado.js';
 import {
@@ -19,6 +19,9 @@ import {
   contarStatus,
   destaquesDoDia,
   diagnosticoDe,
+  eloDe,
+  naoEnviados,
+  naoEnviadosDoDestaque,
   perguntasDe,
   principal,
 } from '../relatorio.js';
@@ -68,10 +71,13 @@ function carregarRecursos() {
 
 // ---------- HTML do relatório ----------
 
-/** Nome do arquivo sem extensão: monitor-mobilidade-aaaa-mm-dd (com o ambiente quando não é produção). */
+/** Nome do arquivo sem extensão: monitor-mobilidade-aaaa-mm-dd (com o ambiente, sem acentos, quando não é produção). */
 function nomeDoArquivo(relatorio) {
   const ambiente = ambienteDeTeste();
-  return `monitor-mobilidade-${relatorio.dataRef}${ambiente ? `-${ambiente.toLowerCase()}` : ''}`;
+  const sufixo = ambiente
+    ? `-${ambiente.normalize('NFD').replace(/\p{M}+/gu, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`
+    : '';
+  return `monitor-mobilidade-${relatorio.dataRef}${sufixo}`;
 }
 
 const status = (codigo) => html`<span class="st ${codigo}">${rotuloDe(codigo)}</span>`;
@@ -90,14 +96,16 @@ function tabelaDeMotivos(itens, chave) {
   </table>`;
 }
 
-/** Indicador do topo do PDF; sem número mostra "—" e o motivo. */
-function indicador(rotulo, n, { sufixo = '', vazio }) {
+/** Indicador do topo do PDF; sem número mostra "—" e o motivo. faltam: "N não enviados" abaixo da barra. */
+function indicador(rotulo, n, { sufixo = '', vazio, faltam = null }) {
   if (!n) return html`<div class="kpi"><span>${rotulo}</span><b>—</b><small>${vazio}</small></div>`;
   const barra = n.base
     ? html`<small>de ${fmt(n.base)} · ${pct(n.valor, n.base)}</small>
         <div class="bar"><i style="width:${Math.min(100, (n.valor * 100) / n.base).toFixed(1)}%"></i></div>`
     : '';
-  return html`<div class="kpi"><span>${rotulo}</span><b>${fmt(n.valor)}${sufixo}</b>${barra}</div>`;
+  return html`<div class="kpi"><span>${rotulo}</span><b>${fmt(n.valor)}${sufixo}</b>${barra}${faltam == null
+      ? ''
+      : html`<em class="nao-env${faltam ? '' : ' zero'}">${fmt(faltam)} não enviado${faltam === 1 ? '' : 's'}</em>`}</div>`;
 }
 
 const valorComPercentual = (n) => html`${fmt(n.valor)}${n.base ? html`<small>${pct(n.valor, n.base)}</small>` : ''}`;
@@ -134,8 +142,8 @@ function veredito(relatorio, perguntas) {
 function indicadores(porId) {
   const { recebidas, entregues, esgotados, login, diagnosticoLogin } = destaquesDoDia(porId);
   return html`<div class="kpis">${[
-    indicador('Ordens recebidas', recebidas, { vazio: 'sem lista do despacho' }),
-    indicador('Retornos entregues', entregues, { vazio: 'sem lista do despacho' }),
+    indicador('Ordens recebidas', recebidas, { vazio: 'sem lista do despacho', faltam: naoEnviados(recebidas) }),
+    indicador('Retornos entregues', entregues, { vazio: 'sem lista do despacho', faltam: naoEnviados(entregues) }),
     indicador('Apontamentos esgotados', esgotados, { vazio: 'sem dados' }),
     diagnosticoLogin
       ? html`<div class="kpi"><span>Login do app</span><b>${diagnosticoLogin.curto}</b>
@@ -193,13 +201,14 @@ function detalheDoCheck(check, pergunta, numPrincipal, varios) {
       : ''}
     ${check.erro ? html`<p class="regra"><b>Sem dados:</b> ${check.erro}</p>` : ''}
     ${check.regra
-      ? html`<p class="regra"><b>Regra:</b> ${check.regra}${check.elo ? html` · <b>Elo:</b> ${check.elo}` : ''}</p>`
+      ? html`<p class="regra"><b>Regra:</b> ${check.regra}${check.elo ? html` · <b>Elo:</b> ${eloDe(check)}` : ''}</p>`
       : ''}`;
 }
 
 function detalheDaPergunta(pergunta, porId) {
   const checks = checksDa(pergunta, porId);
   const numPrincipal = principal(pergunta, porId);
+  const faltam = numPrincipal ? naoEnviadosDoDestaque(numPrincipal) : null;
   const destaque =
     numPrincipal && pergunta.status !== 'FORA'
       ? html`<div class="dest">
@@ -207,6 +216,9 @@ function detalheDaPergunta(pergunta, porId) {
           <span>${numPrincipal.base
               ? `de ${fmt(numPrincipal.base)} (${pct(numPrincipal.valor, numPrincipal.base)}) · `
               : ''}${numPrincipal.rotulo}</span>
+          ${faltam == null
+            ? ''
+            : html`<em class="nao-env${faltam ? '' : ' zero'}">${fmt(faltam)} não enviado${faltam === 1 ? '' : 's'}</em>`}
         </div>`
       : '';
   return html`<div class="perg">
@@ -284,14 +296,21 @@ async function exportar() {
   }
   const nome = `${nomeDoArquivo(relatorio)}.pdf`;
   const liberar = ocupar($('bPdf'), 'Gerando…');
+  let documento = null;
   try {
     const { css, logo } = await carregarRecursos();
-    const documento = htmlDoRelatorio(relatorio, css, logo);
+    documento = htmlDoRelatorio(relatorio, css, logo);
     const pdf = await gerarPdf(nome, documento);
     if (pdf) baixar(pdf, nome);
     else imprimirNoNavegador(documento);
   } catch (erro) {
-    avisarErro('Não foi possível gerar o PDF: ', erro);
+    if (documento && !sessaoExpirada(erro)) {
+      // o servidor local não conseguiu imprimir: o próprio navegador gera o PDF ("Salvar como PDF")
+      avisarErro('O servidor não gerou o PDF; abrindo a impressão do navegador. ', erro);
+      imprimirNoNavegador(documento);
+    } else {
+      avisarErro('Não foi possível gerar o PDF: ', erro);
+    }
   } finally {
     liberar();
   }

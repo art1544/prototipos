@@ -6,6 +6,7 @@ import { html } from './util/html.js';
 import { fmt, pct, numero } from './util/formato.js';
 import { COR } from './util/status.js';
 import { info } from './ui/popover.js';
+import { EXPLICACOES } from './textos.js';
 
 const RAIO = 26;
 const CIRCUNFERENCIA = (2 * Math.PI * RAIO).toFixed(2);
@@ -35,10 +36,11 @@ export function anel(valor, base, status, pequeno = false) {
  * Número real grande, com o % no anel quando há base.
  * @param {{valor: number, base?: number, rotulo: string, explicacao?: string}} n
  * @param {string} status cor final do anel
- * @param {{pequeno?: boolean, rotulo?: boolean, info?: boolean, sufixo?: string, canto?: unknown}} [opcoes]
- *   rotulo/info false escondem o texto e o "i"; sufixo ex.: " ms"; canto: HTML à direita do número
+ * @param {{pequeno?: boolean, rotulo?: boolean, info?: boolean, sufixo?: string, canto?: unknown, faltam?: number | null}} [opcoes]
+ *   rotulo/info false escondem o texto e o "i"; sufixo ex.: " ms"; canto: HTML à direita do número;
+ *   faltam: quantos da base não chegaram, mostrado em destaque abaixo ("38 não enviados")
  */
-export function destaque(n, status, { pequeno = false, rotulo = true, info: comInfo = true, sufixo, canto = '' } = {}) {
+export function destaque(n, status, { pequeno = false, rotulo = true, info: comInfo = true, sufixo, canto = '', faltam = null } = {}) {
   const textoRotulo = rotulo ? n.rotulo : '';
   const de = n.base ? `de ${fmt(n.base)}${rotulo ? ` · ${n.rotulo}` : ''}` : textoRotulo;
   return html`<div class="dest2">
@@ -46,9 +48,16 @@ export function destaque(n, status, { pequeno = false, rotulo = true, info: comI
     <div class="valor">
       <b><span data-n="${n.valor}">${fmt(n.valor)}</span>${sufixo ? html`<small>${sufixo}</small>` : ''}</b>
       ${de ? html`<span class="de">${de}${comInfo ? info(n.explicacao, n.rotulo) : ''}</span>` : ''}
+      ${faltam == null ? '' : naoEnviados(faltam, comInfo)}
     </div>
     ${canto}
   </div>`;
+}
+
+/** Selo "N não enviados": vermelho quando falta algum, verde quando chegou tudo. */
+function naoEnviados(faltam, comInfo) {
+  return html`<span class="nao-env${faltam ? '' : ' zero'}"><b data-n="${faltam}">${fmt(faltam)}</b> não
+    enviado${faltam === 1 ? '' : 's'}${comInfo ? info(EXPLICACOES.naoEnviados, 'Não enviados') : ''}</span>`;
 }
 
 /** Conta de 0 até o alvo em `duracao` ms (desaceleração cúbica), escrevendo com `formatar`. */

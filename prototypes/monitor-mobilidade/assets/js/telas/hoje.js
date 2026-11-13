@@ -2,7 +2,7 @@
  * Aba "Saúde do dia": veredito, quatro destaques, um cartão por pergunta da rotina diária e o cartão do despacho em
  * análise. Também liga o "Rodar agora" do menu.
  */
-import { LIMITES } from '../config.js';
+import { HORARIOS, LIMITES } from '../config.js';
 import { html } from '../util/html.js';
 import { $, fmt, dataBr, horaDe, doisDigitos } from '../util/formato.js';
 import { COR, ICONE, chip, tituloVeredito } from '../util/status.js';
@@ -23,11 +23,13 @@ import {
   contarStatus,
   destaquesDoDia,
   diagnosticoDe,
+  naoEnviados,
+  naoEnviadosDoDestaque,
   numerosDa,
   perguntasDe,
   principal,
   statusDe,
-  totalDoDespacho,
+  cantoDa,
 } from '../relatorio.js';
 import { abrirDetalhe } from './detalhe.js';
 
@@ -53,7 +55,7 @@ function avisoAtrasado(dados) {
   const critico = new Date().getHours() >= LIMITES.horaRelatorioAtrasado;
   const dia = dados.dataRelatorio ? dataBr(dados.dataRelatorio) : 'nenhum dia';
   return html`<div class="aviso${critico ? ' cr' : ''}"><b>Relatório de ${dia}.</b> O de hoje ainda não foi gerado
-    (a análise roda às 05:30, com novas tentativas às 06:30 e 08:00).</div>`;
+    (a análise roda às ${HORARIOS.analise}, com novas tentativas às ${HORARIOS.novasTentativas}).</div>`;
 }
 
 function avisos(dados) {
@@ -90,9 +92,9 @@ function cabecalho(relatorio, perguntas, porId) {
   </div>`;
 }
 
-function tile(rotulo, n, { status = null, vazio, sufixo } = {}) {
+function tile(rotulo, n, { status = null, vazio, sufixo, faltam = null } = {}) {
   const conteudo = n
-    ? destaque(n, status, { pequeno: true, rotulo: false, info: false, sufixo })
+    ? destaque(n, status, { pequeno: true, rotulo: false, info: false, sufixo, faltam })
     : html`<div class="valor sem-valor"><b>—</b><span class="de">${vazio}</span></div>`;
   return html`<div class="tile"><span>${rotulo}${n ? info(n.explicacao, n.rotulo) : ''}</span>${conteudo}</div>`;
 }
@@ -111,8 +113,8 @@ function tileDiagnostico(rotulo, diagnostico, tempo) {
 function tilesDoDia(porId) {
   const { recebidas, entregues, esgotados, login, diagnosticoLogin } = destaquesDoDia(porId);
   return [
-    tile('Ordens recebidas', recebidas, { status: statusDe(porId, 'C06'), vazio: 'sem lista' }),
-    tile('Retornos entregues', entregues, { status: statusDe(porId, 'C07'), vazio: 'sem lista' }),
+    tile('Ordens recebidas', recebidas, { status: statusDe(porId, 'C06'), vazio: 'sem lista', faltam: naoEnviados(recebidas) }),
+    tile('Retornos entregues', entregues, { status: statusDe(porId, 'C07'), vazio: 'sem lista', faltam: naoEnviados(entregues) }),
     tile('Apontamentos esgotados', esgotados, { vazio: 'sem dados' }),
     diagnosticoLogin
       ? tileDiagnostico('Login do app', diagnosticoLogin, login)
@@ -138,12 +140,19 @@ function ladoDespacho(checks, numeros) {
   return html`<div class="lado"><div><h4>Números</h4>${linhas(numeros)}</div>${motivos}</div>`;
 }
 
-/** Total do despacho (com todos os usuários), no canto do número principal. */
-function cantoDoTotal(total) {
-  if (!total) return '';
+/**
+ * Números do canto, ao lado do principal: total do despacho com todos os usuários (C06/C07), fila de mortas (C01, na cor
+ * do status) e os esgotados por XML (C03).
+ */
+function cantoDoCartao(itens, status) {
+  if (!itens.length) return '';
   return html`<div class="dest-canto">
-    <b>${fmt(total.numero.valor)}</b>
-    <span>${total.texto}${info(total.numero.explicacao, total.numero.rotulo)}</span>
+    ${itens.map(
+      (item) => html`<div class="canto-item">
+        <b style="${item.alerta ? `color:${COR[status] ?? COR.SEM_DADOS}` : ''}">${fmt(item.numero.valor)}</b>
+        <span>${item.texto}${info(item.numero.explicacao, item.numero.rotulo)}</span>
+      </div>`,
+    )}
   </div>`;
 }
 
@@ -159,15 +168,21 @@ function cartaoPergunta(pergunta, porId) {
   const checks = checksDa(pergunta, porId);
   const numPrincipal = principal(pergunta, porId);
   const diagnostico = diagnosticoDe(pergunta, porId);
-  const total = totalDoDespacho(pergunta, porId);
-  const outros = numerosDa(pergunta, porId).filter((n) => n !== numPrincipal && n !== total?.numero);
+  const canto = cantoDa(pergunta, porId);
+  const noCanto = new Set(canto.map((item) => item.numero));
+  const outros = numerosDa(pergunta, porId).filter((n) => n !== numPrincipal && !noCanto.has(n));
   const largo = checks.some((check) => CHECKS_DO_DESPACHO.has(check.id));
   const fora = pergunta.status === 'FORA';
 
   let corpo = html``;
   if (fora) corpo = html`<div class="dest fora"><b>Fora do monitor</b></div>`;
   else if (diagnostico) corpo = blocoDiagnostico(diagnostico);
-  else if (numPrincipal) corpo = destaque(numPrincipal, pergunta.status, { canto: cantoDoTotal(total) });
+  else if (numPrincipal) {
+    corpo = destaque(numPrincipal, pergunta.status, {
+      canto: cantoDoCartao(canto, pergunta.status),
+      faltam: naoEnviadosDoDestaque(numPrincipal),
+    });
+  }
   // o texto da resposta fica no "Detalhes"; no cartão só quando não há número nem diagnóstico para mostrar
   if ((!numPrincipal && !diagnostico) || fora) corpo = html`${corpo}<p class="resp-c">${pergunta.resposta}</p>`;
   if (largo) corpo = html`${corpo}${ladoDespacho(checks, outros)}`;
@@ -210,7 +225,7 @@ function cartaoDespacho(despacho) {
 function desenhar(relatorio, htmlAvisos) {
   const aba = $('aba-hoje');
   if (!relatorio) {
-    aba.innerHTML = html`${htmlAvisos}<div class="card vazio">Ainda não há relatório. A análise roda todo dia às 05:30;
+    aba.innerHTML = html`${htmlAvisos}<div class="card vazio">Ainda não há relatório. A análise roda todo dia às ${HORARIOS.analise};
       use "Rodar agora" para gerar o primeiro.</div>`;
     return;
   }

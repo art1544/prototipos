@@ -23,6 +23,9 @@ export const COLUNAS = {
     usuario: 'ID do usuário',
     situacao: 'Situação',
     valido: 'Usuário válido',
+    motivoForaDaBase: 'Por que não é válido',
+    ultimoAcesso: 'Último acesso ao app',
+    versaoApp: 'Versão do app',
     usoApp: 'Uso do app',
     ultimoUso: 'Último apontamento',
     diasSemUsar: 'Dias sem apontar',
@@ -69,7 +72,7 @@ export const COLUNAS = {
 
 /** Filtros de lista de cada tabela. */
 const FILTROS = {
-  usuarios: { situacao: 'Situação', valido: 'Usuário válido', usoApp: 'Uso do app' },
+  usuarios: { situacao: 'Situação', valido: 'Usuário válido', motivoForaDaBase: 'Por que não é válido', usoApp: 'Uso do app' },
   ordens: { motivo: 'Motivo', usuarioValido: 'Usuário válido', usoApp: 'Uso do app', centro: 'Centro' },
   eventos: { motivo: 'Motivo', statusSap: 'Status no SAP', tipo: 'Tipo' },
 };

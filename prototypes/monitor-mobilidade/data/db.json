@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "schemaVersion": 3,
+    "schemaVersion": 4,
     "notes": "Base de exemplo do Monitor Mobilidade: respostas das rotas /v2/monitor/* com dados fictícios (relatório de 2026-11-03). Depois da primeira carga as alterações ficam no navegador (localStorage, chave monitor-mobilidade:db)."
   },
   "config": {
@@ -19,8 +19,8 @@
         "numero": 1,
         "equipe": "Mobilidade",
         "pergunta": "Há filas paradas?",
-        "status": "OK",
-        "resposta": "Não. As 15 filas do Service Bus estão sem acúmulo e sem mensagens na fila de mortas, e o SAP está devolvendo retornos.",
+        "status": "ATENCAO",
+        "resposta": "Não. Nenhuma das 15 filas do Service Bus está parada. Atenção: 1 mensagem(ns) na fila de mortas.",
         "checks": [
           "C01"
         ]
@@ -40,7 +40,7 @@
         "equipe": "Mobilidade",
         "pergunta": "Há eventos que atingiram o máximo de tentativas?",
         "status": "ATENCAO",
-        "resposta": "Sim: 18 apontamento(s) de 10 aparelho(s) esgotaram o reenvio ao SAP (CRNT 8, CRDM 4, ACOP 3, CRAV 3); 0 nas últimas 24 h. Precisam de reenvio manual. Nenhuma notificação de catálogo esgotada.",
+        "resposta": "Sim: 18 apontamento(s) de 10 aparelho(s) esgotaram o reenvio ao SAP, 14 com XML vazio e 4 com XML preenchido (CRNT 8, CRDM 4, ACOP 3, CRAV 3); 0 nas últimas 24 h. Precisam de reenvio manual. Nenhuma notificação de catálogo esgotada.",
         "checks": [
           "C03",
           "C03b"
@@ -61,7 +61,7 @@
         "equipe": "Mobilidade",
         "pergunta": "Quais ordens foram encaminhadas ao usuário e não foram recebidas?",
         "status": "ATENCAO",
-        "resposta": "2.498 de 2.550 envios a usuários válidos chegaram (98,0%). 28 estão pendentes por motivo do usuário (23 fora da janela de 1 mês, 5 sem apontamentos recentes) e 24 estão com o sistema (23 em reenvio, 1 esgotaram as 8 tentativas). No total do despacho foram 4.214 envios; 1.664 foram para 268 usuários que não apontaram nem receberam ordem depois do despacho.",
+        "resposta": "2.498 de 2.550 envios a usuários válidos chegaram (98,0%). 28 estão pendentes por motivo do usuário (23 fora da janela de 1 mês, 5 sem apontamentos recentes) e 24 estão com o sistema (23 em reenvio, 1 esgotaram as 8 tentativas). No total do despacho foram 4.214 envios; 1.664 foram para 268 usuários sem acesso ao app nos últimos 7 dias ou em versão abaixo da mínima.",
         "checks": [
           "C06"
         ]
@@ -71,7 +71,7 @@
         "equipe": "Mobilidade",
         "pergunta": "Quais eventos foram encaminhados ao usuário e não foram recebidos?",
         "status": "OK",
-        "resposta": "64.746 de 65.526 retornos do SAP desde o início do despacho chegaram aos aparelhos (98,8%). Pendentes: 247 por motivo do usuário e 367 com o sistema (316 não confirmados pelo app, 51 em aparelho sem token de notificação).",
+        "resposta": "60.896 de 61.626 retornos do SAP desde o início do despacho a usuários válidos chegaram aos aparelhos (98,8%); no total foram 65.526 retornos. Pendentes: 247 por motivo do usuário e 367 com o sistema (316 não confirmados pelo app, 51 em aparelho sem token de notificação).",
         "checks": [
           "C07"
         ]
@@ -92,24 +92,25 @@
         "id": "C01",
         "titulo": "Filas do Service Bus e fluxo com o SAP",
         "pergunta": 1,
-        "status": "OK",
+        "status": "ATENCAO",
         "valor": 0,
-        "resposta": "Não. As 15 filas do Service Bus estão sem acúmulo e sem mensagens na fila de mortas, e o SAP está devolvendo retornos.",
+        "resposta": "Não. Nenhuma das 15 filas do Service Bus está parada. Atenção: 1 mensagem(ns) na fila de mortas.",
         "numeros": [
           {
-            "rotulo": "Filas lidas",
-            "valor": 15,
-            "explicacao": "Quantidade de filas do Service Bus do Mobilidade lidas na análise. Coleta: API de administração do Service Bus (só leitura de metadados), com a connection string que o backend já usa para enviar mensagens. Cálculo: contagem das filas listadas."
+            "rotulo": "Filas paradas",
+            "valor": 0,
+            "base": 15,
+            "explicacao": "Filas do Service Bus com acúmulo: 500 mensagens ativas ou mais esperando consumo. É o número que responde à pergunta; ao lado aparece quantas filas foram lidas. Coleta: contador activeMessageCount de cada fila no momento da análise. Cálculo: contagem das filas no limite; o % é sobre as filas lidas. Qualquer fila parada deixa a pergunta crítica."
+          },
+          {
+            "rotulo": "Na fila de mortas",
+            "valor": 1,
+            "explicacao": "Mensagens que o Service Bus desistiu de entregar e moveu para a fila de mortas (dead-letter). Coleta: contador deadLetterMessageCount de cada fila no momento da análise. Cálculo: soma das filas. Qualquer valor acima de 0 deixa a pergunta em atenção."
           },
           {
             "rotulo": "Mensagens ativas",
             "valor": 0,
             "explicacao": "Mensagens esperando para serem consumidas, somadas em todas as filas. Coleta: contador activeMessageCount de cada fila no momento da análise. Cálculo: soma das filas. Em operação normal fica perto de 0; uma fila com 500 ou mais deixa a pergunta crítica."
-          },
-          {
-            "rotulo": "Na fila de mortas",
-            "valor": 0,
-            "explicacao": "Mensagens que o Service Bus desistiu de entregar e moveu para a fila de mortas (dead-letter). Coleta: contador deadLetterMessageCount de cada fila no momento da análise. Cálculo: soma das filas. Qualquer valor acima de 0 deixa a pergunta em atenção."
           },
           {
             "rotulo": "Apontamentos aguardando o SAP há mais de 1 h",
@@ -122,6 +123,7 @@
         "consulta": "Service Bus (administração, só leitura), C01_FLUXO",
         "elo": "Backend ⇄ Service Bus ⇄ Function ⇄ SAP",
         "achados": [
+          "15 filas do Service Bus lidas; 0 parada(s); 1 mensagem(ns) na fila de mortas.",
           "Último apontamento do app há 1 min; último retorno do SAP há 1 min; última ordem distribuída há 1 min."
         ],
         "amostra": [],
@@ -166,12 +168,22 @@
         "status": "ATENCAO",
         "valor": 18,
         "referencia7d": 18,
-        "resposta": "Sim: 18 apontamento(s) de 10 aparelho(s) esgotaram o reenvio ao SAP (CRNT 8, CRDM 4, ACOP 3, CRAV 3); 0 nas últimas 24 h. Precisam de reenvio manual.",
+        "resposta": "Sim: 18 apontamento(s) de 10 aparelho(s) esgotaram o reenvio ao SAP, 14 com XML vazio e 4 com XML preenchido (CRNT 8, CRDM 4, ACOP 3, CRAV 3); 0 nas últimas 24 h. Precisam de reenvio manual.",
         "numeros": [
           {
             "rotulo": "Apontamentos esgotados",
             "valor": 18,
             "explicacao": "Apontamentos do app que o backend recebeu, mas que não tiveram retorno do SAP e esgotaram o reenvio automático. Coleta: tabela EVENTOS, STATUS_EVENTO = 'LE' e SENDING_ATTEMPTS >= 3 (o reenvio desiste no 3º envio). A tabela guarda só 15 dias. Cálculo: contagem. Cada um precisa de reenvio manual."
+          },
+          {
+            "rotulo": "Com XML vazio",
+            "valor": 14,
+            "explicacao": "Dos apontamentos esgotados, os que chegaram ao backend sem o XML que vai ao SAP (EVENTOS.CUERPO_XML nulo ou em branco). Reenviar não resolve: o apontamento precisa ser refeito ou corrigido na origem. Cálculo: contagem."
+          },
+          {
+            "rotulo": "Com XML preenchido",
+            "valor": 4,
+            "explicacao": "Dos apontamentos esgotados, os que têm o XML (EVENTOS.CUERPO_XML preenchido) e não tiveram retorno do SAP depois de 3 envios. Podem ser reenviados. Cálculo: apontamentos esgotados menos os com XML vazio."
           },
           {
             "rotulo": "Novos em 24 h",
@@ -190,7 +202,7 @@
           }
         ],
         "regra": "Atenção: há eventos esgotados antigos, nenhum novo nas últimas 24 h.",
-        "definicao": "EVENTOS com STATUS_EVENTO = 'LE' (recebido pelo backend, sem retorno do SAP) e SENDING_ATTEMPTS >= 3. A tabela EVENTOS guarda só 15 dias.",
+        "definicao": "EVENTOS com STATUS_EVENTO = 'LE' (recebido pelo backend, sem retorno do SAP) e SENDING_ATTEMPTS >= 3. A tabela EVENTOS guarda só 15 dias. XML vazio: CUERPO_XML nulo ou em branco (o apontamento chegou sem o corpo que vai ao SAP).",
         "consulta": "C03_RESUMO, C03_POR_TIPO, C03_AMOSTRA",
         "elo": "Backend → Service Bus → Function → SAP",
         "achados": [
@@ -300,12 +312,12 @@
         "status": "ATENCAO",
         "valor": 1716,
         "referencia7d": 1700,
-        "resposta": "2.498 de 2.550 envios a usuários válidos chegaram (98,0%). 28 estão pendentes por motivo do usuário (23 fora da janela de 1 mês, 5 sem apontamentos recentes) e 24 estão com o sistema (23 em reenvio, 1 esgotaram as 8 tentativas). No total do despacho foram 4.214 envios; 1.664 foram para 268 usuários que não apontaram nem receberam ordem depois do despacho.",
+        "resposta": "2.498 de 2.550 envios a usuários válidos chegaram (98,0%). 28 estão pendentes por motivo do usuário (23 fora da janela de 1 mês, 5 sem apontamentos recentes) e 24 estão com o sistema (23 em reenvio, 1 esgotaram as 8 tentativas). No total do despacho foram 4.214 envios; 1.664 foram para 268 usuários sem acesso ao app nos últimos 7 dias ou em versão abaixo da mínima.",
         "numeros": [
           {
             "rotulo": "Usuários válidos",
             "valor": 288,
-            "explicacao": "Usuários do despacho que de fato estavam com o app depois dele: fizeram apontamento depois do início do despacho (EVENTOS.FECHA_CREACION) ou receberam ao menos uma ordem dele (OBJETOUSUARIO.FECHA_SYNC). É uma aproximação, porque o banco não guarda a data de login: quem logou sem apontar e não recebeu nada fica de fora. Cálculo: contagem de usuários."
+            "explicacao": "Usuários do despacho que podem receber o que foi enviado: acessaram o app nos últimos 7 dias e estão numa versão que ainda permite o login (igual ou acima da versão mínima de APP_CONFIGURATION, a que o update-minimum-version grava). O banco não guarda a data de login, então o acesso é a última ação que exige sessão no app: apontamento (EVENTOS), ordem recebida (OBJETOUSUARIO.FECHA_SYNC), retorno recebido (EVENT_NOTIFICATION_CONTROL.SYNC_DATE) ou atualização do aparelho (DEVICE_INFO.UPDATED_AT). A versão é a do aparelho usado por último. Cálculo: contagem de usuários."
           },
           {
             "rotulo": "Envios a usuários válidos",
@@ -336,10 +348,10 @@
             "explicacao": "Total de envios de ordem do despacho, com ou sem uso do app: cada ordem vai para todos os usuários do grupo ou posto no SAP, então uma ordem vira vários envios. Cálculo: contagem de pares ordem × usuário."
           },
           {
-            "rotulo": "Envios a usuários sem uso do app",
+            "rotulo": "Envios a usuários fora da base",
             "valor": 1664,
             "base": 4214,
-            "explicacao": "Envios do despacho para usuários que não apontaram nem receberam ordem depois dele. Cálculo: total de envios menos os envios a usuários válidos; o % é sobre o total de envios."
+            "explicacao": "Envios do despacho para usuários que não são válidos: sem acesso ao app nos últimos 7 dias ou com versão abaixo da mínima. Não têm como receber agora e não contam no número real. Cálculo: total de envios menos os envios a usuários válidos; o % é sobre o total de envios."
           }
         ],
         "resumo": {
@@ -370,7 +382,8 @@
                 "ordens": 1
               }
             ],
-            "enviadasTotal": 4214
+            "enviadasTotal": 4214,
+            "versaoMinima": "3.4.0"
           }
         },
         "regra": "Atenção: envio que esgotou as 8 tentativas (no despacho ou nas últimas 24 h). Crítico: pendências gerais 50% acima da referência de 7 dias (e ao menos 10 a mais).",
@@ -378,7 +391,7 @@
         "consulta": "C06_RESUMO, C06_AMOSTRA e o script do despacho",
         "elo": "Backend → Notification Hub → aparelho",
         "achados": [
-          "2.498 de 2.550 envios a usuários válidos chegaram (98,0%). 28 estão pendentes por motivo do usuário (23 fora da janela de 1 mês, 5 sem apontamentos recentes) e 24 estão com o sistema (23 em reenvio, 1 esgotaram as 8 tentativas). No total do despacho foram 4.214 envios; 1.664 foram para 268 usuários que não apontaram nem receberam ordem depois do despacho."
+          "2.498 de 2.550 envios a usuários válidos chegaram (98,0%). 28 estão pendentes por motivo do usuário (23 fora da janela de 1 mês, 5 sem apontamentos recentes) e 24 estão com o sistema (23 em reenvio, 1 esgotaram as 8 tentativas). No total do despacho foram 4.214 envios; 1.664 foram para 268 usuários sem acesso ao app nos últimos 7 dias ou em versão abaixo da mínima."
         ],
         "amostra": [],
         "duracaoMs": 2300
@@ -390,7 +403,7 @@
         "status": "OK",
         "valor": 731,
         "referencia7d": 700,
-        "resposta": "64.746 de 65.526 retornos do SAP desde o início do despacho chegaram aos aparelhos (98,8%). Pendentes: 247 por motivo do usuário e 367 com o sistema (316 não confirmados pelo app, 51 em aparelho sem token de notificação).",
+        "resposta": "60.896 de 61.626 retornos do SAP desde o início do despacho a usuários válidos chegaram aos aparelhos (98,8%); no total foram 65.526 retornos. Pendentes: 247 por motivo do usuário e 367 com o sistema (316 não confirmados pelo app, 51 em aparelho sem token de notificação).",
         "numeros": [
           {
             "rotulo": "Retornos do SAP no despacho",
@@ -398,28 +411,39 @@
             "explicacao": "Retornos que o SAP devolveu para os apontamentos desde o início do despacho e que o sistema precisa entregar ao aparelho. Coleta: tabela EVENT_NOTIFICATION_CONTROL, STATUS diferente de 'LE' e CREATED_AT a partir do início do despacho (horário de Brasília). Cálculo: contagem."
           },
           {
+            "rotulo": "Retornos a usuários válidos",
+            "valor": 61626,
+            "explicacao": "Retornos do despacho de usuários válidos (acesso ao app nos últimos 7 dias e versão igual ou "
+          },
+          {
             "rotulo": "Entregues aos aparelhos",
-            "valor": 64746,
-            "base": 65526,
-            "explicacao": "Retornos do despacho que o app confirmou ter recebido (EVENT_NOTIFICATION_CONTROL.SYNC_DATE preenchida). Cálculo: contagem; o % é sobre os retornos do despacho. Abaixo de 95% a pergunta fica crítica."
+            "valor": 60896,
+            "base": 61626,
+            "explicacao": "Retornos do despacho a usuários válidos que o app confirmou ter recebido (EVENT_NOTIFICATION_CONTROL.SYNC_DATE preenchida). Cálculo: contagem; o % é sobre os retornos a usuários válidos. Abaixo de 95% a pergunta fica crítica. No primeiro dia do despacho é normal faltar muito; o que falta deve cair durante a semana."
           },
           {
             "rotulo": "Pendentes por motivo do usuário",
             "valor": 247,
-            "base": 65526,
-            "explicacao": "Retornos não entregues porque o aparelho não foi usado desde o retorno ou o usuário trocou de aparelho. Retornos com erro no SAP (status ER) não entram: são responsabilidade do SAP e ficam só na planilha do negócio. Cálculo: contagem; o % é sobre os retornos do despacho."
+            "base": 61626,
+            "explicacao": "Retornos de usuários válidos não entregues porque o aparelho não foi usado desde o retorno ou o usuário trocou de aparelho. Retornos com erro no SAP (status ER) não entram: são responsabilidade do SAP e ficam só na planilha do negócio. Cálculo: contagem; o % é sobre os retornos a usuários válidos."
           },
           {
             "rotulo": "Pendentes com o sistema",
             "valor": 367,
+            "base": 61626,
+            "explicacao": "Retornos de usuários válidos não entregues por motivo técnico: o app recebeu e não confirmou, ou o aparelho não tem token de notificação. São da TI. Cálculo: contagem; o % é sobre os retornos a usuários válidos."
+          },
+          {
+            "rotulo": "Retornos a usuários fora da base",
+            "valor": 3900,
             "base": 65526,
-            "explicacao": "Retornos não entregues por motivo técnico: o app recebeu e não confirmou, ou o aparelho não tem token de notificação. São da TI. Cálculo: contagem; o % é sobre os retornos do despacho."
+            "explicacao": "Retornos do despacho de usuários sem acesso ao app nos últimos 7 dias ou com versão abaixo da mínima. Não entram no número real. Cálculo: soma dos retornos desses usuários; o % é sobre o total de retornos do despacho."
           }
         ],
         "resumo": {
           "despacho": {
-            "retornos": 65526,
-            "recebidos": 64746,
+            "retornos": 61626,
+            "recebidos": 60896,
             "pendentesNegocio": 247,
             "errosSapForaDoMonitor": 113,
             "pendentesTi": 367,
@@ -444,7 +468,8 @@
                 "motivo": "Aparelho sem token de notificação: o sistema não consegue enviar o retorno",
                 "retornos": 51
               }
-            ]
+            ],
+            "retornosTotal": 65526
           }
         },
         "regra": "Atenção: retorno que esgotou o reenvio nas últimas 24 h. Retornos com erro no SAP (ER) são do SAP e ficam só na planilha do negócio. Crítico: menos de 95% dos retornos do despacho entregues, ou pendências 50% acima da referência de 7 dias.",
@@ -452,7 +477,7 @@
         "consulta": "C07_RESUMO, C07_POR_STATUS, C07_AMOSTRA, C07_DESPACHO e o script do despacho",
         "elo": "SAP → Function → Backend → aparelho",
         "achados": [
-          "64.746 de 65.526 retornos do SAP desde o início do despacho chegaram aos aparelhos (98,8%). Pendentes: 247 por motivo do usuário e 367 com o sistema (316 não confirmados pelo app, 51 em aparelho sem token de notificação).",
+          "60.896 de 61.626 retornos do SAP desde o início do despacho a usuários válidos chegaram aos aparelhos (98,8%); no total foram 65.526 retornos. Pendentes: 247 por motivo do usuário e 367 com o sistema (316 não confirmados pelo app, 51 em aparelho sem token de notificação).",
           "Retornos concentrados em poucos usuários: 10900001 (110) 10900002 (107) 10900003 (36)."
         ],
         "amostra": [],
@@ -922,14 +947,62 @@
           }
         ],
         "usuariosForaDaBase": 268,
-        "enviosForaDaBase": 1664
-      }
+        "enviosForaDaBase": 1664,
+        "retornosInvalidos": 3900,
+        "retornosRecebidosInvalidos": 3850,
+        "retornosPendentes": 360,
+        "retornosErroSap": 113,
+        "retornosTi": 367,
+        "retornosPorMotivo": [
+          {
+            "motivo": "Aparelho não foi usado desde o retorno",
+            "retornos": 217,
+            "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho"
+          },
+          {
+            "motivo": "Erro no SAP: o evento foi rejeitado e o retorno volta a ficar pendente a cada reenvio",
+            "retornos": 113,
+            "acao": "Corrigir no SAP o cadastro indicado na Mensagem do SAP"
+          },
+          {
+            "motivo": "Usuário trocou de aparelho: o aparelho antigo não vai receber",
+            "retornos": 30,
+            "acao": "Nenhuma: o retorno ficou no aparelho antigo, que não está mais em uso"
+          }
+        ],
+        "retornosTiPorMotivo": [
+          {
+            "motivo": "Retorno enviado ao aparelho, mas o app não confirmou o recebimento",
+            "retornos": 316
+          },
+          {
+            "motivo": "Aparelho sem token de notificação: o sistema não consegue enviar o retorno",
+            "retornos": 51
+          }
+        ],
+        "ordensTiEsgotadas": 1,
+        "ordensTiPorMotivo": [
+          {
+            "motivo": "Em reenvio pelo sistema",
+            "ordens": 23
+          },
+          {
+            "motivo": "Falha: a notificação não chega ao aparelho (8 tentativas)",
+            "ordens": 1
+          }
+        ]
+      },
+      "versaoMinima": "3.4.0",
+      "diasAcesso": 7
     },
     "usuarios": [
       {
         "usuario": "DEMO000",
         "situacao": "Pendente",
         "valido": "Não",
+        "motivoForaDaBase": "Sem acesso ao app nos últimos 7 dias",
+        "ultimoAcesso": null,
+        "versaoApp": "",
         "usoApp": "Sem aparelho cadastrado",
         "ultimoUso": null,
         "diasSemUsar": null,
@@ -946,6 +1019,9 @@
         "usuario": "10900001",
         "situacao": "Pendente",
         "valido": "Não",
+        "motivoForaDaBase": "Versão 3.2.0 abaixo da mínima 3.4.0",
+        "ultimoAcesso": "2026-11-01T09:50",
+        "versaoApp": "3.2.0",
         "usoApp": "Tem aparelho, sem apontamentos recentes",
         "ultimoUso": null,
         "diasSemUsar": null,
@@ -962,6 +1038,9 @@
         "usuario": "10900002",
         "situacao": "Pendente",
         "valido": "Não",
+        "motivoForaDaBase": "Sem acesso ao app nos últimos 7 dias",
+        "ultimoAcesso": "2026-10-25T08:10",
+        "versaoApp": "3.5.1",
         "usoApp": "Não abriu o app desde o despacho",
         "ultimoUso": "2026-10-25T08:10",
         "diasSemUsar": 9,
@@ -978,6 +1057,9 @@
         "usuario": "10900003",
         "situacao": "Pendente",
         "valido": "Sim",
+        "motivoForaDaBase": "",
+        "ultimoAcesso": "2026-11-02T09:15",
+        "versaoApp": "3.5.1",
         "usoApp": "Usou o app depois do despacho",
         "ultimoUso": "2026-11-02T09:15",
         "diasSemUsar": 1,
@@ -994,6 +1076,9 @@
         "usuario": "DEMO004",
         "situacao": "Pendente",
         "valido": "Não",
+        "motivoForaDaBase": "Sem acesso ao app nos últimos 7 dias",
+        "ultimoAcesso": null,
+        "versaoApp": "",
         "usoApp": "Sem aparelho cadastrado",
         "ultimoUso": null,
         "diasSemUsar": null,
@@ -1010,6 +1095,9 @@
         "usuario": "10900005",
         "situacao": "Pendente",
         "valido": "Sim",
+        "motivoForaDaBase": "",
+        "ultimoAcesso": "2026-11-02T06:50",
+        "versaoApp": "3.5.1",
         "usoApp": "Tem aparelho, sem apontamentos recentes",
         "ultimoUso": null,
         "diasSemUsar": null,
@@ -1026,6 +1114,9 @@
         "usuario": "10900006",
         "situacao": "Pendente",
         "valido": "Não",
+        "motivoForaDaBase": "Sem acesso ao app nos últimos 7 dias",
+        "ultimoAcesso": "2026-10-22T08:10",
+        "versaoApp": "3.5.1",
         "usoApp": "Não abriu o app desde o despacho",
         "ultimoUso": "2026-10-22T08:10",
         "diasSemUsar": 12,
@@ -1042,6 +1133,9 @@
         "usuario": "10900007",
         "situacao": "Pendente",
         "valido": "Sim",
+        "motivoForaDaBase": "",
+        "ultimoAcesso": "2026-11-01T09:15",
+        "versaoApp": "3.5.1",
         "usoApp": "Usou o app depois do despacho",
         "ultimoUso": "2026-11-01T09:15",
         "diasSemUsar": 2,
@@ -1058,6 +1152,9 @@
         "usuario": "DEMO008",
         "situacao": "Pendente",
         "valido": "Não",
+        "motivoForaDaBase": "Sem acesso ao app nos últimos 7 dias",
+        "ultimoAcesso": null,
+        "versaoApp": "",
         "usoApp": "Sem aparelho cadastrado",
         "ultimoUso": null,
         "diasSemUsar": null,
@@ -1074,6 +1171,9 @@
         "usuario": "10900009",
         "situacao": "Pendente",
         "valido": "Sim",
+        "motivoForaDaBase": "",
+        "ultimoAcesso": "2026-11-02T06:50",
+        "versaoApp": "3.5.1",
         "usoApp": "Tem aparelho, sem apontamentos recentes",
         "ultimoUso": null,
         "diasSemUsar": null,
@@ -1090,6 +1190,9 @@
         "usuario": "10900010",
         "situacao": "Pendente",
         "valido": "Não",
+        "motivoForaDaBase": "Sem acesso ao app nos últimos 7 dias",
+        "ultimoAcesso": "2026-10-23T08:10",
+        "versaoApp": "3.5.1",
         "usoApp": "Não abriu o app desde o despacho",
         "ultimoUso": "2026-10-23T08:10",
         "diasSemUsar": 11,
@@ -1106,6 +1209,9 @@
         "usuario": "10900011",
         "situacao": "Pendente",
         "valido": "Sim",
+        "motivoForaDaBase": "",
+        "ultimoAcesso": "2026-11-02T08:15",
+        "versaoApp": "3.5.1",
         "usoApp": "Usou o app depois do despacho",
         "ultimoUso": "2026-11-02T08:15",
         "diasSemUsar": 1,
@@ -1122,6 +1228,9 @@
         "usuario": "DEMO012",
         "situacao": "Pendente",
         "valido": "Não",
+        "motivoForaDaBase": "Sem acesso ao app nos últimos 7 dias",
+        "ultimoAcesso": null,
+        "versaoApp": "",
         "usoApp": "Sem aparelho cadastrado",
         "ultimoUso": null,
         "diasSemUsar": null,
@@ -1138,6 +1247,9 @@
         "usuario": "10900013",
         "situacao": "Pendente",
         "valido": "Sim",
+        "motivoForaDaBase": "",
+        "ultimoAcesso": "2026-11-02T06:50",
+        "versaoApp": "3.5.1",
         "usoApp": "Tem aparelho, sem apontamentos recentes",
         "ultimoUso": null,
         "diasSemUsar": null,
@@ -1154,6 +1266,9 @@
         "usuario": "10900014",
         "situacao": "Pendente",
         "valido": "Não",
+        "motivoForaDaBase": "Sem acesso ao app nos últimos 7 dias",
+        "ultimoAcesso": "2026-10-22T09:50",
+        "versaoApp": "3.5.1",
         "usoApp": "Não abriu o app desde o despacho",
         "ultimoUso": "2026-10-28T08:10",
         "diasSemUsar": 6,
@@ -1170,6 +1285,9 @@
         "usuario": "10900015",
         "situacao": "Pendente",
         "valido": "Sim",
+        "motivoForaDaBase": "",
+        "ultimoAcesso": "2026-11-03T07:15",
+        "versaoApp": "3.5.1",
         "usoApp": "Usou o app depois do despacho",
         "ultimoUso": "2026-11-03T07:15",
         "diasSemUsar": 0,
@@ -1186,6 +1304,9 @@
         "usuario": "DEMO016",
         "situacao": "Pendente",
         "valido": "Não",
+        "motivoForaDaBase": "Sem acesso ao app nos últimos 7 dias",
+        "ultimoAcesso": null,
+        "versaoApp": "",
         "usoApp": "Sem aparelho cadastrado",
         "ultimoUso": null,
         "diasSemUsar": null,
@@ -1202,6 +1323,9 @@
         "usuario": "10900017",
         "situacao": "Pendente",
         "valido": "Não",
+        "motivoForaDaBase": "Sem acesso ao app nos últimos 7 dias",
+        "ultimoAcesso": "2026-10-22T09:50",
+        "versaoApp": "3.5.1",
         "usoApp": "Tem aparelho, sem apontamentos recentes",
         "ultimoUso": null,
         "diasSemUsar": null,
