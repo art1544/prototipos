@@ -41,19 +41,38 @@ export const numeroDe = (porId, id, rotulo) => porId[id]?.numeros?.find((n) => n
 export const statusDe = (porId, id) => porId[id]?.status ?? null;
 
 /**
- * Números exibidos no canto do cartão, ao lado do destaque:
- * - C06/C07: total do despacho com todos os usuários (o segundo rótulo de C06 é o dos relatórios anteriores aos usuários válidos);
+ * Números exibidos no canto do cartão, ao lado do destaque. Cada item usa a primeira opção [rótulo, texto] que o relatório
+ * tiver (as seguintes são de relatórios antigos):
+ * - C06/C07: pendentes de todos os usuários; antes de 13/11/2026 (tarde), o total enviado no despacho;
  * - C01: mensagens na fila de mortas, só quando há alguma, com a cor do status;
  * - C03: os esgotados separados em XML vazio e XML preenchido.
  */
 const CANTO = {
-  C06: [{ rotulos: ['Envios do despacho (todos os usuários)', 'Envios do despacho'], texto: 'envios no total' }],
-  C07: [{ rotulos: ['Retornos do SAP no despacho'], texto: 'retornos no total' }],
-  C01: [{ rotulos: ['Na fila de mortas'], texto: 'na fila de mortas', soAcimaDeZero: true, alerta: true }],
-  C03: [
-    { rotulos: ['Com XML vazio'], texto: 'com XML vazio' },
-    { rotulos: ['Com XML preenchido'], texto: 'com XML preenchido' },
+  C06: [
+    {
+      opcoes: [
+        ['Ordens pendentes no total (todos os usuários)', 'pendentes no total'],
+        ['Envios do despacho (todos os usuários)', 'envios no total'],
+        ['Envios do despacho', 'envios no total'],
+      ],
+    },
   ],
+  C07: [
+    {
+      opcoes: [
+        ['Retornos pendentes no total (todos os usuários)', 'pendentes no total'],
+        ['Retornos do SAP no despacho', 'retornos no total'],
+      ],
+    },
+  ],
+  C01: [{ opcoes: [['Na fila de mortas', 'na fila de mortas']], soAcimaDeZero: true, alerta: true }],
+  C03: [{ opcoes: [['Com XML vazio', 'com XML vazio']] }, { opcoes: [['Com XML preenchido', 'com XML preenchido']] }],
+};
+
+/** Número em destaque das perguntas do despacho: o que ainda falta chegar a quem pode receber (relatórios a partir de 13/11/2026). */
+const PRINCIPAL = {
+  C06: 'Ordens pendentes a usuários válidos',
+  C07: 'Retornos pendentes a usuários válidos',
 };
 
 /**
@@ -64,9 +83,11 @@ export function cantoDa(pergunta, porId) {
   const itens = [];
   for (const check of checksDa(pergunta, porId)) {
     for (const def of CANTO[check.id] ?? []) {
-      const numero = def.rotulos.map((rotulo) => numeroDe(porId, check.id, rotulo)).find(Boolean);
-      if (!numero || (def.soAcimaDeZero && !(numero.valor > 0))) continue;
-      itens.push({ numero, texto: def.texto, alerta: Boolean(def.alerta) });
+      const achado = def.opcoes
+        .map(([rotulo, texto]) => ({ numero: numeroDe(porId, check.id, rotulo), texto }))
+        .find((opcao) => opcao.numero);
+      if (!achado || (def.soAcimaDeZero && !(achado.numero.valor > 0))) continue;
+      itens.push({ numero: achado.numero, texto: achado.texto, alerta: Boolean(def.alerta) });
     }
   }
   return itens;
@@ -86,9 +107,16 @@ function diagnosticoDoLogin(check) {
 /** Diagnóstico de uma pergunta que se responde com um veredito em vez de um número, ou null. */
 export const diagnosticoDe = (pergunta, porId) => (pergunta.checks.includes('C09') ? diagnosticoDoLogin(porId.C09) : null);
 
-/** Número principal de uma pergunta: o primeiro com base (vira %), senão o primeiro de todos; nenhum se ela tem diagnóstico. */
+/**
+ * Número principal de uma pergunta: o pendente das perguntas do despacho (PRINCIPAL), senão o primeiro com base (vira %),
+ * senão o primeiro de todos; nenhum se ela tem diagnóstico.
+ */
 export function principal(pergunta, porId) {
   if (diagnosticoDe(pergunta, porId)) return null;
+  for (const id of pergunta.checks) {
+    const pendentes = PRINCIPAL[id] ? numeroDe(porId, id, PRINCIPAL[id]) : null;
+    if (pendentes) return pendentes;
+  }
   const numeros = numerosDa(pergunta, porId);
   return numeros.find((n) => n.base) ?? numeros[0] ?? null;
 }
@@ -125,11 +153,16 @@ export const naoEnviadosDoDestaque = (numero) => (ROTULOS_COM_FALTANTES.has(nume
  */
 export const eloDe = (check) => (check?.elo ? String(check.elo).replace(/ \? /g, ' → ') : null);
 
-/** Os quatro destaques do topo do dia: ordens recebidas, retornos entregues, apontamentos esgotados e login. */
+/**
+ * Os quatro destaques do topo do dia: ordens e retornos pendentes a usuários válidos (em relatórios antigos, recebidas e
+ * entregues), apontamentos esgotados e login.
+ */
 export function destaquesDoDia(porId) {
   const recebidas = numeroDe(porId, 'C06', 'Recebidos');
   const entregues = numeroDe(porId, 'C07', 'Entregues aos aparelhos');
   return {
+    ordensPendentes: numeroDe(porId, 'C06', PRINCIPAL.C06),
+    retornosPendentes: numeroDe(porId, 'C07', PRINCIPAL.C07),
     recebidas: recebidas?.base ? recebidas : null,
     entregues: entregues?.base ? entregues : null,
     esgotados: numeroDe(porId, 'C03', 'Apontamentos esgotados'),

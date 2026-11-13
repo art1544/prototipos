@@ -111,10 +111,14 @@ function tileDiagnostico(rotulo, diagnostico, tempo) {
 }
 
 function tilesDoDia(porId) {
-  const { recebidas, entregues, esgotados, login, diagnosticoLogin } = destaquesDoDia(porId);
+  const { ordensPendentes, retornosPendentes, recebidas, entregues, esgotados, login, diagnosticoLogin } = destaquesDoDia(porId);
   return [
-    tile('Ordens recebidas', recebidas, { status: statusDe(porId, 'C06'), vazio: 'sem lista', faltam: naoEnviados(recebidas) }),
-    tile('Retornos entregues', entregues, { status: statusDe(porId, 'C07'), vazio: 'sem lista', faltam: naoEnviados(entregues) }),
+    ordensPendentes
+      ? tile('Ordens pendentes', ordensPendentes, { status: statusDe(porId, 'C06') })
+      : tile('Ordens recebidas', recebidas, { status: statusDe(porId, 'C06'), vazio: 'sem lista', faltam: naoEnviados(recebidas) }),
+    retornosPendentes
+      ? tile('Retornos pendentes', retornosPendentes, { status: statusDe(porId, 'C07') })
+      : tile('Retornos entregues', entregues, { status: statusDe(porId, 'C07'), vazio: 'sem lista', faltam: naoEnviados(entregues) }),
     tile('Apontamentos esgotados', esgotados, { vazio: 'sem dados' }),
     diagnosticoLogin
       ? tileDiagnostico('Login do app', diagnosticoLogin, login)
@@ -141,8 +145,8 @@ function ladoDespacho(checks, numeros) {
 }
 
 /**
- * Números do canto, ao lado do principal: total do despacho com todos os usuários (C06/C07), fila de mortas (C01, na cor
- * do status) e os esgotados por XML (C03).
+ * Números do canto, ao lado do principal: pendentes de todos os usuários (C06/C07), fila de mortas (C01, na cor do status)
+ * e os esgotados por XML (C03).
  */
 function cantoDoCartao(itens, status) {
   if (!itens.length) return '';

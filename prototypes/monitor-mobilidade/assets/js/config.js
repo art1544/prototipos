@@ -60,7 +60,7 @@ export const API_CONFIG = {
   /** Sempre prefixada pelo id: todos os protótipos dividem o mesmo localStorage. */
   storageKey: 'monitor-mobilidade:db',
   /** Incremente junto com _meta.schemaVersion do db.json ao mudar a estrutura. */
-  schemaVersion: 4,
+  schemaVersion: 5,
   requestTimeoutMs: 10_000,
   /** ?latencia=0 | ?latencia=2000 fixa a latência; sem o parâmetro ela varia dentro de latencyRangeMs. */
   latencyMs: numeroDaUrl('latencia', null),

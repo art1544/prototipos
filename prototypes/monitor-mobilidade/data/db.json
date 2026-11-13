@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "schemaVersion": 4,
+    "schemaVersion": 5,
     "notes": "Base de exemplo do Monitor Mobilidade: respostas das rotas /v2/monitor/* com dados fictícios (relatório de 2026-11-03). Depois da primeira carga as alterações ficam no navegador (localStorage, chave monitor-mobilidade:db)."
   },
   "config": {
@@ -61,7 +61,7 @@
         "equipe": "Mobilidade",
         "pergunta": "Quais ordens foram encaminhadas ao usuário e não foram recebidas?",
         "status": "ATENCAO",
-        "resposta": "2.498 de 2.550 envios a usuários válidos chegaram (98,0%). 28 estão pendentes por motivo do usuário (23 fora da janela de 1 mês, 5 sem apontamentos recentes) e 24 estão com o sistema (23 em reenvio, 1 esgotaram as 8 tentativas). No total do despacho foram 4.214 envios; 1.664 foram para 268 usuários sem acesso ao app nos últimos 7 dias ou em versão abaixo da mínima.",
+        "resposta": "52 ordens da lista ainda não chegaram a usuários válidos (login nos últimos 7 dias e versão do app igual ou acima da mínima): 28 por motivo do usuário e 24 com o sistema. Dos 2.550 envios do despacho a usuários válidos, 2.498 chegaram (98,0%). Somando todos os usuários são 1.716 ordens pendentes; 1.664 são de usuários fora da base.",
         "checks": [
           "C06"
         ]
@@ -71,7 +71,7 @@
         "equipe": "Mobilidade",
         "pergunta": "Quais eventos foram encaminhados ao usuário e não foram recebidos?",
         "status": "OK",
-        "resposta": "60.896 de 61.626 retornos do SAP desde o início do despacho a usuários válidos chegaram aos aparelhos (98,8%); no total foram 65.526 retornos. Pendentes: 247 por motivo do usuário e 367 com o sistema (316 não confirmados pelo app, 51 em aparelho sem token de notificação).",
+        "resposta": "727 retornos do SAP ainda não chegaram a aparelhos válidos (login nos últimos 7 dias e versão do app igual ou acima da mínima): 247 por motivo do usuário, 113 com erro no SAP e 367 com o sistema. Dos 61.626 retornos do SAP desde o início do despacho a usuários válidos, 60.896 chegaram aos aparelhos (98,8%). Somando todos os aparelhos são 4.627 retornos pendentes; 3.900 são de aparelhos fora da base.",
         "checks": [
           "C07"
         ]
@@ -312,12 +312,29 @@
         "status": "ATENCAO",
         "valor": 1716,
         "referencia7d": 1700,
-        "resposta": "2.498 de 2.550 envios a usuários válidos chegaram (98,0%). 28 estão pendentes por motivo do usuário (23 fora da janela de 1 mês, 5 sem apontamentos recentes) e 24 estão com o sistema (23 em reenvio, 1 esgotaram as 8 tentativas). No total do despacho foram 4.214 envios; 1.664 foram para 268 usuários sem acesso ao app nos últimos 7 dias ou em versão abaixo da mínima.",
+        "resposta": "52 ordens da lista ainda não chegaram a usuários válidos (login nos últimos 7 dias e versão do app igual ou acima da mínima): 28 por motivo do usuário e 24 com o sistema. Dos 2.550 envios do despacho a usuários válidos, 2.498 chegaram (98,0%). Somando todos os usuários são 1.716 ordens pendentes; 1.664 são de usuários fora da base.",
         "numeros": [
+          {
+            "rotulo": "Ordens pendentes a usuários válidos",
+            "valor": 52,
+            "explicacao": "Ordens da lista que ainda não chegaram a usuários válidos (login nos últimos 7 dias e versão igual ou acima da mínima). Coleta: OBJETOUSUARIO das ordens da lista com FECHA_SYNC nula, qualquer que seja a data do vínculo, inclusive de quem não abriu o app desde o despacho (mesma regra da consulta de conferência no banco). Cálculo: contagem de pares ordem × usuário válido. No primeiro dia do despacho é normal ser alto; deve cair durante a semana."
+          },
+          {
+            "rotulo": "Pendentes por motivo do usuário",
+            "valor": 28,
+            "explicacao": "Ordens pendentes de usuários válidos por motivo que o negócio trata: usuário que não abriu o app desde o despacho, sem apontamentos recentes, ou ordem fora da janela de 1 mês (regra de negócio). Cálculo: contagem; o % é sobre as ordens pendentes a usuários válidos.",
+            "base": 52
+          },
+          {
+            "rotulo": "Pendentes com o sistema",
+            "valor": 24,
+            "explicacao": "Ordens pendentes de usuários válidos por motivo técnico: ainda em reenvio automático (menos de 8 tentativas) ou com as 8 tentativas esgotadas (OBJETOUSUARIO.TASK_SYNC_ATTEMPT_COUNT). São da TI. Cálculo: contagem; o % é sobre as ordens pendentes a usuários válidos.",
+            "base": 52
+          },
           {
             "rotulo": "Usuários válidos",
             "valor": 288,
-            "explicacao": "Usuários do despacho que podem receber o que foi enviado: acessaram o app nos últimos 7 dias e estão numa versão que ainda permite o login (igual ou acima da versão mínima de APP_CONFIGURATION, a que o update-minimum-version grava). O banco não guarda a data de login, então o acesso é a última ação que exige sessão no app: apontamento (EVENTOS), ordem recebida (OBJETOUSUARIO.FECHA_SYNC), retorno recebido (EVENT_NOTIFICATION_CONTROL.SYNC_DATE) ou atualização do aparelho (DEVICE_INFO.UPDATED_AT). A versão é a do aparelho usado por último. Cálculo: contagem de usuários."
+            "explicacao": "Usuário que pode receber agora: o aparelho usado por último foi atualizado nos últimos 7 dias (DEVICE_INFO.UPDATED_AT, que o app grava no login e ao voltar a ter rede) e está numa versão que ainda permite o login (igual ou acima da versão mínima de APP_CONFIGURATION, a que o update-minimum-version grava). Para retornos vale o aparelho do próprio retorno. Cálculo: contagem de usuários."
           },
           {
             "rotulo": "Envios a usuários válidos",
@@ -327,35 +344,30 @@
           {
             "rotulo": "Recebidos",
             "valor": 2498,
-            "base": 2550,
-            "explicacao": "Envios a usuários válidos que chegaram ao app. Coleta: OBJETOUSUARIO.FECHA_SYNC preenchida (o app confirmou a sincronização). Cálculo: contagem; o % é sobre os envios a usuários válidos."
+            "explicacao": "Envios a usuários válidos que chegaram ao app. Coleta: OBJETOUSUARIO.FECHA_SYNC preenchida (o app confirmou a sincronização). Cálculo: contagem; o % é sobre os envios a usuários válidos.",
+            "base": 2550
           },
           {
-            "rotulo": "Pendentes por motivo do usuário",
-            "valor": 28,
-            "base": 2550,
-            "explicacao": "Envios a usuários válidos não recebidos por motivo que o negócio trata: usuário que não abriu o app desde o despacho, sem apontamentos recentes, ou ordem fora da janela de 1 mês (regra de negócio). O uso do app é medido pelo último apontamento em EVENTOS (15 dias de histórico). Cálculo: contagem; o % é sobre os envios a usuários válidos."
+            "rotulo": "Ordens pendentes no total (todos os usuários)",
+            "valor": 1716,
+            "explicacao": "Todas as ordens da lista ainda não recebidas, de qualquer usuário, válido ou não. Cálculo: contagem de pares ordem × usuário com OBJETOUSUARIO.FECHA_SYNC nula."
           },
           {
-            "rotulo": "Pendentes com o sistema",
-            "valor": 24,
-            "base": 2550,
-            "explicacao": "Envios a usuários válidos não recebidos por motivo técnico: ainda em reenvio automático (menos de 8 tentativas) ou com as 8 tentativas esgotadas (OBJETOUSUARIO.TASK_SYNC_ATTEMPT_COUNT). São da TI. Cálculo: contagem; o % é sobre os envios a usuários válidos."
+            "rotulo": "Pendentes de usuários fora da base",
+            "valor": 1664,
+            "explicacao": "Ordens pendentes de usuários que não são válidos: sem login nos últimos 7 dias, sem aparelho ou com versão abaixo da mínima. Não têm como receber agora e não entram no destaque. Cálculo: total de pendentes menos os de usuários válidos; o % é sobre o total de pendentes.",
+            "base": 1716
           },
           {
             "rotulo": "Envios do despacho (todos os usuários)",
             "valor": 4214,
             "explicacao": "Total de envios de ordem do despacho, com ou sem uso do app: cada ordem vai para todos os usuários do grupo ou posto no SAP, então uma ordem vira vários envios. Cálculo: contagem de pares ordem × usuário."
-          },
-          {
-            "rotulo": "Envios a usuários fora da base",
-            "valor": 1664,
-            "base": 4214,
-            "explicacao": "Envios do despacho para usuários que não são válidos: sem acesso ao app nos últimos 7 dias ou com versão abaixo da mínima. Não têm como receber agora e não contam no número real. Cálculo: total de envios menos os envios a usuários válidos; o % é sobre o total de envios."
           }
         ],
         "resumo": {
           "despacho": {
+            "pendentes": 52,
+            "pendentesTotal": 1716,
             "enviadas": 2550,
             "recebidas": 2498,
             "pendentesNegocio": 28,
@@ -391,7 +403,7 @@
         "consulta": "C06_RESUMO, C06_AMOSTRA e o script do despacho",
         "elo": "Backend → Notification Hub → aparelho",
         "achados": [
-          "2.498 de 2.550 envios a usuários válidos chegaram (98,0%). 28 estão pendentes por motivo do usuário (23 fora da janela de 1 mês, 5 sem apontamentos recentes) e 24 estão com o sistema (23 em reenvio, 1 esgotaram as 8 tentativas). No total do despacho foram 4.214 envios; 1.664 foram para 268 usuários sem acesso ao app nos últimos 7 dias ou em versão abaixo da mínima."
+          "52 ordens da lista ainda não chegaram a usuários válidos (login nos últimos 7 dias e versão do app igual ou acima da mínima): 28 por motivo do usuário e 24 com o sistema. Dos 2.550 envios do despacho a usuários válidos, 2.498 chegaram (98,0%). Somando todos os usuários são 1.716 ordens pendentes; 1.664 são de usuários fora da base."
         ],
         "amostra": [],
         "duracaoMs": 2300
@@ -403,45 +415,63 @@
         "status": "OK",
         "valor": 731,
         "referencia7d": 700,
-        "resposta": "60.896 de 61.626 retornos do SAP desde o início do despacho a usuários válidos chegaram aos aparelhos (98,8%); no total foram 65.526 retornos. Pendentes: 247 por motivo do usuário e 367 com o sistema (316 não confirmados pelo app, 51 em aparelho sem token de notificação).",
+        "resposta": "727 retornos do SAP ainda não chegaram a aparelhos válidos (login nos últimos 7 dias e versão do app igual ou acima da mínima): 247 por motivo do usuário, 113 com erro no SAP e 367 com o sistema. Dos 61.626 retornos do SAP desde o início do despacho a usuários válidos, 60.896 chegaram aos aparelhos (98,8%). Somando todos os aparelhos são 4.627 retornos pendentes; 3.900 são de aparelhos fora da base.",
         "numeros": [
           {
-            "rotulo": "Retornos do SAP no despacho",
-            "valor": 65526,
-            "explicacao": "Retornos que o SAP devolveu para os apontamentos desde o início do despacho e que o sistema precisa entregar ao aparelho. Coleta: tabela EVENT_NOTIFICATION_CONTROL, STATUS diferente de 'LE' e CREATED_AT a partir do início do despacho (horário de Brasília). Cálculo: contagem."
-          },
-          {
-            "rotulo": "Retornos a usuários válidos",
-            "valor": 61626,
-            "explicacao": "Retornos do despacho de usuários válidos (acesso ao app nos últimos 7 dias e versão igual ou "
-          },
-          {
-            "rotulo": "Entregues aos aparelhos",
-            "valor": 60896,
-            "base": 61626,
-            "explicacao": "Retornos do despacho a usuários válidos que o app confirmou ter recebido (EVENT_NOTIFICATION_CONTROL.SYNC_DATE preenchida). Cálculo: contagem; o % é sobre os retornos a usuários válidos. Abaixo de 95% a pergunta fica crítica. No primeiro dia do despacho é normal faltar muito; o que falta deve cair durante a semana."
+            "rotulo": "Retornos pendentes a usuários válidos",
+            "valor": 727,
+            "explicacao": "Retornos do SAP que ainda não chegaram a aparelhos válidos (aparelho do retorno atualizado nos últimos 7 dias e versão igual ou acima da mínima). Coleta: EVENT_NOTIFICATION_CONTROL com STATUS PR, PRE ou ER e SYNC_DATE nula, sem recorte de data (mesma regra da consulta de conferência no banco). Inclui os de erro no SAP. Cálculo: contagem."
           },
           {
             "rotulo": "Pendentes por motivo do usuário",
             "valor": 247,
-            "base": 61626,
-            "explicacao": "Retornos de usuários válidos não entregues porque o aparelho não foi usado desde o retorno ou o usuário trocou de aparelho. Retornos com erro no SAP (status ER) não entram: são responsabilidade do SAP e ficam só na planilha do negócio. Cálculo: contagem; o % é sobre os retornos a usuários válidos."
+            "explicacao": "Retornos pendentes de aparelhos válidos porque o aparelho não foi usado desde o retorno ou o usuário trocou de aparelho. Os de erro no SAP aparecem à parte. Cálculo: contagem; o % é sobre os retornos pendentes a usuários válidos.",
+            "base": 727
+          },
+          {
+            "rotulo": "Com erro no SAP",
+            "valor": 113,
+            "explicacao": "Retornos pendentes de aparelhos válidos com status ER: o SAP rejeitou o evento e o retorno volta a ficar pendente até corrigirem o cadastro. São do SAP. Cálculo: contagem; o % é sobre os retornos pendentes a usuários válidos.",
+            "base": 727
           },
           {
             "rotulo": "Pendentes com o sistema",
             "valor": 367,
-            "base": 61626,
-            "explicacao": "Retornos de usuários válidos não entregues por motivo técnico: o app recebeu e não confirmou, ou o aparelho não tem token de notificação. São da TI. Cálculo: contagem; o % é sobre os retornos a usuários válidos."
+            "explicacao": "Retornos pendentes de aparelhos válidos por motivo técnico: o app recebeu e não confirmou, ou o aparelho não tem token de notificação. São da TI. Cálculo: contagem; o % é sobre os retornos pendentes a usuários válidos.",
+            "base": 727
           },
           {
-            "rotulo": "Retornos a usuários fora da base",
+            "rotulo": "Retornos do despacho a usuários válidos",
+            "valor": 61626,
+            "explicacao": "Retornos desde o início do despacho de usuários válidos; é a base do % de entregues. Cálculo: retornos do despacho menos os de usuários fora da base."
+          },
+          {
+            "rotulo": "Entregues aos aparelhos",
+            "valor": 60896,
+            "explicacao": "Retornos do despacho a usuários válidos que o app confirmou ter recebido (EVENT_NOTIFICATION_CONTROL.SYNC_DATE preenchida). Cálculo: contagem; o % é sobre os retornos a usuários válidos. Abaixo de 95% a pergunta fica crítica. No primeiro dia do despacho é normal faltar muito; o que falta deve cair durante a semana.",
+            "base": 61626
+          },
+          {
+            "rotulo": "Retornos pendentes no total (todos os usuários)",
+            "valor": 4627,
+            "explicacao": "Todos os retornos PR, PRE ou ER ainda não recebidos, de qualquer aparelho, válido ou não. Cálculo: contagem em EVENT_NOTIFICATION_CONTROL com SYNC_DATE nula."
+          },
+          {
+            "rotulo": "Pendentes de usuários fora da base",
             "valor": 3900,
-            "base": 65526,
-            "explicacao": "Retornos do despacho de usuários sem acesso ao app nos últimos 7 dias ou com versão abaixo da mínima. Não entram no número real. Cálculo: soma dos retornos desses usuários; o % é sobre o total de retornos do despacho."
+            "explicacao": "Retornos pendentes de aparelhos que não são válidos: sem atualização nos últimos 7 dias ou com versão abaixo da mínima. Não entram no destaque. Cálculo: total de pendentes menos os de aparelhos válidos; o % é sobre o total de pendentes.",
+            "base": 4627
+          },
+          {
+            "rotulo": "Retornos do SAP no despacho",
+            "valor": 65526,
+            "explicacao": "Retornos que o SAP devolveu para os apontamentos desde o início do despacho e que o sistema precisa entregar ao aparelho. Coleta: tabela EVENT_NOTIFICATION_CONTROL, STATUS diferente de 'LE' e CREATED_AT a partir do início do despacho (horário de Brasília). Cálculo: contagem."
           }
         ],
         "resumo": {
           "despacho": {
+            "pendentes": 727,
+            "pendentesTotal": 4627,
             "retornos": 61626,
             "recebidos": 60896,
             "pendentesNegocio": 247,
@@ -477,7 +507,7 @@
         "consulta": "C07_RESUMO, C07_POR_STATUS, C07_AMOSTRA, C07_DESPACHO e o script do despacho",
         "elo": "SAP → Function → Backend → aparelho",
         "achados": [
-          "60.896 de 61.626 retornos do SAP desde o início do despacho a usuários válidos chegaram aos aparelhos (98,8%); no total foram 65.526 retornos. Pendentes: 247 por motivo do usuário e 367 com o sistema (316 não confirmados pelo app, 51 em aparelho sem token de notificação).",
+          "727 retornos do SAP ainda não chegaram a aparelhos válidos (login nos últimos 7 dias e versão do app igual ou acima da mínima): 247 por motivo do usuário, 113 com erro no SAP e 367 com o sistema. Dos 61.626 retornos do SAP desde o início do despacho a usuários válidos, 60.896 chegaram aos aparelhos (98,8%). Somando todos os aparelhos são 4.627 retornos pendentes; 3.900 são de aparelhos fora da base.",
           "Retornos concentrados em poucos usuários: 10900001 (110) 10900002 (107) 10900003 (36)."
         ],
         "amostra": [],
@@ -1985,7 +2015,8 @@
         "eventoCriadoEm": "2026-10-30T03:05",
         "retornoSapEm": "2026-10-30T03:06",
         "motivo": "Erro no SAP: o evento foi rejeitado e o retorno volta a ficar pendente a cada reenvio",
-        "acao": "Corrigir no SAP o cadastro indicado na Mensagem do SAP"
+        "acao": "Corrigir no SAP o cadastro indicado na Mensagem do SAP",
+        "aparelhoValido": "Sim"
       },
       {
         "usuario": "10900003",
@@ -2000,7 +2031,8 @@
         "eventoCriadoEm": "2026-10-30T03:05",
         "retornoSapEm": "2026-10-30T03:06",
         "motivo": "Erro no SAP: o evento foi rejeitado e o retorno volta a ficar pendente a cada reenvio",
-        "acao": "Corrigir no SAP o cadastro indicado na Mensagem do SAP"
+        "acao": "Corrigir no SAP o cadastro indicado na Mensagem do SAP",
+        "aparelhoValido": "Sim"
       },
       {
         "usuario": "10900003",
@@ -2015,7 +2047,8 @@
         "eventoCriadoEm": "2026-10-30T03:05",
         "retornoSapEm": "2026-10-30T03:06",
         "motivo": "Erro no SAP: o evento foi rejeitado e o retorno volta a ficar pendente a cada reenvio",
-        "acao": "Corrigir no SAP o cadastro indicado na Mensagem do SAP"
+        "acao": "Corrigir no SAP o cadastro indicado na Mensagem do SAP",
+        "aparelhoValido": "Sim"
       },
       {
         "usuario": "10900005",
@@ -2030,7 +2063,8 @@
         "eventoCriadoEm": "2026-10-30T03:05",
         "retornoSapEm": "2026-10-30T03:06",
         "motivo": "Aparelho não foi usado desde o retorno",
-        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho"
+        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho",
+        "aparelhoValido": "Sim"
       },
       {
         "usuario": "10900005",
@@ -2045,7 +2079,8 @@
         "eventoCriadoEm": "2026-10-30T03:05",
         "retornoSapEm": "2026-10-30T03:06",
         "motivo": "Aparelho não foi usado desde o retorno",
-        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho"
+        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho",
+        "aparelhoValido": "Sim"
       },
       {
         "usuario": "10900005",
@@ -2060,7 +2095,8 @@
         "eventoCriadoEm": "2026-10-30T03:05",
         "retornoSapEm": "2026-10-30T03:06",
         "motivo": "Aparelho não foi usado desde o retorno",
-        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho"
+        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho",
+        "aparelhoValido": "Sim"
       },
       {
         "usuario": "10900006",
@@ -2075,7 +2111,8 @@
         "eventoCriadoEm": "2026-10-30T03:05",
         "retornoSapEm": "2026-10-30T03:06",
         "motivo": "Aparelho não foi usado desde o retorno",
-        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho"
+        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho",
+        "aparelhoValido": "Não"
       },
       {
         "usuario": "10900006",
@@ -2090,7 +2127,8 @@
         "eventoCriadoEm": "2026-10-30T03:05",
         "retornoSapEm": "2026-10-30T03:06",
         "motivo": "Aparelho não foi usado desde o retorno",
-        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho"
+        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho",
+        "aparelhoValido": "Não"
       },
       {
         "usuario": "10900006",
@@ -2105,7 +2143,8 @@
         "eventoCriadoEm": "2026-10-30T03:05",
         "retornoSapEm": "2026-10-30T03:06",
         "motivo": "Aparelho não foi usado desde o retorno",
-        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho"
+        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho",
+        "aparelhoValido": "Não"
       },
       {
         "usuario": "10900007",
@@ -2120,7 +2159,8 @@
         "eventoCriadoEm": "2026-10-30T03:05",
         "retornoSapEm": "2026-10-30T03:06",
         "motivo": "Erro no SAP: o evento foi rejeitado e o retorno volta a ficar pendente a cada reenvio",
-        "acao": "Corrigir no SAP o cadastro indicado na Mensagem do SAP"
+        "acao": "Corrigir no SAP o cadastro indicado na Mensagem do SAP",
+        "aparelhoValido": "Sim"
       },
       {
         "usuario": "10900007",
@@ -2135,7 +2175,8 @@
         "eventoCriadoEm": "2026-10-30T03:05",
         "retornoSapEm": "2026-10-30T03:06",
         "motivo": "Erro no SAP: o evento foi rejeitado e o retorno volta a ficar pendente a cada reenvio",
-        "acao": "Corrigir no SAP o cadastro indicado na Mensagem do SAP"
+        "acao": "Corrigir no SAP o cadastro indicado na Mensagem do SAP",
+        "aparelhoValido": "Sim"
       },
       {
         "usuario": "10900009",
@@ -2150,7 +2191,8 @@
         "eventoCriadoEm": "2026-10-30T03:05",
         "retornoSapEm": "2026-10-30T03:06",
         "motivo": "Aparelho não foi usado desde o retorno",
-        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho"
+        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho",
+        "aparelhoValido": "Sim"
       },
       {
         "usuario": "10900009",
@@ -2165,7 +2207,8 @@
         "eventoCriadoEm": "2026-10-30T03:05",
         "retornoSapEm": "2026-10-30T03:06",
         "motivo": "Aparelho não foi usado desde o retorno",
-        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho"
+        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho",
+        "aparelhoValido": "Sim"
       },
       {
         "usuario": "10900011",
@@ -2180,7 +2223,8 @@
         "eventoCriadoEm": "2026-10-30T03:05",
         "retornoSapEm": "2026-10-30T03:06",
         "motivo": "Aparelho não foi usado desde o retorno",
-        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho"
+        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho",
+        "aparelhoValido": "Sim"
       },
       {
         "usuario": "10900011",
@@ -2195,7 +2239,8 @@
         "eventoCriadoEm": "2026-10-30T03:05",
         "retornoSapEm": "2026-10-30T03:06",
         "motivo": "Aparelho não foi usado desde o retorno",
-        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho"
+        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho",
+        "aparelhoValido": "Sim"
       },
       {
         "usuario": "10900011",
@@ -2210,7 +2255,8 @@
         "eventoCriadoEm": "2026-10-30T03:05",
         "retornoSapEm": "2026-10-30T03:06",
         "motivo": "Aparelho não foi usado desde o retorno",
-        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho"
+        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho",
+        "aparelhoValido": "Sim"
       },
       {
         "usuario": "10900014",
@@ -2225,7 +2271,8 @@
         "eventoCriadoEm": "2026-10-30T03:05",
         "retornoSapEm": "2026-10-30T03:06",
         "motivo": "Aparelho não foi usado desde o retorno",
-        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho"
+        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho",
+        "aparelhoValido": "Não"
       },
       {
         "usuario": "10900014",
@@ -2240,7 +2287,8 @@
         "eventoCriadoEm": "2026-10-30T03:05",
         "retornoSapEm": "2026-10-30T03:06",
         "motivo": "Aparelho não foi usado desde o retorno",
-        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho"
+        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho",
+        "aparelhoValido": "Não"
       },
       {
         "usuario": "10900014",
@@ -2255,7 +2303,8 @@
         "eventoCriadoEm": "2026-10-30T03:05",
         "retornoSapEm": "2026-10-30T03:06",
         "motivo": "Aparelho não foi usado desde o retorno",
-        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho"
+        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho",
+        "aparelhoValido": "Não"
       },
       {
         "usuario": "10900015",
@@ -2270,7 +2319,8 @@
         "eventoCriadoEm": "2026-10-30T03:05",
         "retornoSapEm": "2026-10-30T03:06",
         "motivo": "Aparelho não foi usado desde o retorno",
-        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho"
+        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho",
+        "aparelhoValido": "Sim"
       },
       {
         "usuario": "10900015",
@@ -2285,7 +2335,8 @@
         "eventoCriadoEm": "2026-10-30T03:05",
         "retornoSapEm": "2026-10-30T03:06",
         "motivo": "Aparelho não foi usado desde o retorno",
-        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho"
+        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho",
+        "aparelhoValido": "Sim"
       },
       {
         "usuario": "10900017",
@@ -2300,7 +2351,8 @@
         "eventoCriadoEm": "2026-10-30T03:05",
         "retornoSapEm": "2026-10-30T03:06",
         "motivo": "Aparelho não foi usado desde o retorno",
-        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho"
+        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho",
+        "aparelhoValido": "Não"
       },
       {
         "usuario": "10900017",
@@ -2315,7 +2367,8 @@
         "eventoCriadoEm": "2026-10-30T03:05",
         "retornoSapEm": "2026-10-30T03:06",
         "motivo": "Aparelho não foi usado desde o retorno",
-        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho"
+        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho",
+        "aparelhoValido": "Não"
       },
       {
         "usuario": "10900017",
@@ -2330,7 +2383,8 @@
         "eventoCriadoEm": "2026-10-30T03:05",
         "retornoSapEm": "2026-10-30T03:06",
         "motivo": "Aparelho não foi usado desde o retorno",
-        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho"
+        "acao": "Nenhuma: o retorno chega quando o usuário abrir o app nesse aparelho",
+        "aparelhoValido": "Não"
       }
     ]
   },

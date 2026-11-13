@@ -140,10 +140,14 @@ function veredito(relatorio, perguntas) {
 }
 
 function indicadores(porId) {
-  const { recebidas, entregues, esgotados, login, diagnosticoLogin } = destaquesDoDia(porId);
+  const { ordensPendentes, retornosPendentes, recebidas, entregues, esgotados, login, diagnosticoLogin } = destaquesDoDia(porId);
   return html`<div class="kpis">${[
-    indicador('Ordens recebidas', recebidas, { vazio: 'sem lista do despacho', faltam: naoEnviados(recebidas) }),
-    indicador('Retornos entregues', entregues, { vazio: 'sem lista do despacho', faltam: naoEnviados(entregues) }),
+    ordensPendentes
+      ? indicador('Ordens pendentes', ordensPendentes, {})
+      : indicador('Ordens recebidas', recebidas, { vazio: 'sem lista do despacho', faltam: naoEnviados(recebidas) }),
+    retornosPendentes
+      ? indicador('Retornos pendentes', retornosPendentes, {})
+      : indicador('Retornos entregues', entregues, { vazio: 'sem lista do despacho', faltam: naoEnviados(entregues) }),
     indicador('Apontamentos esgotados', esgotados, { vazio: 'sem dados' }),
     diagnosticoLogin
       ? html`<div class="kpi"><span>Login do app</span><b>${diagnosticoLogin.curto}</b>

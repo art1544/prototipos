@@ -56,6 +56,7 @@ export const COLUNAS = {
   eventos: {
     usuario: 'ID do usuário',
     aparelho: 'Aparelho',
+    aparelhoValido: 'Aparelho válido',
     evento: 'Evento',
     tipo: 'Tipo',
     descricaoTipo: 'Descrição do tipo',
@@ -74,7 +75,7 @@ export const COLUNAS = {
 const FILTROS = {
   usuarios: { situacao: 'Situação', valido: 'Usuário válido', motivoForaDaBase: 'Por que não é válido', usoApp: 'Uso do app' },
   ordens: { motivo: 'Motivo', usuarioValido: 'Usuário válido', usoApp: 'Uso do app', centro: 'Centro' },
-  eventos: { motivo: 'Motivo', statusSap: 'Status no SAP', tipo: 'Tipo' },
+  eventos: { motivo: 'Motivo', aparelhoValido: 'Aparelho válido', statusSap: 'Status no SAP', tipo: 'Tipo' },
 };
 
 /** Sub-abas das tabelas detalhadas. */
