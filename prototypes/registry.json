@@ -5,14 +5,28 @@
       "name": "Mobilidade",
       "client": "Ternium",
       "project": "App de manutenção em campo",
-      "description": "App de campo com login: execução das operações da ordem (iniciar, pausar com desvio, parar, pessoas, tempo, fotos e pontos de medida), conclusão de ordens em lote, solicitação de ordens, notas com fotos e eventos de sincronização com o SAP. Em português, inglês e espanhol.",
+      "description": "App de campo com login: execução das operações da ordem (iniciar, pausar com desvio, parar, pessoas, tempo, fotos e pontos de medida), conclusão de ordens em lote, solicitação de ordens, notas com fotos, eventos de sincronização com o SAP e reportar erro ao suporte (com prints, banco de dados e envio sem sinal). Em português, inglês e espanhol.",
       "platform": "mobile",
       "version": "4.0.0",
-      "updatedAt": "2026-10-26",
+      "updatedAt": "2026-11-16",
       "path": "prototypes/mobilidade/",
       "icon": "prototypes/mobilidade/assets/img/logo.png",
       "accent": "#f37021",
-      "tags": ["Ordens", "Operações", "Notas", "SAP", "i18n"]
+      "tags": ["Ordens", "Operações", "Notas", "SAP", "i18n", "Suporte"]
+    },
+    {
+      "id": "mobilidade-portal",
+      "name": "Mobilidade · Portal web",
+      "client": "Ternium",
+      "project": "Gestão e suporte do app Mobilidade",
+      "description": "Portal web do Mobilidade com login e perfis de acesso: início, alertas, ordens, notas, indicadores, envios ao SAP, saúde da aplicação (rotina diária, despacho, histórico e agendamento), erros reportados pelos técnicos, diagnóstico, atualização do app, usuários e acessos e histórico de ações. Em português, inglês e espanhol.",
+      "platform": "web",
+      "version": "1.0.0",
+      "updatedAt": "2026-11-16",
+      "path": "prototypes/mobilidade-portal/",
+      "icon": "prototypes/mobilidade-portal/assets/img/logo.png",
+      "accent": "#f26a1b",
+      "tags": ["Portal", "Ordens", "Saúde da aplicação", "Erros reportados", "Perfis"]
     },
     {
       "id": "tool-management",

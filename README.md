@@ -7,6 +7,7 @@ dados de exemplo independentes.
 | Protótipo                                              | Projeto                               | Plataforma |
 | ------------------------------------------------------ | ------------------------------------- | ---------- |
 | [Mobilidade](prototypes/mobilidade/README.md)          | Ternium · App de manutenção em campo  | Mobile     |
+| [Mobilidade · Portal web](prototypes/mobilidade-portal/README.md) | Ternium · Gestão e suporte do Mobilidade | Web |
 | [Tool Management](prototypes/tool-management/README.md) | Ternium · Gestão de ferramentas      | Web        |
 | [Monitor Mobilidade](prototypes/monitor-mobilidade/README.md) | Ternium · Saúde diária do Mobilidade | Web |
 | [ENCO · Portal Web](prototypes/enco-portal/README.md) | Ternium · Entregas e coletas | Web |
@@ -39,6 +40,7 @@ assets/                     estilos e scripts do catálogo
 prototypes/
   registry.json             lista de protótipos exibidos no catálogo
   mobilidade/               um protótipo = uma pasta autossuficiente
+  mobilidade-portal/
   tool-management/
   monitor-mobilidade/
   enco-portal/
