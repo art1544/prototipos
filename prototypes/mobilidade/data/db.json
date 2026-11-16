@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "schemaVersion": 2,
+    "schemaVersion": 3,
     "referenceDate": "2026-09-21",
     "notes": "Base de exemplo do protótipo Mobilidade. Na primeira carga, todas as datas são deslocadas para que referenceDate vire o dia atual; depois os dados ficam salvos no navegador (localStorage, chave mobilidade:db). Textos exibidos (prioridades, status, tipos de nota, notificações, eventos) são traduzidos pela interface a partir dos ids. A matrícula do usuário começa vazia: ela é pedida no primeiro acesso, logo depois do login."
   },
@@ -13,7 +13,8 @@
       "registration": "",
       "email": "sara.elkhal@ternium.com",
       "role": "tecnico_campo",
-      "deviceId": "7fq2mksd91plwaeuz3"
+      "deviceId": "7fq2mksd91plwaeuz3",
+      "device": { "brand": "Samsung", "model": "Galaxy XCover 6 Pro", "imei": "352099001761481" }
     }
   ],
 
@@ -282,5 +283,22 @@
     { "id": 3, "type": "aviso", "template": "manutencao_programada", "vars": {}, "createdAt": "2026-09-21T09:15:00", "read": false },
     { "id": 2, "type": "sucesso", "template": "tarefa_concluida", "vars": { "order": "OS-58122" }, "createdAt": "2026-09-20T17:45:00", "read": true },
     { "id": 1, "type": "info", "template": "lembrete", "vars": {}, "createdAt": "2026-09-20T08:00:00", "read": true }
+  ],
+
+  "reports": [
+    {
+      "id": 2, "protocol": "", "status": "falha", "createdAt": "2026-09-21T07:52:00",
+      "orders": [{ "code": "OS-58204", "operations": ["0020"], "manual": false, "inProgress": false }],
+      "error": "Nenhuma mensagem de erro foi capturada. Reporte aberto pelo botão na tela Ordens.",
+      "text": "A leitura do ponto de medida não salvou ao parar a operação.",
+      "prints": [{ "mock": { "title": "Ordens", "message": "Print da tela no momento do reporte.", "tone": "neutral" }, "label": "screen" }]
+    },
+    {
+      "id": 1, "protocol": "REP-2026-0041", "status": "enviado", "createdAt": "2026-09-16T14:10:00",
+      "orders": [],
+      "error": "Não foi possível atualizar os catálogos. Código CAT-500.",
+      "text": "Os catálogos não atualizaram depois da troca de matrícula.",
+      "prints": [{ "mock": { "title": "Início", "message": "Não foi possível atualizar os catálogos.", "tone": "error" }, "label": "error" }]
+    }
   ]
 }

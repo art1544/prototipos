@@ -15,7 +15,7 @@ export const APP = {
   version: '4.0.0',
   environment: 'PRD',
   releasedAt: '2026-09-15', // data fixa da versão (não é deslocada como os dados de exemplo)
-  changelog: ['about.changelog1', 'about.changelog2', 'about.changelog3', 'about.changelog4'],
+  changelog: ['about.changelog5', 'about.changelog1', 'about.changelog2', 'about.changelog3', 'about.changelog4'],
   hubUrl: '../../', // catálogo de protótipos (raiz do repositório)
   currentUserId: 1, // usuário "logado" (tabela users)
   toastMs: 2600,
@@ -32,7 +32,7 @@ export const SESSION = {
 export const API_CONFIG = {
   dbUrl: 'data/db.json',
   storageKey: 'mobilidade:db',
-  schemaVersion: 2,
+  schemaVersion: 3,
   requestTimeoutMs: 10000,
   // Parâmetros de URL para testar estados de carregamento e erro:
   //   ?latencia=0    → sem atraso simulado       ?latencia=2000 → 2 s por operação
@@ -64,6 +64,20 @@ export const NETWORK = {
   },
   forced: params.get('rede'),
   fallback: 'boa',
+};
+
+// Reportar erro: botão flutuante em todas as telas, envio ao suporte com relato, prints e banco.
+export const REPORT = {
+  maxPrints: 3,
+  textMax: 1000,
+  orderCodeMax: 20,
+  dbSizeMb: 18.4, // tamanho da cópia do banco enviada junto (simulado)
+  protocolPrefix: 'REP',
+  firstProtocol: 41, // numeração dos protocolos de exemplo (REP-AAAA-0041…)
+  fabExpandedMs: 4000, // botão expandido volta a ficar só com o ícone depois disso
+  fabErrorMs: 5000, // com erro capturado, fica expandido um pouco mais
+  sendSteps: ['report.stepCopy', 'report.stepZip', 'report.stepSend'],
+  stepMs: 550,
 };
 
 export const PHOTO = {

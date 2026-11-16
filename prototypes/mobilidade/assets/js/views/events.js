@@ -81,9 +81,14 @@ function eventCardHtml(ev) {
       <div class="event-card__bottom">
         <span class="event-card__time">${esc(formatDateTime(ev.createdAt, { seconds: true }))}</span>
         ${ev.status === 'ER' ? `
-        <button type="button" id="ev-retry-${ev.id}" class="retry-btn${retrying ? ' is-busy' : ''}" data-action="reprocessEvent" data-id="${ev.id}" aria-label="${esc(t('events.reprocessAria', { id: ev.id }))}"${retrying ? ' disabled aria-busy="true"' : ''}>
-          ${icon('sync')}<span>${esc(t('events.reprocess'))}</span>
-        </button>` : ''}
+        <span class="event-card__actions">
+          <button type="button" id="ev-report-${ev.id}" class="retry-btn retry-btn--outline" data-action="reportEvent" data-id="${ev.id}" aria-label="${esc(t('report.eventAria', { id: ev.id }))}">
+            ${icon('warning')}<span>${esc(t('report.eventButton'))}</span>
+          </button>
+          <button type="button" id="ev-retry-${ev.id}" class="retry-btn${retrying ? ' is-busy' : ''}" data-action="reprocessEvent" data-id="${ev.id}" aria-label="${esc(t('events.reprocessAria', { id: ev.id }))}"${retrying ? ' disabled aria-busy="true"' : ''}>
+            ${icon('sync')}<span>${esc(t('events.reprocess'))}</span>
+          </button>
+        </span>` : ''}
       </div>
     </div>
   </li>`;

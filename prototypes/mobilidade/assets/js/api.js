@@ -9,7 +9,7 @@
 
 import {
   APP, API_CONFIG, DEVIATION_REASONS, EMERGENCY_ORDER, EVENT_STATUS_GROUP, EXECUTION, FAILURE_PROBABILITIES, LIMITS,
-  MAINTENANCE_IMPACTS, PHOTO, PRIORITIES,
+  MAINTENANCE_IMPACTS, PHOTO, PRIORITIES, REPORT,
 } from './config.js';
 import { addDaysISO, addHoursISO, daysBetween, isValidISO, normalize, nowISO, randomBetween, sleep, todayISO } from './utils.js';
 
@@ -39,7 +39,7 @@ const notFound = (key) => new ApiError(key, { status: 404, code: 'NOT_FOUND' });
 
 const TABLES = [
   'users', 'inspectors', 'planningGroups', 'workCenters', 'plants', 'activityTypes', 'noteTypes', 'locations',
-  'orders', 'requests', 'events', 'notes', 'notifications',
+  'orders', 'requests', 'events', 'notes', 'notifications', 'reports',
 ];
 
 // Campos de data deslocados na primeira carga (ver _meta.referenceDate em db.json).
@@ -49,6 +49,7 @@ const DATE_FIELDS = {
   events: ['createdAt'],
   notes: ['startAt', 'endAt', 'createdAt'],
   notifications: ['createdAt'],
+  reports: ['createdAt'],
 };
 
 function assertShape(data) {
@@ -128,6 +129,14 @@ async function fetchJSON(url) {
   } catch {
     throw new ApiError('errors.invalidData', { code: 'INVALID_DATA' });
   }
+}
+
+// Conexão do aparelho. Sem sinal, o que depende do servidor (sincronizações, reprocessamento,
+// envio de reportes) falha com errors.offline; o que é gravado no aparelho continua funcionando.
+let online = true;
+
+function requireOnline() {
+  if (!online) throw new ApiError('errors.offline', { status: 0, code: 'OFFLINE' });
 }
 
 // Atraso e falhas simuladas (ver API_CONFIG) para exercitar os estados de carregamento e erro.
@@ -454,6 +463,26 @@ export function validateDeviation(input, { needsExtraOps = false } = {}) {
   return errors;
 }
 
+// Reporte de erro: o relato é obrigatório; ordens e prints são opcionais.
+export function validateReport(input) {
+  const errors = {};
+  const text = String(input.text || '').trim();
+  if (!text) errors.text = msg('report.textRequired');
+  else if (text.length > REPORT.textMax) errors.text = msg('validation.tooLong', { max: REPORT.textMax });
+  if ((input.prints || []).length > REPORT.maxPrints) errors.prints = msg('report.printLimit', { max: REPORT.maxPrints });
+  return errors;
+}
+
+function nextProtocol(reports) {
+  const year = todayISO().slice(0, 4);
+  const pattern = new RegExp(`^${REPORT.protocolPrefix}-\\d{4}-(\\d+)$`);
+  const max = reports.reduce((acc, r) => {
+    const match = pattern.exec(r.protocol || '');
+    return match ? Math.max(acc, Number(match[1])) : acc;
+  }, REPORT.firstProtocol);
+  return `${REPORT.protocolPrefix}-${year}-${String(max + 1).padStart(4, '0')}`;
+}
+
 function requireValid(errors) {
   if (hasErrors(errors)) throw validationError(errors);
 }
@@ -545,6 +574,7 @@ export const api = {
 
   // Sincronizações sem efeito nos dados do protótipo (catálogos, locais, matrículas, ordens, documentos).
   async sync() {
+    requireOnline();
     await simulateNetwork();
   },
 
@@ -599,6 +629,7 @@ export const api = {
 
   // POST /requests/sync — as pendentes passam a sincronizadas.
   async refreshRequests() {
+    requireOnline();
     await simulateNetwork();
     const pending = db.requests.filter((r) => r.status === 'pendente').length;
     if (!pending) return 0;
@@ -936,6 +967,7 @@ export const api = {
   // POST /events/sync — o que já estava no SAP volta processado (LE → PR) e o que estava no
   // aparelho sai para o SAP (PE/PER → LE).
   async syncEvents(group) {
+    requireOnline();
     await simulateNetwork();
     const count = db.events.filter((e) => inGroup(e, group) && ['PE', 'PER', 'LE'].includes(e.status)).length;
     if (!count) return 0;
@@ -951,6 +983,7 @@ export const api = {
 
   // POST /events/reprocess — eventos com erro voltam para a fila do aparelho (ER → PER).
   async reprocessEvents(group) {
+    requireOnline();
     await simulateNetwork();
     const count = db.events.filter((e) => inGroup(e, group) && e.status === 'ER').length;
     if (!count) return 0;
@@ -960,10 +993,83 @@ export const api = {
 
   // POST /events/:id/reprocess
   async reprocessEvent(id) {
+    requireOnline();
     await simulateNetwork();
     const event = byId(db.events, id);
     if (!event) throw notFound('validation.eventNotFound');
     if (event.status !== 'ER') return;
     commit((draft) => { byId(draft.events, id).status = 'PER'; });
+  },
+
+  /* reportes de erro (suporte) */
+
+  setOnline(value) {
+    online = !!value;
+  },
+
+  // POST /support/reports — com conexão envia e recebe protocolo; sem conexão fica no aparelho
+  // ("aguardando") e sai sozinho quando a conexão voltar. Falha do servidor: "falha", com reenvio.
+  async createReport(input) {
+    requireValid(validateReport(input));
+    let status = 'aguardando';
+    if (online) {
+      try {
+        await simulateNetwork();
+        status = 'enviado';
+      } catch (err) {
+        if (!(err instanceof ApiError)) throw err;
+        status = 'falha';
+      }
+    }
+    return commit((draft) => {
+      const report = {
+        id: nextId(draft.reports),
+        protocol: status === 'enviado' ? nextProtocol(draft.reports) : '',
+        status,
+        createdAt: nowISO(),
+        orders: (input.orders || []).map((o) => ({ code: o.code, operations: (o.operations || []).slice().sort(), manual: !!o.manual, inProgress: !!o.inProgress })),
+        error: trimmed(input.error),
+        text: trimmed(input.text),
+        prints: (input.prints || []).map((p) => ({ ...p })),
+      };
+      draft.reports.unshift(report);
+      return report;
+    });
+  },
+
+  // POST /support/reports/:id/resend
+  async resendReport(id) {
+    const report = byId(db.reports, id);
+    if (!report) throw notFound('report.notFound');
+    if (report.status === 'enviado') return clone(report);
+    if (!online) {
+      return commit((draft) => {
+        const target = byId(draft.reports, id);
+        target.status = 'aguardando';
+        return target;
+      });
+    }
+    await simulateNetwork();
+    return commit((draft) => {
+      const target = byId(draft.reports, id);
+      target.status = 'enviado';
+      target.protocol = target.protocol || nextProtocol(draft.reports);
+      return target;
+    });
+  },
+
+  // A conexão voltou: envia os reportes guardados no aparelho. Devolve os que foram enviados.
+  flushReports() {
+    if (!online || !db.reports.some((r) => r.status === 'aguardando')) return [];
+    return commit((draft) => {
+      const sent = [];
+      draft.reports.slice().reverse().forEach((r) => {
+        if (r.status !== 'aguardando') return;
+        r.status = 'enviado';
+        r.protocol = r.protocol || nextProtocol(draft.reports);
+        sent.push(r);
+      });
+      return sent;
+    });
   },
 };

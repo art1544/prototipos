@@ -29,8 +29,12 @@ import { ORDER_DETAIL_TABS, orderDetailView, ordersView } from './views/orders.j
 import { peopleView } from './views/people.js';
 import { eventsGroupView, eventsView } from './views/events.js';
 import { firstAccessView, registrationView } from './views/registration.js';
+import { myReportsView, reportDetailView, reportFabHtml, reportView } from './views/reports.js';
+import { REPORT_ACTIONS, REPORT_SUBMITS, attachReportPrint, onNetworkChange, reportForm } from './reports.js';
+import { fabOpenedSince, setFabOpen } from './capture.js';
 
-Object.assign(ACTIONS, EXECUTION_ACTIONS);
+Object.assign(ACTIONS, EXECUTION_ACTIONS, REPORT_ACTIONS);
+Object.assign(SUBMITS, REPORT_SUBMITS);
 CHANGES.pointScale = onPointScale;
 
 /* ---------- rotas ---------- */
@@ -41,6 +45,9 @@ const ROUTES = [
   { name: 'firstAccess', path: 'primeiro-acesso' },
   { name: 'home', path: '' },
   { name: 'profile', path: 'perfil' },
+  { name: 'myReports', path: 'perfil/reportes' },
+  { name: 'reportDetail', path: 'perfil/reportes/:id' },
+  { name: 'report', path: 'reportar' },
   { name: 'notifications', path: 'notificacoes' },
   { name: 'orders', path: 'ordens' },
   { name: 'orderDetail', path: 'ordens/:code' },
@@ -94,6 +101,13 @@ const VIEWS = {
   },
   home: { render: homeView, bar: 'nav' },
   profile: { render: profileView, bar: 'nav', nav: 'profile', title: () => currentUserName() },
+  myReports: { render: myReportsView, bar: 'nav', nav: 'profile', title: () => t('report.myTitle') },
+  reportDetail: { render: reportDetailView, bar: 'nav', nav: 'profile', title: () => t('report.detailTitle') },
+  // Reportar erro: o formulário nasce da tela de onde o botão foi tocado (erro capturado, print, ordem).
+  report: {
+    render: reportView, bar: 'actions', fab: false, title: () => t('report.title'),
+    onEnter: () => (state.forms.report ? null : { 'forms.report': reportForm() }),
+  },
   notifications: { render: notificationsView, bar: 'nav', title: () => t('notifications.title') },
   orders: {
     render: ordersView, title: () => t('orders.title'),
@@ -251,11 +265,15 @@ function render() {
   const def = currentDef();
   const { html, bar } = mainHtml(def);
   const bare = def && def.shell === 'bare';
+  // Botão "Reportar erro": em todas as telas do app logado, menos no próprio reporte.
+  const fab = !!def && !bare && def.fab !== false && !isLockedShell();
   patch(appEl, `
     ${bare ? '' : topbarHtml({ locked: isLockedShell() })}
     <main id="main" class="app-main">${html}</main>
+    ${fab ? reportFabHtml() : ''}
     ${bar === 'nav' ? bottomNavHtml((def && def.nav) || 'home') : ''}`);
   document.body.dataset.bar = bar;
+  document.body.dataset.fab = fab ? 'on' : 'off';
   document.body.dataset.shell = bare ? 'bare' : 'app';
   updateTitle(def);
   restoreFocus(saved);
@@ -306,6 +324,7 @@ function onRoute(next, { type, previous, scrollY }) {
     return;
   }
   applyPatch(def.onEnter ? def.onEnter(next, previous) : null);
+  if (state.report.fabOpen) setFabOpen(false);
   closeDialog();
   closeTip();
   render();
@@ -406,6 +425,12 @@ appEl.addEventListener('compositionend', (e) => {
 
 appEl.addEventListener('change', (e) => {
   const el = e.target;
+  if (el.id === 'rp-print-input') {
+    const file = el.files && el.files[0];
+    el.value = '';
+    run(attachReportPrint, file);
+    return;
+  }
   if (el.id === 'nn-photo-input') {
     const file = el.files && el.files[0];
     el.value = ''; // permite escolher a mesma foto de novo
@@ -461,6 +486,11 @@ window.addEventListener('pointerup', () => {
   car.scrollTo({ left: Math.round(car.scrollLeft / car.clientWidth) * car.clientWidth, behavior: 'smooth' });
 });
 
+// Botão "Reportar erro" expandido: tocar em qualquer outro lugar volta a mostrar só o ícone.
+document.addEventListener('click', (e) => {
+  if (state.report.fabOpen && fabOpenedSince() < e.timeStamp && !e.target.closest('.report-fab')) setFabOpen(false);
+});
+
 // Rede de segurança para erros não tratados (ignora erros de extensões do navegador).
 window.addEventListener('error', (e) => {
   if (e.filename && !e.filename.startsWith(window.location.origin)) return;
@@ -471,7 +501,11 @@ window.addEventListener('unhandledrejection', (e) => reportUnexpected(e.reason))
 
 /* ---------- qualidade da rede ---------- */
 
+// Simulação de "sem sinal" pelo topo (dica do indicador de rede): testa o envio de reportes offline.
+let simulatedOffline = false;
+
 function detectNetwork() {
+  if (simulatedOffline) return 'sem_sinal';
   if (NETWORK.forced && NETWORK.levels[NETWORK.forced]) return NETWORK.forced;
   if (navigator.onLine === false) return 'sem_sinal';
   const connection = navigator.connection;
@@ -481,15 +515,26 @@ function detectNetwork() {
   return 'ruim';
 }
 
+function updateNetwork() {
+  const previous = state.network;
+  const level = detectNetwork();
+  if (level === previous) return;
+  setState({ network: level });
+  onNetworkChange(previous, level);
+}
+
+TIP_ACTIONS.toggleSignal = () => {
+  simulatedOffline = !simulatedOffline;
+  updateNetwork();
+};
+
 function watchNetwork() {
-  const update = () => {
-    const level = detectNetwork();
-    if (level !== state.network) setState({ network: level });
-  };
+  const update = updateNetwork;
   window.addEventListener('online', update);
   window.addEventListener('offline', update);
   if (navigator.connection && navigator.connection.addEventListener) navigator.connection.addEventListener('change', update);
   assignState({ network: detectNetwork() });
+  onNetworkChange(undefined, state.network);
 }
 
 /* ---------- pausa automática e tempo das confirmações ---------- */

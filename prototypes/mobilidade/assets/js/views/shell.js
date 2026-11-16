@@ -26,7 +26,7 @@ export function topbarHtml({ locked = false } = {}) {
       ? `<span class="topbar__brand">${brand}</span>`
       : `<a class="topbar__brand" href="${hrefFor('')}" aria-label="${esc(APP.name)} – ${esc(t('shell.navHome'))}">${brand}</a>`}
     <div class="topbar__actions">
-      <span class="signal signal--${esc(level)}" aria-label="${esc(t('shell.network', { level: levelLabel }))}"${tipAttrs(t(`networkTips.${level}`), { focusable: true })}>
+      <span class="signal signal--${esc(level)}" aria-label="${esc(t('shell.network', { level: levelLabel }))}"${tipAttrs(t(`networkTips.${level}`), { focusable: true, action: ready ? 'toggleSignal' : '', actionLabel: t(level === 'sem_sinal' ? 'report.signalRestore' : 'report.signalSimulate') })}>
         ${signalIcon(NETWORK.levels[level].bars)}
         <span class="signal__label" aria-hidden="true">${esc(levelLabel)}</span>
       </span>

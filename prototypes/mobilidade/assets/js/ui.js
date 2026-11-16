@@ -48,6 +48,7 @@ function cleanup() {
 // quando a aba está em segundo plano).
 export function closeDialog(value = 'cancel') {
   if (!dialogEl || !dialogEl.open) return;
+  locked = false;
   settle(value);
   dialogEl.close(value);
   cleanup();
@@ -58,10 +59,16 @@ if (dialogEl) {
   dialogEl.addEventListener('click', (e) => {
     const closer = e.target.closest('[data-dialog-close]');
     if (closer) closeDialog(closer.dataset.dialogClose || 'cancel');
-    else if (e.target === dialogEl) closeDialog('cancel');
+    else if (e.target === dialogEl && !locked) closeDialog('cancel');
   });
   // Esc ou "voltar" do Android: o navegador fecha sozinho.
-  dialogEl.addEventListener('cancel', () => settle('cancel'));
+  dialogEl.addEventListener('cancel', (e) => {
+    if (locked) {
+      e.preventDefault();
+      return;
+    }
+    settle('cancel');
+  });
   dialogEl.addEventListener('close', () => {
     if (dialogEl.open) return; // evento atrasado de um diálogo anterior
     settle(dialogEl.returnValue || 'cancel');
@@ -70,9 +77,17 @@ if (dialogEl) {
 }
 
 // Abre o diálogo com o HTML informado. Resolve com o valor de fechamento.
-export function openDialog(html, { labelledBy = 'dialog-title', variant = '' } = {}) {
+// `locked`: não fecha com Esc, "voltar" ou clique no fundo (ex.: envio em andamento).
+let locked = false;
+
+export function setDialogLocked(value) {
+  locked = !!value;
+}
+
+export function openDialog(html, { labelledBy = 'dialog-title', variant = '', lock = false } = {}) {
   if (!dialogEl) return Promise.resolve('cancel');
   closeDialog('cancel');
+  locked = lock;
   returnFocusId = document.activeElement && document.activeElement.id ? document.activeElement.id : null;
   dialogEl.className = `dialog${variant ? ` dialog--${variant}` : ''}`;
   dialogEl.setAttribute('aria-labelledby', labelledBy);

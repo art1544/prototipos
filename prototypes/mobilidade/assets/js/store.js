@@ -11,6 +11,9 @@ export let state = {
   ui: {},
   forms: {},
   picker: null,
+  // Reportar erro: último erro capturado pelo app (deixa o botão flutuante vermelho) e se o
+  // botão está expandido (com texto) ou só com o ícone.
+  report: { captured: null, fabOpen: false },
 };
 
 const listeners = new Set();

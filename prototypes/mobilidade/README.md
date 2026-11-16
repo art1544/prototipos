@@ -7,7 +7,8 @@ ordem em andamento, ordens (lista com abas, detalhe e "Concluir todas ordens"), 
 operações** (iniciar, pausar com registro de desvio, parar, pessoas, confirmações de tempo, anexos,
 fotos, notas e estorno), pontos de medida com histórico, solicitação de ordem comum e de emergência
 (PM10), notas com fotos e edição, eventos de sincronização com o SAP, notificações, modificação de
-matrícula e perfil com troca de idioma (português, inglês e espanhol).
+matrícula, **reportar erro** (botão em todas as telas, envio ao suporte e "Meus reportes") e perfil
+com troca de idioma (português, inglês e espanhol).
 
 Site estático, sem build: HTML, CSS e JavaScript (módulos ES). Os dados de exemplo ficam em
 `data/db.json`; o que for feito na interface fica salvo no navegador (`localStorage`, chave
@@ -60,6 +61,8 @@ assets/js/
   model.js                 leitura e derivação de dados para as telas
   forms.js                 estados iniciais de formulários e filtros
   actions.js               cliques, envios de formulário e tratamento de erros
+  capture.js               captura do último erro mostrado (deixa o "Reportar erro" vermelho)
+  reports.js               reportar erro: formulário, seleção de ordens, prints, envio e reenvio
   execution.js             execução das operações, pontos de medida, pessoas e encerramento em lote
   ui.js                    toast e diálogos (<dialog> nativo, inclusive com formulário)
   tooltip.js               dica ao tocar num status ("o que significa?")
@@ -75,7 +78,9 @@ assets/js/
 | `#/login`                                   | Login (sem barra superior)                |
 | `#/primeiro-acesso`                         | Informe sua matrícula (logo após o 1º login) |
 | `#/`                                        | Início                                    |
-| `#/perfil`                                  | Perfil (idioma, sobre o app, protótipo)   |
+| `#/perfil`                                  | Perfil (idioma, meus reportes, sobre o app, protótipo) |
+| `#/perfil/reportes` · `#/perfil/reportes/:id` | Meus reportes e detalhe do reporte (somente leitura) |
+| `#/reportar`                                | Reportar erro (aberto pelo botão flutuante ou pelo "Reportar" de um evento) |
 | `#/notificacoes`                            | Notificações                              |
 | `#/ordens` · `#/ordens?aba=andamento`       | Ordens (Todas / Não iniciadas / Em andamento / Concluídas) e "Concluir todas ordens" |
 | `#/ordens/:codigo`                          | Detalhe da ordem (Operações / Dados Básicos / Documentos) |
@@ -102,7 +107,7 @@ rascunho, o painel aberto e o slide do carrossel.
 
 | Entidade          | Campos principais                                                                 |
 | ----------------- | --------------------------------------------------------------------------------- |
-| `users`           | `id`, `name`, `username`, `registration` (matrícula; vazia até o primeiro acesso), `email`, `role`, `deviceId` |
+| `users`           | `id`, `name`, `username`, `registration` (matrícula; vazia até o primeiro acesso), `email`, `role`, `deviceId`, `device` (`brand`, `model`, `imei`) |
 | `inspectors`      | inspetores que podem ser incluídos nas operações: `registration`, `name`          |
 | `planningGroups`, `workCenters`, `plants`, `activityTypes` | catálogos SAP: `id`, `name`              |
 | `noteTypes`       | `id` (`M0` \| `M8` \| `M3`), `requiresOrder`                                        |
@@ -113,6 +118,7 @@ rascunho, o painel aberto e o slide do carrossel.
 | `events`          | fila de sincronização: `orderCode` + `operation` ou `noteCode`, `kind`, `category`, `status` (`PE` \| `PER` \| `LE` \| `PR` \| `PRE` \| `ER`) |
 | `notes`           | `code`, `type`, `orderNumber`, `locationCode`, textos, período, classificação, `photos[]` |
 | `notifications`   | `type`, `template`, `vars`, `createdAt`, `read`                                   |
+| `reports`         | reportes de erro: `protocol` (`REP-AAAA-NNNN`, vazio até enviar), `status` (`enviado` \| `aguardando` \| `falha`), `createdAt`, `orders[]` (`code`, `operations[]`, `manual`, `inProgress`), `error`, `text`, `prints[]` (`src` ou `mock` + `label`) |
 
 Prioridades, probabilidade de falha, impacto e motivos de desvio ficam como ids (`emergencia`,
 `media`, `parada_linha`, `falta_material`…) e são traduzidos na exibição. Datas em ISO local; na
@@ -123,6 +129,28 @@ Ao mudar a estrutura do `db.json`, incremente `_meta.schemaVersion` e `API_CONFI
 (`assets/js/config.js`): os dados antigos salvos no navegador são descartados.
 
 ## Regras de negócio simuladas
+
+**Reportar erro**
+
+- Botão flutuante em todas as telas do app logado (menos no próprio reporte e no primeiro acesso).
+  Começa só com o ícone: o 1º toque expande, o 2º abre o reporte; recolhe sozinho após alguns segundos.
+- Quando o app mostra um erro (falha de sincronização, serviço indisponível, sem conexão, erro
+  inesperado), o erro é **capturado**: o botão fica vermelho, expande como "Reportar este erro" e
+  ganha um "x" para dispensar. O reporte já vem com a mensagem, o código, a ordem/operação da tela e o
+  print do momento do erro. Sem erro capturado, o reporte vem com o print da tela atual e a ordem em
+  andamento (sem operação marcada).
+- Eventos com erro no SAP têm **Reportar** ao lado de Reprocessar (mensagem e ordem/operação do evento).
+- Formulário: dados do usuário e do aparelho (fixos), ordens e operações (seleção das ordens do
+  aparelho ou número digitado de uma ordem que não está nele), erro apresentado, relato
+  **obrigatório** (até 1000 caracteres), até 3 prints (o automático + galeria) e a cópia do banco
+  (18,4 MB, incluída sempre). Voltar com relato ou print da galeria pede confirmação para descartar.
+- Enviar mostra um resumo; com sinal, o envio mostra o progresso e devolve o protocolo
+  (`REP-AAAA-NNNN`). **Sem sinal**, o reporte fica salvo no aparelho (*Aguardando conexão*) e sai
+  sozinho quando a conexão volta. Falha do servidor (`?erros=1`) deixa *Falha no envio*, com
+  **Reenviar** na lista e no detalhe.
+- Para testar sem sinal: toque no indicador de rede do topo → **Simular sem sinal** (e depois
+  **Restaurar conexão**). Sem sinal, sincronizações e reprocessamento falham com "sem conexão" — um
+  jeito rápido de capturar um erro.
 
 **Sessão**
 

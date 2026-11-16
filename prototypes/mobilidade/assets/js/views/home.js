@@ -84,11 +84,12 @@ export function homeView() {
     </section>`, { cls: 'view--home' });
 }
 
-function menuRowHtml({ action = '', href = '', iconName, label, busy = false, busyLabel = '' }) {
+function menuRowHtml({ action = '', href = '', link = '', iconName, label, busy = false, busyLabel = '' }) {
   const content = `
     <span class="menu-row__icon">${icon(iconName)}</span>
     <span class="menu-row__label">${esc(busy ? busyLabel : label)}</span>
     <span class="menu-row__chevron">${icon('chevronRight')}</span>`;
+  if (link) return `<a class="menu-row" href="${hrefFor(link)}">${content}</a>`;
   if (href) return `<a class="menu-row" href="${esc(href)}" target="_top">${content}</a>`;
   return `<button type="button" id="menu-${esc(action)}" class="menu-row" data-action="${esc(action)}"${busy ? ' disabled aria-busy="true"' : ''}>${content}</button>`;
 }
@@ -121,6 +122,7 @@ export function profileView() {
       </div>
 
       <div class="menu-card">
+        ${menuRowHtml({ link: 'perfil/reportes', iconName: 'warning', label: t('report.myTitle') })}
         ${menuRowHtml({ action: 'openAbout', iconName: 'info', label: t('profile.about') })}
       </div>
 

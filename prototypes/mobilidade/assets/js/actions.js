@@ -14,6 +14,7 @@ import { countEvents, currentUser, noteByCode, orderByCode } from './model.js';
 import { defaultUi, loginForm } from './forms.js';
 import { setSession } from './session.js';
 import { confirmDialog, dialogHeaderHtml, openDialog, showToast } from './ui.js';
+import { captureError } from './capture.js';
 
 const hasErrors = (errors) => Object.keys(errors).length > 0;
 const stillOn = (routeName) => currentRoute() && currentRoute().name === routeName;
@@ -24,7 +25,9 @@ export const refreshDb = () => assignState({ db: api.snapshot() });
 // Erro inesperado (bug): registra no console e avisa sem derrubar a tela.
 export function reportUnexpected(err) {
   console.error('[app]', err);
-  if (state.status === 'ready') showToast(t('errors.unexpected'), 'error');
+  if (state.status !== 'ready') return;
+  showToast(t('errors.unexpected'), 'error');
+  captureError({ message: t('errors.unexpected'), code: 'APP' });
 }
 
 function focusField(id) {
@@ -55,6 +58,7 @@ export function handleError(err, { form, prefix } = {}) {
   else {
     setState({});
     showToast(t(err.key, err.vars), 'error');
+    captureError({ message: t(err.key, err.vars), code: err.code, status: err.status });
   }
 }
 

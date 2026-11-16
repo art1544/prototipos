@@ -11,10 +11,11 @@ export const errorText = (error) => (error ? t(error.key, error.vars) : '');
 
 // Barra laranja com "voltar" e o título (h1 recebe o foco ao trocar de tela).
 // `end`: botão opcional à direita (ex.: editar). `noBack`: sem voltar (primeiro acesso).
-export function subheaderHtml(title, { fallback = '', end = '', noBack = false } = {}) {
+// `backAction`: ação própria do voltar (ex.: perguntar antes de descartar um rascunho).
+export function subheaderHtml(title, { fallback = '', end = '', noBack = false, backAction = 'back' } = {}) {
   return `
   <header class="subheader">
-    ${noBack ? '' : `<button type="button" class="subheader__back" data-action="back" data-fallback="${esc(fallback)}" aria-label="${esc(t('common.back'))}">${icon('back')}</button>`}
+    ${noBack ? '' : `<button type="button" class="subheader__back" data-action="${esc(backAction)}" data-fallback="${esc(fallback)}" aria-label="${esc(t('common.back'))}">${icon('back')}</button>`}
     <h1 id="page-title" class="subheader__title" tabindex="-1">${esc(title)}</h1>
     ${end}
   </header>`;
@@ -41,10 +42,10 @@ export function legendHtml() {
 }
 
 // Barra fixa no rodapé com Voltar + ação principal (sempre alcançável em formulários longos).
-export function actionBarHtml({ submitLabel, busyLabel, busy = false, disabled = false, form = '', fallback = '', noBack = false }) {
+export function actionBarHtml({ submitLabel, busyLabel, busy = false, disabled = false, form = '', fallback = '', noBack = false, backAction = 'back' }) {
   return `
   <div class="action-bar">
-    ${noBack ? '' : `<button type="button" class="btn btn--secondary" data-action="back" data-fallback="${esc(fallback)}">${esc(t('common.back'))}</button>`}
+    ${noBack ? '' : `<button type="button" class="btn btn--secondary" data-action="${esc(backAction)}" data-fallback="${esc(fallback)}">${esc(t('common.back'))}</button>`}
     <button type="submit"${form ? ` form="${esc(form)}"` : ''} class="btn btn--primary${busy ? ' is-busy' : ''}"${busy || disabled ? ' disabled' : ''}${busy ? ' aria-busy="true"' : ''}>${esc(busy ? busyLabel : submitLabel)}</button>
   </div>`;
 }
