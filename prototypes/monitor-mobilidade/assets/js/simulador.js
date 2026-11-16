@@ -8,6 +8,7 @@
  *   GET  hoje                relatório do dia, chave "ativo" e execuções
  *   GET  historico?dias=30   série dos últimos dias
  *   GET  relatorio/aaaa-mm-dd?formato=md   relatório completo em Markdown
+ *   GET  relatorio/aaaa-mm-dd?formato=json relatório de um dia (consulta de dias anteriores no Histórico)
  *   GET  despacho/atual      resultado do despacho para a área de negócio
  *   POST despacho            nova lista: depois de API_CONFIG.calculoMs o despacho e o relatório do dia são "refeitos"
  *   POST executar            "Rodar agora": refaz a análise depois de API_CONFIG.calculoMs (1 a cada 10 min)
@@ -195,10 +196,33 @@ function hoje() {
   });
 }
 
-function relatorioMarkdown(rota) {
+/**
+ * Relatório de um dia guardado: o do dia de hoje, ou um dia do histórico. O protótipo só tem um relatório completo de
+ * exemplo; para um dia anterior ele vai com a data, o veredito e o status das perguntas daquele dia (os números são os
+ * mesmos do exemplo).
+ */
+function relatorioDoDia(dia) {
+  if (dia === db.relatorio.dataRef) return db.relatorio;
+  const doHistorico = db.historico.find((h) => String(h.data).slice(0, 10) === dia);
+  if (!doHistorico) return null;
+  const copia = structuredClone(db.relatorio);
+  copia.dataRef = dia;
+  copia.geradoEm = `${dia}T07:02:00`;
+  copia.tipo = 'AGENDADO';
+  copia.veredito = doHistorico.veredito;
+  for (const pergunta of copia.perguntas || []) {
+    pergunta.status = doHistorico.perguntas?.[String(pergunta.numero)] ?? pergunta.status;
+  }
+  return copia;
+}
+
+function relatorio(caminho) {
+  const [rota, consulta = ''] = String(caminho).split('?');
   const dia = rota.slice('relatorio/'.length);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dia)) return erro(400, MESSAGES.invalidDate);
-  if (dia !== db.relatorio.dataRef) return erro(404, MESSAGES.noReport);
+  const doDia = relatorioDoDia(dia);
+  if (!doDia) return erro(404, MESSAGES.noReport);
+  if (new URLSearchParams(consulta).get('formato') === 'json') return responder(200, doDia);
   return responder(200, db.relatorioMarkdown, 'text/markdown; charset=utf-8');
 }
 
@@ -304,7 +328,7 @@ export async function servidor(caminho, init = {}) {
 
   if (pedido === 'GET hoje') return hoje();
   if (pedido === 'GET historico') return responder(200, db.historico);
-  if (metodo === 'GET' && rota.startsWith('relatorio/')) return relatorioMarkdown(rota);
+  if (metodo === 'GET' && rota.startsWith('relatorio/')) return relatorio(caminho);
   if (pedido === 'GET despacho/atual') {
     return db.despachoAtual ? responder(200, db.despachoAtual) : erro(404, MESSAGES.noDispatch);
   }

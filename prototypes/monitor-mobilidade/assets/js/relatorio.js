@@ -43,6 +43,7 @@ export const statusDe = (porId, id) => porId[id]?.status ?? null;
 /**
  * Números exibidos no canto do cartão, ao lado do destaque. Cada item usa a primeira opção [rótulo, texto] que o relatório
  * tiver (as seguintes são de relatórios antigos):
+ * - C05: ordens da lista que chegaram ao Mobilidade (o destaque são as que faltam);
  * - C06/C07: pendentes de todos os usuários; antes de 13/11/2026 (tarde), o total enviado no despacho;
  * - C01: mensagens na fila de mortas, só quando há alguma, com a cor do status;
  * - C03: os esgotados separados em XML vazio e XML preenchido.
@@ -60,20 +61,31 @@ const CANTO = {
   C07: [
     {
       opcoes: [
+        ['Retornos pendentes no total (todos os aparelhos)', 'pendentes no total'],
         ['Retornos pendentes no total (todos os usuários)', 'pendentes no total'],
         ['Retornos do SAP no despacho', 'retornos no total'],
       ],
     },
   ],
+  C05: [{ opcoes: [['No Mobilidade', 'no Mobilidade']] }],
   C01: [{ opcoes: [['Na fila de mortas', 'na fila de mortas']], soAcimaDeZero: true, alerta: true }],
   C03: [{ opcoes: [['Com XML vazio', 'com XML vazio']] }, { opcoes: [['Com XML preenchido', 'com XML preenchido']] }],
 };
 
-/** Número em destaque das perguntas do despacho: o que ainda falta chegar a quem pode receber (relatórios a partir de 13/11/2026). */
+/**
+ * Número em destaque das perguntas do despacho: o que ainda falta chegar a quem pode receber (relatórios a partir de 13/11/2026).
+ * Vale o primeiro rótulo que o relatório tiver; o C07 diz "aparelhos válidos" desde 16/11/2026. No C05, as ordens da lista
+ * que não chegaram ao Mobilidade (as que chegaram ficam no canto).
+ */
 const PRINCIPAL = {
-  C06: 'Ordens pendentes a usuários válidos',
-  C07: 'Retornos pendentes a usuários válidos',
+  C05: ['Faltando'],
+  C06: ['Ordens pendentes a usuários válidos'],
+  C07: ['Retornos pendentes a aparelhos válidos', 'Retornos pendentes a usuários válidos'],
 };
+
+/** Número em destaque de um check do despacho, ou null. */
+const pendentesDe = (porId, id) =>
+  (PRINCIPAL[id] ?? []).map((rotulo) => numeroDe(porId, id, rotulo)).find(Boolean) ?? null;
 
 /**
  * Números do canto do cartão de uma pergunta (pode ser vazio).
@@ -114,7 +126,7 @@ export const diagnosticoDe = (pergunta, porId) => (pergunta.checks.includes('C09
 export function principal(pergunta, porId) {
   if (diagnosticoDe(pergunta, porId)) return null;
   for (const id of pergunta.checks) {
-    const pendentes = PRINCIPAL[id] ? numeroDe(porId, id, PRINCIPAL[id]) : null;
+    const pendentes = pendentesDe(porId, id);
     if (pendentes) return pendentes;
   }
   const numeros = numerosDa(pergunta, porId);
@@ -161,8 +173,8 @@ export function destaquesDoDia(porId) {
   const recebidas = numeroDe(porId, 'C06', 'Recebidos');
   const entregues = numeroDe(porId, 'C07', 'Entregues aos aparelhos');
   return {
-    ordensPendentes: numeroDe(porId, 'C06', PRINCIPAL.C06),
-    retornosPendentes: numeroDe(porId, 'C07', PRINCIPAL.C07),
+    ordensPendentes: pendentesDe(porId, 'C06'),
+    retornosPendentes: pendentesDe(porId, 'C07'),
     recebidas: recebidas?.base ? recebidas : null,
     entregues: entregues?.base ? entregues : null,
     esgotados: numeroDe(porId, 'C03', 'Apontamentos esgotados'),

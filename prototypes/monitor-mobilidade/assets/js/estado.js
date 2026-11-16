@@ -1,5 +1,5 @@
 /**
- * Estado compartilhado da tela. Nada aqui é persistido: ao recarregar a página o usuário entra de novo.
+ * Estado compartilhado da tela. Só o token sobrevive ao F5 (sessionStorage da aba, ver sessao.js); o resto é recarregado.
  */
 import { AMBIENTE_PRODUCAO } from './config.js';
 

@@ -1,6 +1,7 @@
 /**
  * Login, saída e ambiente. O login é o mesmo do app Mobilidade (/login devolve um JWT); só entram as chaves liberadas
- * no backend (monitor-usuarios-permitidos). O token fica só na memória da página.
+ * no backend (monitor-usuarios-permitidos). O token fica na memória da página e no sessionStorage da aba, para o F5 não
+ * deslogar: some ao fechar a aba, ao sair, ao vencer (claim exp) ou quando o backend responde 401.
  */
 import { APP } from './config.js';
 import { $ } from './util/formato.js';
@@ -8,20 +9,66 @@ import { estado } from './estado.js';
 import { login, buscarAmbiente } from './api.js';
 import { ocupar } from './ui/ocupado.js';
 
-/**
- * 8ID de quem entrou: claim nameid do token (DOMINIO\8ID) ou, sem ele, o usuário digitado.
- * O token não é validado aqui (isso é papel do backend); só é lido para exibir o nome.
- */
-function idDoUsuario(token, digitado) {
-  let id = '';
+const CHAVE_SESSAO = 'monitor-mobilidade.sessao';
+
+/** Claims do JWT (só leitura, sem validar: isso é papel do backend), ou {} se o payload não for legível. */
+function claimsDo(token) {
   try {
     const base64 = String(token).split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    const claims = JSON.parse(atob(base64 + '==='.slice((base64.length + 3) % 4)));
-    id = String(claims.nameid || claims.unique_name || claims.sub || '');
+    return JSON.parse(atob(base64 + '==='.slice((base64.length + 3) % 4))) || {};
   } catch {
-    // token sem payload legível
+    return {};
   }
+}
+
+/** 8ID de quem entrou: claim nameid do token (DOMINIO\8ID) ou, sem ele, o usuário digitado. */
+function idDoUsuario(token, digitado) {
+  const claims = claimsDo(token);
+  const id = String(claims.nameid || claims.unique_name || claims.sub || '');
   return (id || String(digitado || '')).split('\\').pop().split('@')[0].trim().toUpperCase();
+}
+
+/** Token ainda dentro da validade (claim exp, com 1 min de folga); sem exp, vale até o backend recusar. */
+const tokenVigente = (token) => {
+  const exp = Number(claimsDo(token).exp);
+  return !exp || exp * 1000 > Date.now() + 60_000;
+};
+
+function guardarSessao(token, id) {
+  try {
+    sessionStorage.setItem(CHAVE_SESSAO, JSON.stringify({ token, id }));
+  } catch {
+    // sessionStorage indisponível (ex.: bloqueado): o F5 pede login de novo
+  }
+}
+
+function esquecerSessao() {
+  try {
+    sessionStorage.removeItem(CHAVE_SESSAO);
+  } catch {
+    // nada guardado
+  }
+}
+
+/** Sessão guardada na aba e ainda vigente, ou null. */
+function sessaoGuardada() {
+  try {
+    const sessao = JSON.parse(sessionStorage.getItem(CHAVE_SESSAO) || 'null');
+    if (sessao?.token && tokenVigente(sessao.token)) return sessao;
+  } catch {
+    // conteúdo ilegível
+  }
+  esquecerSessao();
+  return null;
+}
+
+/** Mostra a tela principal com o token aceito. */
+function abrirApp(token, id, aoEntrar) {
+  estado.token = token;
+  mostrarUsuario(id);
+  $('login').hidden = true;
+  $('app').hidden = false;
+  aoEntrar();
 }
 
 function mostrarUsuario(id) {
@@ -39,6 +86,7 @@ function ocultarSenha() {
 /** Volta para o login, limpando a sessão. A mensagem aparece embaixo do formulário (ex.: sessão expirada). */
 export function sair(mensagem = '') {
   estado.token = null;
+  esquecerSessao();
   $('quem').hidden = true;
   ocultarSenha();
   $('app').hidden = true;
@@ -79,12 +127,10 @@ async function entrar(aoEntrar) {
   const liberar = ocupar($('bEntrar'), 'Entrando…');
   try {
     const { token } = await login(credenciais.usuario, credenciais.senha);
-    estado.token = token;
-    mostrarUsuario(idDoUsuario(token, credenciais.usuario));
+    const id = idDoUsuario(token, credenciais.usuario);
     $('senha').value = '';
-    $('login').hidden = true;
-    $('app').hidden = false;
-    aoEntrar();
+    guardarSessao(token, id);
+    abrirApp(token, id, aoEntrar);
   } catch (erro) {
     $('erroLogin').textContent = erro.message;
   } finally {
@@ -107,6 +153,11 @@ export function iniciarSessao(aoEntrar) {
   $('bSair').addEventListener('click', () => sair());
 
   if (APP.avisoLogin) $('notaLogin').innerHTML = APP.avisoLogin;
+
+  // F5: retoma a sessão da aba sem pedir login de novo; se o backend recusar o token, o 401 volta ao login
+  // (depois que o main.js termina de ligar abas e telas, como num login normal)
+  const sessao = sessaoGuardada();
+  if (sessao) queueMicrotask(() => abrirApp(sessao.token, sessao.id, aoEntrar));
 }
 
 /**

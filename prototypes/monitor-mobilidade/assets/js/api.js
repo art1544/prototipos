@@ -95,6 +95,9 @@ export const buscarHoje = () => chamar('hoje');
 /** Resumo de cada dia (veredito, status das perguntas e valores principais). */
 export const buscarHistorico = (dias) => chamar(`historico?dias=${dias}`);
 
+/** Relatório completo de um dia (JSON, o mesmo formato do relatório de /hoje); 404 quando o dia não tem relatório. */
+export const buscarRelatorio = (dia) => chamar(`relatorio/${dia}?formato=json`);
+
 /** Relatório completo de um dia em Markdown. */
 export const buscarRelatorioMarkdown = (dia) => chamar(`relatorio/${dia}?formato=md`, { formato: 'texto' });
 

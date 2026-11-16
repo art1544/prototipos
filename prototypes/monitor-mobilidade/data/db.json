@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "schemaVersion": 5,
+    "schemaVersion": 6,
     "notes": "Base de exemplo do Monitor Mobilidade: respostas das rotas /v2/monitor/* com dados fictícios (relatório de 2026-11-03). Depois da primeira carga as alterações ficam no navegador (localStorage, chave monitor-mobilidade:db)."
   },
   "config": {
@@ -71,7 +71,7 @@
         "equipe": "Mobilidade",
         "pergunta": "Quais eventos foram encaminhados ao usuário e não foram recebidos?",
         "status": "OK",
-        "resposta": "727 retornos do SAP ainda não chegaram a aparelhos válidos (login nos últimos 7 dias e versão do app igual ou acima da mínima): 247 por motivo do usuário, 113 com erro no SAP e 367 com o sistema. Dos 61.626 retornos do SAP desde o início do despacho a usuários válidos, 60.896 chegaram aos aparelhos (98,8%). Somando todos os aparelhos são 4.627 retornos pendentes; 3.900 são de aparelhos fora da base.",
+        "resposta": "727 retornos do SAP ainda não chegaram a aparelhos válidos (login nos últimos 7 dias e versão do app igual ou acima da mínima): 247 por motivo do usuário, 113 com erro no SAP e 367 com o sistema. Dos 61.626 retornos do SAP desde o início do despacho a aparelhos válidos, 60.896 chegaram aos aparelhos (98,8%). Somando todos os aparelhos são 4.627 retornos pendentes; 3.900 são de aparelhos fora da base.",
         "checks": [
           "C07"
         ]
@@ -415,49 +415,49 @@
         "status": "OK",
         "valor": 731,
         "referencia7d": 700,
-        "resposta": "727 retornos do SAP ainda não chegaram a aparelhos válidos (login nos últimos 7 dias e versão do app igual ou acima da mínima): 247 por motivo do usuário, 113 com erro no SAP e 367 com o sistema. Dos 61.626 retornos do SAP desde o início do despacho a usuários válidos, 60.896 chegaram aos aparelhos (98,8%). Somando todos os aparelhos são 4.627 retornos pendentes; 3.900 são de aparelhos fora da base.",
+        "resposta": "727 retornos do SAP ainda não chegaram a aparelhos válidos (login nos últimos 7 dias e versão do app igual ou acima da mínima): 247 por motivo do usuário, 113 com erro no SAP e 367 com o sistema. Dos 61.626 retornos do SAP desde o início do despacho a aparelhos válidos, 60.896 chegaram aos aparelhos (98,8%). Somando todos os aparelhos são 4.627 retornos pendentes; 3.900 são de aparelhos fora da base.",
         "numeros": [
           {
-            "rotulo": "Retornos pendentes a usuários válidos",
+            "rotulo": "Retornos pendentes a aparelhos válidos",
             "valor": 727,
-            "explicacao": "Retornos do SAP que ainda não chegaram a aparelhos válidos (aparelho do retorno atualizado nos últimos 7 dias e versão igual ou acima da mínima). Coleta: EVENT_NOTIFICATION_CONTROL com STATUS PR, PRE ou ER e SYNC_DATE nula, sem recorte de data (mesma regra da consulta de conferência no banco). Inclui os de erro no SAP. Cálculo: contagem."
+            "explicacao": "Retornos do SAP que ainda não chegaram a aparelhos válidos: o aparelho do próprio retorno foi atualizado (login) nos últimos 7 dias e está numa versão igual ou acima da mínima. Coleta: EVENT_NOTIFICATION_CONTROL com STATUS PR, PRE ou ER e SYNC_DATE nula, sem recorte de data (mesma regra da consulta de conferência no banco). Inclui os de erro no SAP. Cálculo: contagem."
           },
           {
             "rotulo": "Pendentes por motivo do usuário",
             "valor": 247,
-            "explicacao": "Retornos pendentes de aparelhos válidos porque o aparelho não foi usado desde o retorno ou o usuário trocou de aparelho. Os de erro no SAP aparecem à parte. Cálculo: contagem; o % é sobre os retornos pendentes a usuários válidos.",
+            "explicacao": "Retornos pendentes de aparelhos válidos porque o aparelho não foi usado desde o retorno ou o usuário trocou de aparelho. Os de erro no SAP aparecem à parte. Cálculo: contagem; o % é sobre os retornos pendentes a aparelhos válidos.",
             "base": 727
           },
           {
             "rotulo": "Com erro no SAP",
             "valor": 113,
-            "explicacao": "Retornos pendentes de aparelhos válidos com status ER: o SAP rejeitou o evento e o retorno volta a ficar pendente até corrigirem o cadastro. São do SAP. Cálculo: contagem; o % é sobre os retornos pendentes a usuários válidos.",
+            "explicacao": "Retornos pendentes de aparelhos válidos com status ER: o SAP rejeitou o evento e o retorno volta a ficar pendente até corrigirem o cadastro. São do SAP. Cálculo: contagem; o % é sobre os retornos pendentes a aparelhos válidos.",
             "base": 727
           },
           {
             "rotulo": "Pendentes com o sistema",
             "valor": 367,
-            "explicacao": "Retornos pendentes de aparelhos válidos por motivo técnico: o app recebeu e não confirmou, ou o aparelho não tem token de notificação. São da TI. Cálculo: contagem; o % é sobre os retornos pendentes a usuários válidos.",
+            "explicacao": "Retornos pendentes de aparelhos válidos por motivo técnico: o app recebeu e não confirmou, ou o aparelho não tem token de notificação. São da TI. Cálculo: contagem; o % é sobre os retornos pendentes a aparelhos válidos.",
             "base": 727
           },
           {
-            "rotulo": "Retornos do despacho a usuários válidos",
+            "rotulo": "Retornos do despacho a aparelhos válidos",
             "valor": 61626,
-            "explicacao": "Retornos desde o início do despacho de usuários válidos; é a base do % de entregues. Cálculo: retornos do despacho menos os de usuários fora da base."
+            "explicacao": "Retornos desde o início do despacho cujo aparelho é válido (login nos últimos 7 dias e versão igual ou acima da mínima), o mesmo critério dos pendentes; é a base do % de entregues. Coleta: EVENT_NOTIFICATION_CONTROL com STATUS diferente de 'LE' e CREATED_AT a partir do início, agrupado por aparelho. Cálculo: soma dos retornos dos aparelhos válidos."
           },
           {
             "rotulo": "Entregues aos aparelhos",
             "valor": 60896,
-            "explicacao": "Retornos do despacho a usuários válidos que o app confirmou ter recebido (EVENT_NOTIFICATION_CONTROL.SYNC_DATE preenchida). Cálculo: contagem; o % é sobre os retornos a usuários válidos. Abaixo de 95% a pergunta fica crítica. No primeiro dia do despacho é normal faltar muito; o que falta deve cair durante a semana.",
+            "explicacao": "Retornos do despacho a aparelhos válidos que o app confirmou ter recebido (EVENT_NOTIFICATION_CONTROL.SYNC_DATE preenchida). Cálculo: contagem; o % é sobre os retornos do despacho a aparelhos válidos. Abaixo de 95% a pergunta fica crítica. No primeiro dia do despacho é normal faltar muito; o que falta deve cair durante a semana.",
             "base": 61626
           },
           {
-            "rotulo": "Retornos pendentes no total (todos os usuários)",
+            "rotulo": "Retornos pendentes no total (todos os aparelhos)",
             "valor": 4627,
             "explicacao": "Todos os retornos PR, PRE ou ER ainda não recebidos, de qualquer aparelho, válido ou não. Cálculo: contagem em EVENT_NOTIFICATION_CONTROL com SYNC_DATE nula."
           },
           {
-            "rotulo": "Pendentes de usuários fora da base",
+            "rotulo": "Pendentes de aparelhos fora da base",
             "valor": 3900,
             "explicacao": "Retornos pendentes de aparelhos que não são válidos: sem atualização nos últimos 7 dias ou com versão abaixo da mínima. Não entram no destaque. Cálculo: total de pendentes menos os de aparelhos válidos; o % é sobre o total de pendentes.",
             "base": 4627
@@ -507,7 +507,7 @@
         "consulta": "C07_RESUMO, C07_POR_STATUS, C07_AMOSTRA, C07_DESPACHO e o script do despacho",
         "elo": "SAP → Function → Backend → aparelho",
         "achados": [
-          "727 retornos do SAP ainda não chegaram a aparelhos válidos (login nos últimos 7 dias e versão do app igual ou acima da mínima): 247 por motivo do usuário, 113 com erro no SAP e 367 com o sistema. Dos 61.626 retornos do SAP desde o início do despacho a usuários válidos, 60.896 chegaram aos aparelhos (98,8%). Somando todos os aparelhos são 4.627 retornos pendentes; 3.900 são de aparelhos fora da base.",
+          "727 retornos do SAP ainda não chegaram a aparelhos válidos (login nos últimos 7 dias e versão do app igual ou acima da mínima): 247 por motivo do usuário, 113 com erro no SAP e 367 com o sistema. Dos 61.626 retornos do SAP desde o início do despacho a aparelhos válidos, 60.896 chegaram aos aparelhos (98,8%). Somando todos os aparelhos são 4.627 retornos pendentes; 3.900 são de aparelhos fora da base.",
           "Retornos concentrados em poucos usuários: 10900001 (110) 10900002 (107) 10900003 (36)."
         ],
         "amostra": [],

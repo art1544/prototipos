@@ -1,17 +1,22 @@
 /**
- * Aba "Histórico": mapa de calor pergunta × dia e as séries dos principais números, em barras.
- * Os dados vêm de /historico, que o backend guarda por 180 dias (MONITOR_EXECUCAO).
+ * Aba "Histórico": consulta do relatório de um dia anterior, mapa de calor pergunta × dia e as séries dos principais
+ * números, em barras. Os dados vêm de /historico e /relatorio/{dia}, que o backend guarda por 180 dias (MONITOR_EXECUCAO).
  */
 import { LIMITES } from '../config.js';
 import { html } from '../util/html.js';
-import { $, fmt, dataBr, diaMes, doisDigitos } from '../util/formato.js';
+import { $, fmt, dataBr, diaMes, doisDigitos, horaDe } from '../util/formato.js';
 import { ROTULO, rotuloDe } from '../util/status.js';
 import { estado } from '../estado.js';
-import { buscarHistorico } from '../api.js';
+import { ApiError, buscarHistorico, buscarRelatorio, sessaoExpirada } from '../api.js';
 import { EXPLICACOES } from '../textos.js';
 import { info } from '../ui/popover.js';
+import { ocupar } from '../ui/ocupado.js';
 import { mostrarCarregando, mostrarFalha } from '../componentes.js';
 import { perguntasDe } from '../relatorio.js';
+import { htmlDoRelatorio, ligarRelatorio } from './hoje.js';
+
+/** Dias guardados no backend (MONITOR_EXECUCAO): limite da consulta de um dia anterior. */
+const DIAS_GUARDADOS = 180;
 
 const DIAS_DA_SEMANA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
 /** Perguntas mostradas quando o relatório do dia ainda não foi carregado. */
@@ -30,12 +35,13 @@ const ALTURA_MINIMA_BARRA = 1.5;
 
 // ---------- mapa de calor ----------
 
+/** Cabeçalho de uma coluna do mapa: clicar abre o relatório daquele dia logo acima. */
 function cabecalhoDoDia(dia, ultimo) {
   const m = String(dia.data).match(/^(\d{4})-(\d{2})-(\d{2})/);
   const semana = m ? DIAS_DA_SEMANA[new Date(+m[1], +m[2] - 1, +m[3]).getDay()] : null;
-  return html`<div class="mh-dia${ultimo ? ' hoje' : ''}" title="${dataBr(dia.data)}">
-    ${semana ? html`${semana}<b>${m[3]}</b>` : ''}
-  </div>`;
+  if (!m) return html`<div class="mh-dia"></div>`;
+  return html`<button class="mh-dia${ultimo ? ' hoje' : ''}" type="button" data-dia="${m[0]}"
+    title="Ver o relatório de ${dataBr(dia.data)}">${semana}<b>${m[3]}</b></button>`;
 }
 
 /** Uma linha do mapa: rótulo, uma célula por dia e o total de dias OK. */
@@ -155,6 +161,60 @@ function serie(historico, idCheck, titulo) {
   </div>`;
 }
 
+// ---------- relatório de um dia anterior ----------
+
+/** Data local no formato do input date (aaaa-mm-dd). */
+const isoDoDia = (data) =>
+  `${data.getFullYear()}-${doisDigitos(data.getMonth() + 1)}-${doisDigitos(data.getDate())}`;
+
+function cartaoConsulta(diaInicial) {
+  const hoje = new Date();
+  const limite = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - DIAS_GUARDADOS);
+  return html`<div class="card pad">
+    <form class="consulta-dia" id="fDia">
+      <div class="campo">
+        <label for="diaConsulta">Consultar o relatório de um dia</label>
+        <input id="diaConsulta" type="date" required value="${diaInicial}" min="${isoDoDia(limite)}" max="${isoDoDia(hoje)}">
+      </div>
+      <button class="btn prim" id="bDia" type="submit">Ver relatório</button>
+      <span class="tiny">Ou clique no dia, no topo do mapa abaixo. Ficam guardados os últimos ${DIAS_GUARDADOS} dias.</span>
+    </form>
+  </div>
+  <div id="histDia"></div>`;
+}
+
+/** Busca o relatório do dia e desenha os cartões dele (como na Saúde do dia) acima do mapa. */
+async function abrirDia(dia) {
+  const alvo = $('histDia');
+  const campo = $('diaConsulta');
+  if (!alvo || !dia) return;
+  campo.value = dia;
+  const liberar = ocupar($('bDia'), 'Buscando…');
+  mostrarCarregando(alvo);
+  try {
+    const relatorio = await buscarRelatorio(dia);
+    alvo.innerHTML = html`<div class="dia-consultado">
+      <div class="cab-sec">
+        <h2 class="titulo-card">Relatório de ${dataBr(relatorio.dataRef || dia)}</h2>
+        <span class="tiny">gerado às ${horaDe(relatorio.geradoEm)}</span>
+        <button class="btn" id="bFecharDia" type="button">Fechar</button>
+      </div>
+      ${htmlDoRelatorio(relatorio, { prefixoId: 'h', comDespacho: false })}
+    </div>`;
+    ligarRelatorio(alvo, relatorio);
+    $('bFecharDia').addEventListener('click', () => (alvo.innerHTML = ''));
+    alvo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (erro) {
+    if (erro instanceof ApiError && erro.status === 404) {
+      alvo.innerHTML = html`<div class="card vazio">Sem relatório em ${dataBr(dia)}.</div>`;
+    } else if (!sessaoExpirada(erro)) {
+      mostrarFalha(alvo, erro);
+    }
+  } finally {
+    liberar();
+  }
+}
+
 // ---------- tela ----------
 
 /** Busca o histórico e redesenha a aba (a cada visita). */
@@ -163,14 +223,22 @@ export async function carregarHistorico() {
   mostrarCarregando(aba);
   try {
     const historico = await buscarHistorico(LIMITES.diasHistorico);
-    if (!historico.length) {
-      aba.innerHTML = html`<div class="card vazio">Sem histórico ainda.</div>`;
-      return;
-    }
+    // o dia sugerido é o anterior ao mais recente (o mais recente é o da Saúde do dia)
+    const ontem = new Date();
+    ontem.setDate(ontem.getDate() - 1);
+    const sugerido = String(historico[1]?.data ?? isoDoDia(ontem)).slice(0, 10);
     aba.innerHTML = html`<div class="topo-rel hist">
-      ${mapaDeCalor(historico)}
+      ${cartaoConsulta(sugerido)}
+      ${historico.length ? mapaDeCalor(historico) : html`<div class="card vazio">Sem histórico ainda.</div>`}
       <div class="series">${SERIES.map(([id, titulo]) => serie(historico, id, titulo))}</div>
     </div>`;
+    $('fDia').addEventListener('submit', (evento) => {
+      evento.preventDefault();
+      abrirDia($('diaConsulta').value);
+    });
+    for (const botao of aba.querySelectorAll('[data-dia]')) {
+      botao.addEventListener('click', () => abrirDia(botao.dataset.dia));
+    }
   } catch (erro) {
     mostrarFalha(aba, erro);
   }

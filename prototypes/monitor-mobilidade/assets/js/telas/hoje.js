@@ -168,7 +168,7 @@ function blocoDiagnostico(diagnostico) {
 }
 
 /** Cartão de uma pergunta: número principal ou diagnóstico em destaque, demais números e, no despacho, motivos negócio × TI. */
-function cartaoPergunta(pergunta, porId) {
+function cartaoPergunta(pergunta, porId, prefixoId = 'p') {
   const checks = checksDa(pergunta, porId);
   const numPrincipal = principal(pergunta, porId);
   const diagnostico = diagnosticoDe(pergunta, porId);
@@ -192,7 +192,7 @@ function cartaoPergunta(pergunta, porId) {
   if (largo) corpo = html`${corpo}${ladoDespacho(checks, outros)}`;
   else if (outros.length) corpo = html`${corpo}${linhas(outros)}`;
 
-  return html`<article class="card rel ${pergunta.status}${largo ? ' largo2' : ''}" id="p${pergunta.numero}">
+  return html`<article class="card rel ${pergunta.status}${largo ? ' largo2' : ''}" id="${prefixoId}${pergunta.numero}">
     <div class="rel-cab">
       <div class="num">${doisDigitos(pergunta.numero)}</div>
       <h3>${pergunta.pergunta}</h3>
@@ -233,15 +233,31 @@ function desenhar(relatorio, htmlAvisos) {
       use "Rodar agora" para gerar o primeiro.</div>`;
     return;
   }
+  aba.innerHTML = html`${htmlAvisos}${htmlDoRelatorio(relatorio)}`;
+  ligarRelatorio(aba, relatorio);
+  $('irDespacho')?.addEventListener('click', () => irPara('despacho'));
+}
+
+/**
+ * Cabeçalho (veredito e destaques) e cartões das perguntas de um relatório. Também serve para consultar um dia anterior
+ * no Histórico, com outro prefixo nos ids e sem o cartão do despacho em análise (que é sempre o atual).
+ */
+export function htmlDoRelatorio(relatorio, { prefixoId = 'p', comDespacho = true } = {}) {
   const perguntas = perguntasDe(relatorio);
   const porId = checksPorId(relatorio);
-  const cartoes = [...perguntas.map((pergunta) => cartaoPergunta(pergunta, porId)), cartaoDespacho(relatorio.despacho)];
-  aba.innerHTML = html`${htmlAvisos}${cabecalho(relatorio, perguntas, porId)}<div class="grade">${cartoes}</div>`;
-  animar(aba);
-  for (const botao of aba.querySelectorAll('[data-det]')) {
+  const cartoes = perguntas.map((pergunta) => cartaoPergunta(pergunta, porId, prefixoId));
+  if (comDespacho) cartoes.push(cartaoDespacho(relatorio.despacho));
+  return html`${cabecalho(relatorio, perguntas, porId)}<div class="grade">${cartoes}</div>`;
+}
+
+/** Animações e botões "Detalhes" dos cartões já desenhados em raiz. */
+export function ligarRelatorio(raiz, relatorio) {
+  const perguntas = perguntasDe(relatorio);
+  const porId = checksPorId(relatorio);
+  animar(raiz);
+  for (const botao of raiz.querySelectorAll('[data-det]')) {
     botao.addEventListener('click', () => abrirDetalhe(perguntas[Number(botao.dataset.det)], porId));
   }
-  $('irDespacho')?.addEventListener('click', () => irPara('despacho'));
 }
 
 function subtitulo(relatorio) {
