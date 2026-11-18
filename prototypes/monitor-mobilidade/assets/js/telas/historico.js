@@ -37,6 +37,9 @@ const MEDIDA = {
   C09: ['ms', 'ms'],
 };
 
+/** Texto do status dentro da célula do veredito, mais curto que o da legenda onde não cabe. */
+const STATUS_NA_CELULA = { FORA: 'Fora', SEM_DADOS: 'Sem dados', SEM_LISTA: 'Sem lista' };
+
 /** Medida de um valor ("1 ordem", "2 ordens"); vazia quando o check não tem medida conhecida. */
 const medidaDe = (idCheck, valor) => (MEDIDA[idCheck] ? MEDIDA[idCheck][valor === 1 ? 0 : 1] : '');
 const STATUS_DA_LEGENDA =['OK', 'ATENCAO', 'CRITICO', 'FORA', 'SEM_DADOS'];
@@ -66,7 +69,7 @@ function cabecalhoDoDia(dia, ultimo) {
  * Uma linha do mapa: rótulo, uma célula por dia (cor do status e, quando houver, o número exato da pergunta naquele
  * dia com a medida: "1.716 ordens") e o total de dias OK.
  */
-function linhaDoMapa(dias, { rotulo, classe = '', numero = null, statusDoDia, idCheck = null }) {
+function linhaDoMapa(dias, { rotulo, classe = '', numero = null, statusDoDia, idCheck = null, comTextoDoStatus = false }) {
   let ok = 0;
   let comStatus = 0;
   const celulas = dias.map((dia, i) => {
@@ -77,7 +80,9 @@ function linhaDoMapa(dias, { rotulo, classe = '', numero = null, statusDoDia, id
     const descricao = status ? rotuloDe(status) : 'sem relatório';
     const temValor = typeof valor === 'number';
     const medida = temValor ? medidaDe(idCheck, valor) : '';
-    const conteudo = temValor ? html`<b>${fmt(valor)}</b>${medida ? html`<small>${medida}</small>` : ''}` : '';
+    let conteudo = '';
+    if (temValor) conteudo = html`<b>${fmt(valor)}</b>${medida ? html`<small>${medida}</small>` : ''}`;
+    else if (comTextoDoStatus && status) conteudo = html`<span class="mh-st">${STATUS_NA_CELULA[status] ?? rotuloDe(status)}</span>`;
     return html`<div class="mh-cel ${status || 'vazia'}${temValor ? ' com-valor' : ''}${i === dias.length - 1 ? ' ult' : ''}"
       style="animation-delay:${i * ATRASO_CELULA_MS}ms"
       title="${dataBr(dia.data)} · ${rotulo}: ${descricao}${temValor ? ` · ${fmt(valor)} ${medida}` : ''}">${conteudo}</div>`;
@@ -102,6 +107,7 @@ function mapaDeCalor(historico) {
     rotulo: 'Veredito do dia',
     classe: 'ver-d',
     statusDoDia: (dia) => dia.veredito,
+    comTextoDoStatus: true,
   });
   const linhasPerguntas = numeros.map((n) =>
     linhaDoMapa(dias, {
