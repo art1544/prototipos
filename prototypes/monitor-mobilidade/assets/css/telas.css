@@ -444,7 +444,7 @@
 }
 
 .mapa-h {
-  grid-template-columns: minmax(180px,360px) repeat(var(--dias),minmax(36px,1fr)) auto!important;
+  grid-template-columns: minmax(180px,360px) repeat(var(--dias),minmax(58px,1fr)) auto!important;
   display: grid;
   gap: 5px 4px;
   align-items: center;
@@ -502,9 +502,12 @@
 
 .mh-cel {
   height: 24px;
-  display: grid;
-  place-items: center;
-  font: 600 10.5px/1 var(--mono);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font: 600 11px/1 var(--mono);
   color: #fff;
   white-space: nowrap;
   overflow: hidden;
@@ -512,6 +515,17 @@
   transition: transform .12s,box-shadow .12s;
   animation: sobe .4s cubic-bezier(.2,.8,.2,1) both;
   border-radius: 6px;
+}
+
+/* célula com número: o número exato em cima e a medida (ordens, eventos...) embaixo */
+.mh-cel.com-valor {
+  height: 38px;
+  padding: 0 3px;
+}
+
+.mh-cel small {
+  font: 500 9.5px/1 var(--fonte);
+  opacity: .85;
 }
 
 .mh-cel:hover {
@@ -568,7 +582,7 @@
 
 @media (max-width:640px) {
   .mapa-h {
-    grid-template-columns: 110px repeat(var(--dias),minmax(34px,1fr)) auto!important;
+    grid-template-columns: 110px repeat(var(--dias),minmax(56px,1fr)) auto!important;
   }
 
   .mh-rot span {

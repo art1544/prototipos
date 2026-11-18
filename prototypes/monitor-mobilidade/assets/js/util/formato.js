@@ -16,23 +16,6 @@ export function fmt(valor) {
   return typeof valor === 'number' ? numero.format(valor) : String(valor);
 }
 
-const COMPACTO = [
-  [1e6, 'M'],
-  [1e3, 'k'],
-];
-
-/** Número curto para caber numa célula ("465", "1,7k", "17k", "1,2M"); sem valor vira "". */
-export function curto(valor) {
-  if (typeof valor !== 'number' || !Number.isFinite(valor)) return '';
-  for (const [base, sufixo] of COMPACTO) {
-    if (Math.abs(valor) >= base) {
-      const n = valor / base;
-      return `${n.toLocaleString('pt-BR', { maximumFractionDigits: Math.abs(n) < 10 ? 1 : 0 })}${sufixo}`;
-    }
-  }
-  return numero.format(valor);
-}
-
 /** Percentual de parte sobre total com 1 casa ("12,5%"); sem total vira "—". */
 export function pct(parte, total) {
   return total ? `${((parte * 100) / total).toLocaleString('pt-BR', PERCENTUAL)}%` : '—';

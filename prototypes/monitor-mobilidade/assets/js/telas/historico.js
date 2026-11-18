@@ -4,7 +4,7 @@
  */
 import { LIMITES } from '../config.js';
 import { html } from '../util/html.js';
-import { $, fmt, curto, dataBr, diaMes, doisDigitos, horaDe } from '../util/formato.js';
+import { $, fmt, dataBr, diaMes, doisDigitos, horaDe } from '../util/formato.js';
 import { ROTULO, rotuloDe } from '../util/status.js';
 import { estado } from '../estado.js';
 import { ApiError, buscarHistorico, buscarRelatorio, sessaoExpirada } from '../api.js';
@@ -26,6 +26,19 @@ const PERGUNTAS_PADRAO = [1, 2, 3, 4, 5, 6, 7, 8];
  * Com o relatório do dia carregado, vale a lista de checks que vem nele.
  */
 const CHECK_PRINCIPAL = { 1: 'C01', 2: 'C02', 3: 'C03', 4: 'C05', 5: 'C06', 6: 'C07', 7: 'C09' };
+/** Medida do número de cada check nas células: [singular, plural]. */
+const MEDIDA = {
+  C01: ['fila', 'filas'],
+  C02: ['deadlock', 'deadlocks'],
+  C03: ['evento', 'eventos'],
+  C05: ['ordem', 'ordens'],
+  C06: ['ordem', 'ordens'],
+  C07: ['evento', 'eventos'],
+  C09: ['ms', 'ms'],
+};
+
+/** Medida de um valor ("1 ordem", "2 ordens"); vazia quando o check não tem medida conhecida. */
+const medidaDe = (idCheck, valor) => (MEDIDA[idCheck] ? MEDIDA[idCheck][valor === 1 ? 0 : 1] : '');
 const STATUS_DA_LEGENDA =['OK', 'ATENCAO', 'CRITICO', 'FORA', 'SEM_DADOS'];
 /** Séries exibidas: id do check e título do gráfico. */
 const SERIES = [
@@ -50,21 +63,24 @@ function cabecalhoDoDia(dia, ultimo) {
 }
 
 /**
- * Uma linha do mapa: rótulo, uma célula por dia (cor do status e, quando houver, o número principal da pergunta
- * naquele dia) e o total de dias OK.
+ * Uma linha do mapa: rótulo, uma célula por dia (cor do status e, quando houver, o número exato da pergunta naquele
+ * dia com a medida: "1.716 ordens") e o total de dias OK.
  */
-function linhaDoMapa(dias, { rotulo, classe = '', numero = null, statusDoDia, valorDoDia = () => null }) {
+function linhaDoMapa(dias, { rotulo, classe = '', numero = null, statusDoDia, idCheck = null }) {
   let ok = 0;
   let comStatus = 0;
   const celulas = dias.map((dia, i) => {
     const status = statusDoDia(dia);
-    const valor = valorDoDia(dia);
+    const valor = idCheck ? dia.valores?.[idCheck] : null;
     if (status) comStatus++;
     if (status === 'OK') ok++;
     const descricao = status ? rotuloDe(status) : 'sem relatório';
-    const comValor = typeof valor === 'number' ? ` · ${fmt(valor)}` : '';
-    return html`<div class="mh-cel ${status || 'vazia'}${i === dias.length - 1 ? ' ult' : ''}"
-      style="animation-delay:${i * ATRASO_CELULA_MS}ms" title="${dataBr(dia.data)} · ${rotulo}: ${descricao}${comValor}">${curto(valor)}</div>`;
+    const temValor = typeof valor === 'number';
+    const medida = temValor ? medidaDe(idCheck, valor) : '';
+    const conteudo = temValor ? html`<b>${fmt(valor)}</b>${medida ? html`<small>${medida}</small>` : ''}` : '';
+    return html`<div class="mh-cel ${status || 'vazia'}${temValor ? ' com-valor' : ''}${i === dias.length - 1 ? ' ult' : ''}"
+      style="animation-delay:${i * ATRASO_CELULA_MS}ms"
+      title="${dataBr(dia.data)} · ${rotulo}: ${descricao}${temValor ? ` · ${fmt(valor)} ${medida}` : ''}">${conteudo}</div>`;
   });
   return html`<div class="mh-rot ${classe}" title="${rotulo}">
       ${numero ? html`<span class="num">${numero}</span>` : ''}<span>${rotulo}</span>
@@ -92,7 +108,7 @@ function mapaDeCalor(historico) {
       rotulo: titulos[n] || `Pergunta ${n}`,
       numero: doisDigitos(n),
       statusDoDia: (dia) => dia.perguntas?.[String(n)],
-      valorDoDia: (dia) => dia.valores?.[checks[n]] ?? null,
+      idCheck: checks[n],
     }),
   );
   return html`<div class="card pad">
