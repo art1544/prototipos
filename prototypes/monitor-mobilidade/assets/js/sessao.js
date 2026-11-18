@@ -9,7 +9,11 @@ import { estado } from './estado.js';
 import { login, buscarAmbiente } from './api.js';
 import { ocupar } from './ui/ocupado.js';
 
-const CHAVE_SESSAO = 'monitor-mobilidade.sessao';
+/** Chave no sessionStorage; fica em <html data-chave-sessao> porque o tema-inicial.js também a lê. */
+const CHAVE_SESSAO = document.documentElement.dataset.chaveSessao || 'monitor-mobilidade.sessao';
+
+/** Tira a marca do tema-inicial.js (<html data-sessao>): daqui em diante quem manda é o atributo hidden. */
+const soltarMarcaDeSessao = () => document.documentElement.removeAttribute('data-sessao');
 
 /** Claims do JWT (só leitura, sem validar: isso é papel do backend), ou {} se o payload não for legível. */
 function claimsDo(token) {
@@ -68,6 +72,7 @@ function abrirApp(token, id, aoEntrar) {
   mostrarUsuario(id);
   $('login').hidden = true;
   $('app').hidden = false;
+  soltarMarcaDeSessao();
   aoEntrar();
 }
 
@@ -91,6 +96,7 @@ export function sair(mensagem = '') {
   ocultarSenha();
   $('app').hidden = true;
   $('login').hidden = false;
+  soltarMarcaDeSessao();
   $('erroLogin').textContent = mensagem;
 }
 
@@ -158,6 +164,7 @@ export function iniciarSessao(aoEntrar) {
   // (depois que o main.js termina de ligar abas e telas, como num login normal)
   const sessao = sessaoGuardada();
   if (sessao) queueMicrotask(() => abrirApp(sessao.token, sessao.id, aoEntrar));
+  else soltarMarcaDeSessao();
 }
 
 /**

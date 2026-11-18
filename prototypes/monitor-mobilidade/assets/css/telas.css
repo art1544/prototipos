@@ -425,11 +425,39 @@
   background: var(--fundo-3);
 }
 
+/* número sobre fundo claro (amarelo, cinza ou listrado): texto escuro */
+.mh-cel.ATENCAO {
+  color: #2A2A4D;
+}
+
+.mh-cel.FORA,
+.mh-cel.SEM_DADOS,
+.mh-cel.SEM_LISTA,
+.mh-cel.vazia {
+  color: var(--texto-2);
+}
+
+/* com 30 dias e o número em cada célula, a grade rola na horizontal; a coluna das perguntas fica parada */
+.mapa-rolagem {
+  overflow-x: auto;
+  padding: 4px 2px 6px;
+}
+
 .mapa-h {
-  grid-template-columns: minmax(180px,420px) repeat(var(--dias),minmax(12px,1fr)) auto!important;
+  grid-template-columns: minmax(180px,360px) repeat(var(--dias),minmax(36px,1fr)) auto!important;
   display: grid;
   gap: 5px 4px;
   align-items: center;
+  min-width: max-content;
+}
+
+.mapa-h > .mh-rot,
+.mapa-h > div:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--fundo);
+  align-self: stretch;
 }
 
 .mh-dia {
@@ -474,6 +502,12 @@
 
 .mh-cel {
   height: 24px;
+  display: grid;
+  place-items: center;
+  font: 600 10.5px/1 var(--mono);
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
   background: var(--fundo-3);
   transition: transform .12s,box-shadow .12s;
   animation: sobe .4s cubic-bezier(.2,.8,.2,1) both;
@@ -534,7 +568,7 @@
 
 @media (max-width:640px) {
   .mapa-h {
-    grid-template-columns: 110px repeat(var(--dias),minmax(8px,1fr)) auto!important;
+    grid-template-columns: 110px repeat(var(--dias),minmax(34px,1fr)) auto!important;
   }
 
   .mh-rot span {
@@ -550,6 +584,15 @@
 }
 
 /* Login */
+/* F5 com sessão na aba (tema-inicial.js marca <html data-sessao>): já pinta a tela principal, sem piscar o login */
+html[data-sessao] #login {
+  display: none!important;
+}
+
+html[data-sessao] #app[hidden] {
+  display: block!important;
+}
+
 .login-rod .amb {
   background: rgba(255,255,255,.18);
   color: #fff;

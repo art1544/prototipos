@@ -4,7 +4,7 @@
  */
 import { LIMITES } from '../config.js';
 import { html } from '../util/html.js';
-import { $, fmt, dataBr, diaMes, doisDigitos, horaDe } from '../util/formato.js';
+import { $, fmt, curto, dataBr, diaMes, doisDigitos, horaDe } from '../util/formato.js';
 import { ROTULO, rotuloDe } from '../util/status.js';
 import { estado } from '../estado.js';
 import { ApiError, buscarHistorico, buscarRelatorio, sessaoExpirada } from '../api.js';
@@ -21,7 +21,12 @@ const DIAS_GUARDADOS = 180;
 const DIAS_DA_SEMANA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
 /** Perguntas mostradas quando o relatório do dia ainda não foi carregado. */
 const PERGUNTAS_PADRAO = [1, 2, 3, 4, 5, 6, 7, 8];
-const STATUS_DA_LEGENDA = ['OK', 'ATENCAO', 'CRITICO', 'FORA', 'SEM_DADOS'];
+/**
+ * Número de cada pergunta nas células do mapa: valor do primeiro check dela (o mesmo de MonitorPerguntas.java).
+ * Com o relatório do dia carregado, vale a lista de checks que vem nele.
+ */
+const CHECK_PRINCIPAL = { 1: 'C01', 2: 'C02', 3: 'C03', 4: 'C05', 5: 'C06', 6: 'C07', 7: 'C09' };
+const STATUS_DA_LEGENDA =['OK', 'ATENCAO', 'CRITICO', 'FORA', 'SEM_DADOS'];
 /** Séries exibidas: id do check e título do gráfico. */
 const SERIES = [
   ['C06', 'Ordens pendentes (envios)'],
@@ -44,17 +49,22 @@ function cabecalhoDoDia(dia, ultimo) {
     title="Ver o relatório de ${dataBr(dia.data)}">${semana}<b>${m[3]}</b></button>`;
 }
 
-/** Uma linha do mapa: rótulo, uma célula por dia e o total de dias OK. */
-function linhaDoMapa(dias, { rotulo, classe = '', numero = null, statusDoDia }) {
+/**
+ * Uma linha do mapa: rótulo, uma célula por dia (cor do status e, quando houver, o número principal da pergunta
+ * naquele dia) e o total de dias OK.
+ */
+function linhaDoMapa(dias, { rotulo, classe = '', numero = null, statusDoDia, valorDoDia = () => null }) {
   let ok = 0;
   let comStatus = 0;
   const celulas = dias.map((dia, i) => {
     const status = statusDoDia(dia);
+    const valor = valorDoDia(dia);
     if (status) comStatus++;
     if (status === 'OK') ok++;
     const descricao = status ? rotuloDe(status) : 'sem relatório';
+    const comValor = typeof valor === 'number' ? ` · ${fmt(valor)}` : '';
     return html`<div class="mh-cel ${status || 'vazia'}${i === dias.length - 1 ? ' ult' : ''}"
-      style="animation-delay:${i * ATRASO_CELULA_MS}ms" title="${dataBr(dia.data)} · ${rotulo}: ${descricao}"></div>`;
+      style="animation-delay:${i * ATRASO_CELULA_MS}ms" title="${dataBr(dia.data)} · ${rotulo}: ${descricao}${comValor}">${curto(valor)}</div>`;
   });
   return html`<div class="mh-rot ${classe}" title="${rotulo}">
       ${numero ? html`<span class="num">${numero}</span>` : ''}<span>${rotulo}</span>
@@ -69,6 +79,7 @@ function mapaDeCalor(historico) {
   const perguntas = estado.relatorio ? perguntasDe(estado.relatorio) : [];
   const numeros = estado.relatorio ? perguntas.map((p) => p.numero) : PERGUNTAS_PADRAO;
   const titulos = Object.fromEntries(perguntas.map((p) => [p.numero, p.pergunta]));
+  const checks = { ...CHECK_PRINCIPAL, ...Object.fromEntries(perguntas.filter((p) => p.checks?.length).map((p) => [p.numero, p.checks[0]])) };
   const dias = [...historico].reverse();
 
   const linhaVeredito = linhaDoMapa(dias, {
@@ -81,6 +92,7 @@ function mapaDeCalor(historico) {
       rotulo: titulos[n] || `Pergunta ${n}`,
       numero: doisDigitos(n),
       statusDoDia: (dia) => dia.perguntas?.[String(n)],
+      valorDoDia: (dia) => dia.valores?.[checks[n]] ?? null,
     }),
   );
   return html`<div class="card pad">
@@ -88,13 +100,15 @@ function mapaDeCalor(historico) {
       <h2 class="titulo-card">Respostas por dia${info(EXPLICACOES.matriz)}</h2>
       <span class="tiny">${dias.length} dia(s) · mais recente à direita</span>
     </div>
-    <div class="mapa-h" style="--dias:${dias.length}">
-      <div></div>
-      ${dias.map((dia, i) => cabecalhoDoDia(dia, i === dias.length - 1))}
-      <div class="mh-tot">OK</div>
-      ${linhaVeredito}
-      <div class="mh-sep"></div>
-      ${linhasPerguntas}
+    <div class="mapa-rolagem">
+      <div class="mapa-h" style="--dias:${dias.length}">
+        <div></div>
+        ${dias.map((dia, i) => cabecalhoDoDia(dia, i === dias.length - 1))}
+        <div class="mh-tot">OK</div>
+        ${linhaVeredito}
+        <div class="mh-sep"></div>
+        ${linhasPerguntas}
+      </div>
     </div>
     <div class="mh-leg">
       ${STATUS_DA_LEGENDA.map((status) => html`<span><i class="mh-cel ${status}"></i>${ROTULO[status]}</span>`)}
