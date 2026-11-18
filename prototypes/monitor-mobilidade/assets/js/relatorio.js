@@ -83,6 +83,16 @@ const PRINCIPAL = {
   C07: ['Retornos pendentes a aparelhos válidos', 'Retornos pendentes a usuários válidos'],
 };
 
+/**
+ * Número principal de um check num dia do histórico (/historico): o mesmo da Saúde do dia (PRINCIPAL acima, pelos
+ * números por rótulo que o backend manda em dia.numeros) ou, sem ele, o valor bruto do check (relatórios antigos).
+ * @returns {number | null}
+ */
+export const principalDoDia = (dia, id) =>
+  (PRINCIPAL[id] ?? []).map((rotulo) => dia.numeros?.[id]?.[rotulo]).find((v) => typeof v === 'number') ??
+  dia.valores?.[id] ??
+  null;
+
 /** Número em destaque de um check do despacho, ou null. */
 const pendentesDe = (porId, id) =>
   (PRINCIPAL[id] ?? []).map((rotulo) => numeroDe(porId, id, rotulo)).find(Boolean) ?? null;

@@ -12,7 +12,7 @@ import { EXPLICACOES } from '../textos.js';
 import { info } from '../ui/popover.js';
 import { ocupar } from '../ui/ocupado.js';
 import { mostrarCarregando, mostrarFalha } from '../componentes.js';
-import { perguntasDe } from '../relatorio.js';
+import { perguntasDe, principalDoDia } from '../relatorio.js';
 import { htmlDoRelatorio, ligarRelatorio } from './hoje.js';
 
 /** Dias guardados no backend (MONITOR_EXECUCAO): limite da consulta de um dia anterior. */
@@ -45,8 +45,8 @@ const medidaDe = (idCheck, valor) => (MEDIDA[idCheck] ? MEDIDA[idCheck][valor ==
 const STATUS_DA_LEGENDA =['OK', 'ATENCAO', 'CRITICO', 'FORA', 'SEM_DADOS'];
 /** Séries exibidas: id do check e título do gráfico. */
 const SERIES = [
-  ['C06', 'Ordens pendentes (envios)'],
-  ['C07', 'Retornos pendentes'],
+  ['C06', 'Ordens pendentes a usuários válidos'],
+  ['C07', 'Retornos pendentes a aparelhos válidos'],
   ['C03', 'Apontamentos esgotados'],
   ['C09', 'Login: tempo de resposta (ms)'],
 ];
@@ -74,7 +74,7 @@ function linhaDoMapa(dias, { rotulo, classe = '', numero = null, statusDoDia, id
   let comStatus = 0;
   const celulas = dias.map((dia, i) => {
     const status = statusDoDia(dia);
-    const valor = idCheck ? dia.valores?.[idCheck] : null;
+    const valor = idCheck ? principalDoDia(dia, idCheck) : null;
     if (status) comStatus++;
     if (status === 'OK') ok++;
     const descricao = status ? rotuloDe(status) : 'sem relatório';
@@ -168,7 +168,7 @@ function barra(dia, valor, i, { ultimo, maximo }) {
  */
 function serie(historico, idCheck, titulo) {
   const dias = [...historico].reverse();
-  const pontos = dias.map((dia) => dia.valores?.[idCheck] ?? null);
+  const pontos = dias.map((dia) => principalDoDia(dia, idCheck));
   const valores = pontos.filter((v) => v != null);
   if (!valores.length) return '';
 

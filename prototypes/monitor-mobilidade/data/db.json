@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "schemaVersion": 6,
+    "schemaVersion": 7,
     "notes": "Base de exemplo do Monitor Mobilidade: respostas das rotas /v2/monitor/* com dados fictícios (relatório de 2026-11-03). Depois da primeira carga as alterações ficam no navegador (localStorage, chave monitor-mobilidade:db)."
   },
   "config": {
@@ -694,6 +694,30 @@
         "C06": 1716,
         "C07": 731,
         "C09": 465
+      },
+      "numeros": {
+        "C06": {
+          "Ordens pendentes a usuários válidos": 52,
+          "Pendentes por motivo do usuário": 28,
+          "Pendentes com o sistema": 24,
+          "Usuários válidos": 288,
+          "Envios a usuários válidos": 2550,
+          "Recebidos": 2498,
+          "Ordens pendentes no total (todos os usuários)": 1716,
+          "Pendentes de usuários fora da base": 1664,
+          "Envios do despacho (todos os usuários)": 4214
+        },
+        "C07": {
+          "Retornos pendentes a aparelhos válidos": 727,
+          "Pendentes por motivo do usuário": 247,
+          "Com erro no SAP": 113,
+          "Pendentes com o sistema": 367,
+          "Retornos do despacho a aparelhos válidos": 61626,
+          "Entregues aos aparelhos": 60896,
+          "Retornos pendentes no total (todos os aparelhos)": 4627,
+          "Pendentes de aparelhos fora da base": 3900,
+          "Retornos do SAP no despacho": 65526
+        }
       }
     },
     {
@@ -716,6 +740,16 @@
         "C06": 1702,
         "C07": 720,
         "C09": 377
+      },
+      "numeros": {
+        "C06": {
+          "Ordens pendentes a usuários válidos": 52,
+          "Ordens pendentes no total (todos os usuários)": 1702
+        },
+        "C07": {
+          "Retornos pendentes a aparelhos válidos": 716,
+          "Retornos pendentes no total (todos os aparelhos)": 720
+        }
       }
     },
     {
@@ -738,6 +772,16 @@
         "C06": 1690,
         "C07": 705,
         "C09": 502
+      },
+      "numeros": {
+        "C06": {
+          "Ordens pendentes a usuários válidos": 51,
+          "Ordens pendentes no total (todos os usuários)": 1690
+        },
+        "C07": {
+          "Retornos pendentes a aparelhos válidos": 701,
+          "Retornos pendentes no total (todos os aparelhos)": 705
+        }
       }
     },
     {
@@ -760,6 +804,16 @@
         "C06": 1810,
         "C07": 690,
         "C09": 633
+      },
+      "numeros": {
+        "C06": {
+          "Ordens pendentes a usuários válidos": 55,
+          "Ordens pendentes no total (todos os usuários)": 1810
+        },
+        "C07": {
+          "Retornos pendentes a aparelhos válidos": 686,
+          "Retornos pendentes no total (todos os aparelhos)": 690
+        }
       }
     },
     {
@@ -782,6 +836,16 @@
         "C06": 2300,
         "C07": 1100,
         "C09": 324
+      },
+      "numeros": {
+        "C06": {
+          "Ordens pendentes a usuários válidos": 70,
+          "Ordens pendentes no total (todos os usuários)": 2300
+        },
+        "C07": {
+          "Retornos pendentes a aparelhos válidos": 1094,
+          "Retornos pendentes no total (todos os aparelhos)": 1100
+        }
       }
     },
     {
@@ -804,6 +868,12 @@
         "C06": null,
         "C07": 300,
         "C09": 337
+      },
+      "numeros": {
+        "C07": {
+          "Retornos pendentes a aparelhos válidos": 298,
+          "Retornos pendentes no total (todos os aparelhos)": 300
+        }
       }
     },
     {
@@ -826,6 +896,16 @@
         "C06": 120,
         "C07": 260,
         "C09": 574
+      },
+      "numeros": {
+        "C06": {
+          "Ordens pendentes a usuários válidos": 4,
+          "Ordens pendentes no total (todos os usuários)": 120
+        },
+        "C07": {
+          "Retornos pendentes a aparelhos válidos": 259,
+          "Retornos pendentes no total (todos os aparelhos)": 260
+        }
       }
     }
   ],
